@@ -3,6 +3,26 @@ const DB_NAME = 'RevisionCasitasDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
+// --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
+const STATIC_CACHE = 'static-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-128x128.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-152x152.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-384x384.png',
+  '/icons/icon-512x512.png',
+  '/icons/maskable-icon-192x192.png',
+  '/icons/maskable-icon-512x512.png',
+  '/output.css',
+  // Agrega aquí otros archivos estáticos necesarios
+];
+
 // Abrir IndexedDB
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -218,12 +238,25 @@ async function getImageKitConfig() {
 // Event Listeners
 self.addEventListener('install', (event) => {
   console.log('Service Worker instalado');
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then(cache => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activado');
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(key => key !== STATIC_CACHE && key !== CACHE_NAME)
+            .map(key => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('message', (event) => {
@@ -369,4 +402,18 @@ async function checkAndStartKeepAlive() {
 }
 
 // Verificar keep-alive periódicamente
-setInterval(checkAndStartKeepAlive, 60000); // Cada minuto 
+setInterval(checkAndStartKeepAlive, 60000); // Cada minuto
+
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  event.respondWith(
+    caches.match(event.request).then(cachedRes => {
+      return cachedRes || fetch(event.request).catch(() => {
+        // Si es navegación, devuelve el index.html cacheado
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+      });
+    })
+  );
+}); 

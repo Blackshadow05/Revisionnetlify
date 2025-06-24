@@ -100,6 +100,167 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// ===== BACKGROUND SYNC PARA FORMULARIOS OFFLINE =====
+self.addEventListener('sync', (event) => {
+  console.log('🔄 SW: Background Sync activado:', event.tag);
+  
+  if (event.tag === 'offline-form-sync') {
+    event.waitUntil(processOfflineFormQueue());
+  }
+});
+
+// Función para procesar cola de formularios offline
+async function processOfflineFormQueue() {
+  try {
+    console.log('📤 SW: Procesando cola de formularios offline...');
+    
+    // Abrir IndexedDB específicamente para formularios
+    const db = await openOfflineFormsDB();
+    const transaction = db.transaction(['offlineForms'], 'readwrite');
+    const store = transaction.objectStore('offlineForms');
+    
+    // Obtener formularios pendientes
+    const pendingForms = await getAllPendingForms(store);
+    console.log(`📋 SW: ${pendingForms.length} formularios pendientes encontrados`);
+    
+    if (pendingForms.length === 0) {
+      db.close();
+      return;
+    }
+    
+    for (const form of pendingForms) {
+      try {
+        console.log(`📤 SW: Procesando formulario ${form.id}...`);
+        
+        // Actualizar estado a 'uploading'
+        form.status = 'uploading';
+        await updateFormInStore(store, form);
+        
+        // Enviar formulario según tipo
+        if (form.formType === 'revision') {
+          await submitRevisionOffline(form.data);
+        } else if (form.formType === 'nota') {
+          await submitNotaOffline(form.data);
+        }
+        
+        // Marcar como completado
+        form.status = 'completed';
+        await updateFormInStore(store, form);
+        
+        console.log(`✅ SW: Formulario ${form.id} enviado exitosamente`);
+        
+        // Notificar al cliente sobre el éxito
+        notifyClients({
+          type: 'FORM_SYNC_SUCCESS',
+          formId: form.id,
+          formType: form.formType
+        });
+        
+      } catch (error) {
+        console.error(`❌ SW: Error procesando formulario ${form.id}:`, error);
+        
+        // Marcar como error
+        form.status = 'error';
+        form.lastError = error.message;
+        form.retryCount = (form.retryCount || 0) + 1;
+        await updateFormInStore(store, form);
+        
+        // Notificar al cliente sobre el error
+        notifyClients({
+          type: 'FORM_SYNC_ERROR',
+          formId: form.id,
+          formType: form.formType,
+          error: error.message
+        });
+      }
+    }
+    
+    db.close();
+    console.log('✅ SW: Procesamiento de cola de formularios completado');
+    
+  } catch (error) {
+    console.error('❌ SW: Error procesando cola offline:', error);
+  }
+}
+
+// Función auxiliar para abrir IndexedDB de formularios desde SW
+async function openOfflineFormsDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('OfflineFormsDB', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('offlineForms')) {
+        const store = db.createObjectStore('offlineForms', { keyPath: 'id' });
+        store.createIndex('status', 'status', { unique: false });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+        store.createIndex('formType', 'formType', { unique: false });
+      }
+    };
+  });
+}
+
+// Función auxiliar para obtener formularios pendientes
+async function getAllPendingForms(store) {
+  return new Promise((resolve, reject) => {
+    const request = store.index('status').getAll('pending');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Función auxiliar para actualizar formulario en store
+async function updateFormInStore(store, form) {
+  return new Promise((resolve, reject) => {
+    const request = store.put(form);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Función para enviar revisión offline
+async function submitRevisionOffline(formData) {
+  const response = await fetch('/api/revisiones', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formData)
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+// Función para enviar nota offline
+async function submitNotaOffline(formData) {
+  const response = await fetch('/api/notas', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formData)
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+// Función auxiliar para notificar a todos los clientes
+async function notifyClients(message) {
+  const clients = await self.clients.matchAll();
+  clients.forEach(client => {
+    client.postMessage(message);
+  });
+}
+
 // ===== ESTRATEGIA MODERNA DE FETCH =====
 self.addEventListener('fetch', (event) => {
   const request = event.request;

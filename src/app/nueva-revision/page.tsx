@@ -14,6 +14,10 @@ import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
 import FormField from '@/components/revision/FormField';
 import ImageModal from '@/components/revision/ImageModal';
 import EvidenceUploader from '@/components/revision/EvidenceUploader';
+import { OfflineQueue } from '@/components/OfflineQueue';
+
+// Importar hook para offline
+import { useOfflineFormSubmit } from '@/hooks/useOfflineFormSubmit';
 
 // Importar tipos
 import type { 
@@ -87,10 +91,20 @@ export default function NuevaRevision() {
   const { showSuccess, showError } = useToast();
   const spectacularBg = useSpectacularBackground();
   
+  // Hook para manejo offline
+  const { 
+    submitForm: submitOfflineForm, 
+    isSubmitting: isOfflineSubmitting, 
+    isOnline 
+  } = useOfflineFormSubmit();
+  
   // Estados principales
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
+  
+  // Combinar estado de loading local y offline
+  const isFormLoading = loading || isOfflineSubmitting;
   
   // Estados para formulario y archivos
   const [formData, setFormData] = useState<RevisionData>({
@@ -437,9 +451,33 @@ export default function NuevaRevision() {
     setModalImg(null);
   };
 
-  // Manejar envío del formulario
+  // Función auxiliar para el envío online tradicional
+  const submitRevisionOnline = async (finalData: any) => {
+    console.log('📤 Enviando datos a Supabase:');
+    console.log(JSON.stringify(finalData, null, 2));
+    
+    const { error: insertError } = await supabase
+      .from('revisiones_casitas')
+      .insert([finalData]);
+
+    if (insertError) {
+      console.error('❌ Error de Supabase:');
+      console.error('Code:', insertError.code);
+      console.error('Message:', insertError.message);
+      console.error('Details:', insertError.details);
+      console.error('Hint:', insertError.hint);
+      console.error('Full error:', JSON.stringify(insertError, null, 2));
+      throw insertError;
+    }
+
+    console.log('✅ Datos insertados exitosamente');
+  };
+
+  // Manejar envío del formulario con soporte offline
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Usar loading del hook offline si está disponible, sino el local
     setLoading(true);
     setError(null);
 
@@ -453,31 +491,42 @@ export default function NuevaRevision() {
       // Preparar datos para envío
       const submitData = { ...formData };
       const evidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
+      const imageFiles: { [key: string]: File } = {};
       
-      // Subir imágenes comprimidas
-      for (const field of evidenceFields) {
-        const compressedFile = compressedFiles[field];
-        if (compressedFile) {
-          try {
-            const uploadedUrl = await uploadToImageKitClient(compressedFile, 'evidencias', `revision_${Date.now()}_${field}`);
-            submitData[field] = uploadedUrl;
-          } catch (uploadError) {
-            console.error(`Error subiendo ${field}:`, uploadError);
-            showError(`Error al subir ${field}`);
-            return;
+      // Solo subir imágenes si estamos online
+      if (isOnline) {
+        // Subir imágenes comprimidas
+        for (const field of evidenceFields) {
+          const compressedFile = compressedFiles[field];
+          if (compressedFile) {
+            try {
+              const uploadedUrl = await uploadToImageKitClient(compressedFile, 'evidencias', `revision_${Date.now()}_${field}`);
+              submitData[field] = uploadedUrl;
+            } catch (uploadError) {
+              console.error(`Error subiendo ${field}:`, uploadError);
+              showError(`Error al subir ${field}`);
+              return;
+            }
           }
         }
+      } else {
+        // Guardar archivos para upload offline posterior
+        evidenceFields.forEach(field => {
+          const compressedFile = compressedFiles[field];
+          if (compressedFile) {
+            imageFiles[field] = compressedFile;
+          }
+        });
       }
 
       // Generar fecha y hora local del dispositivo
       const now = new Date();
-      // Crear timestamp en formato ISO local (ajustado para zona horaria local)
       const fechaLocal = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString();
       
       console.log(`📅 Fecha y hora local generada: ${fechaLocal}`);
       console.log(`🕐 Hora actual del dispositivo: ${now.toLocaleString()}`);
 
-      // Preparar datos finales (solo campos básicos)
+      // Preparar datos finales
       const finalData = {
         casita: submitData.casita,
         quien_revisa: submitData.quien_revisa,
@@ -506,28 +555,16 @@ export default function NuevaRevision() {
         created_at: fechaLocal,
       };
 
-      // Insertar en Supabase
-      console.log('📤 Enviando datos a Supabase:');
-      console.log(JSON.stringify(finalData, null, 2));
-      const { error: insertError } = await supabase
-        .from('revisiones_casitas')
-        .insert([finalData]);
-
-      if (insertError) {
-        console.error('❌ Error de Supabase:');
-        console.error('Code:', insertError.code);
-        console.error('Message:', insertError.message);
-        console.error('Details:', insertError.details);
-        console.error('Hint:', insertError.hint);
-        console.error('Full error:', JSON.stringify(insertError, null, 2));
-        throw insertError;
-      }
-
-      console.log('✅ Datos insertados exitosamente');
+      // Usar el sistema offline que maneja automáticamente online/offline
+      await submitOfflineForm(
+        'revision',
+        finalData,
+        submitRevisionOnline,
+        Object.keys(imageFiles).length > 0 ? imageFiles : undefined
+      );
 
       // 🎉 ENVÍO EXITOSO: Limpiar formulario y scroll al top
       limpiarFormulario();
-      showSuccess('Revisión guardada exitosamente. Listo para nueva revisión.');
       
       // 📜 Scroll suave hacia arriba para comenzar nueva revisión
       window.scrollTo({ 
@@ -587,6 +624,9 @@ export default function NuevaRevision() {
               </button>
             </div>
           </header>
+
+          {/* Cola de formularios offline */}
+          <OfflineQueue className="mb-6" />
 
           {/* Formulario */}
           <div className="space-y-6">
@@ -907,24 +947,48 @@ export default function NuevaRevision() {
               </div>
             )}
 
-            {/* Submit button */}
-            <div>
+            {/* Submit button con estado offline */}
+            <div className="space-y-3">
+              {/* Indicador de conexión */}
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                <span className={isOnline ? 'text-green-400' : 'text-yellow-400'}>
+                  {isOnline ? 'En línea - Envío directo' : 'Sin conexión - Se guardará offline'}
+                </span>
+              </div>
+
               <button
                 type="submit"
-                disabled={loading}
-                className={loading ? "btn-primary btn-loading" : "btn-primary"}
+                disabled={isFormLoading}
+                className={isFormLoading ? "btn-primary btn-loading" : "btn-primary"}
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
-                  {loading ? (
+                  {isFormLoading ? (
                     <>
                       <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Guardando y subiendo imágenes...
+                      {isOnline ? 'Guardando y subiendo imágenes...' : 'Guardando offline...'}
                     </>
                   ) : (
-                    'Guardar Revisión'
+                    <>
+                      {isOnline ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          Guardar Revisión
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                          </svg>
+                          Guardar Offline
+                        </>
+                      )}
+                    </>
                   )}
                 </span>
               </button>

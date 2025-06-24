@@ -4,22 +4,20 @@ const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
 // --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v2';
+const STATIC_CACHE = 'static-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',
-  '/icons/icon-128x128.png',
   '/icons/icon-144x144.png',
   '/icons/icon-152x152.png',
   '/icons/icon-192x192.png',
-  '/icons/icon-384x384.png',
   '/icons/icon-512x512.png',
   '/icons/maskable-icon-192x192.png',
   '/icons/maskable-icon-512x512.png',
   '/output.css',
-  // Agrega aquí otros archivos estáticos necesarios
+  // Solo archivos que realmente existen en public/
 ];
 
 // Abrir IndexedDB

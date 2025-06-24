@@ -504,7 +504,6 @@ export default function NuevaRevision() {
         evidencia_02: submitData.evidencia_02,
         evidencia_03: submitData.evidencia_03,
         faltantes: submitData.faltantes,
-        notas: submitData.faltantes || '',
         created_at: fechaLocal,
       };
 

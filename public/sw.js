@@ -4,20 +4,30 @@ const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
 // --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v5';
+const STATIC_CACHE = 'static-v6';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',
   '/icons/icon-144x144.png',
-  '/icons/icon-152x152.png',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/maskable-icon-192x192.png',
   '/icons/maskable-icon-512x512.png',
   '/output.css',
   // Solo archivos que realmente existen en public/
+];
+
+// Rutas de Next.js que deben funcionar offline
+const NEXTJS_ROUTES = [
+  '/',
+  '/nueva-revision',
+  '/estadisticas', 
+  '/unir-imagenes',
+  '/subidas-pendientes',
+  '/gestion-usuarios',
+  '/nueva-nota'
 ];
 
 // Abrir IndexedDB
@@ -403,14 +413,33 @@ setInterval(checkAndStartKeepAlive, 60000); // Cada minuto
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  
+  const url = new URL(event.request.url);
+  
+  // Solo interceptar requests del mismo origin
+  if (url.origin !== location.origin) return;
+  
   event.respondWith(
     caches.match(event.request).then(cachedRes => {
-      return cachedRes || fetch(event.request).catch(() => {
-        // Si es navegación, devuelve la página principal cacheada
+      if (cachedRes) return cachedRes;
+      
+      return fetch(event.request).catch(() => {
+        // Si es navegación a una ruta conocida de Next.js
         if (event.request.mode === 'navigate') {
+          const pathname = url.pathname;
+          
+          // Si es una ruta de Next.js conocida, devolver la página principal
+          if (NEXTJS_ROUTES.includes(pathname) || 
+              pathname.startsWith('/detalles/') ||
+              pathname.startsWith('/api/')) {
+            return caches.match('/');
+          }
+          
+          // Para otras navegaciones, también devolver la página principal
           return caches.match('/');
         }
-        // Para otros recursos, devuelve una respuesta 404 válida
+        
+        // Para recursos estáticos, devolver 404
         return new Response('Resource not found', { 
           status: 404, 
           statusText: 'Not Found',

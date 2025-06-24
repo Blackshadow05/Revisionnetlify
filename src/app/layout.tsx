@@ -42,13 +42,13 @@ export default function RootLayout({
         <meta name="msapplication-navbutton-color" content="#c9a45c" />
         
         {/* PWA Icons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-152x152.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-152x152.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-144x144.png" />
         <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-128x128.png" />
-        <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-128x128.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-96x96.png" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-96x96.png" />
         <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-96x96.png" />
         <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
         <link rel="apple-touch-icon" sizes="60x60" href="/icons/icon-72x72.png" />
@@ -94,13 +94,15 @@ export default function RootLayout({
               });
             }
             
-            // Diagnóstico PWA después de cargar
+            // Diagnóstico PWA completo después de cargar
             window.addEventListener('load', () => {
               setTimeout(() => {
-                console.log('=== DIAGNÓSTICO PWA ===');
+                console.log('=== DIAGNÓSTICO PWA COMPLETO ===');
                 console.log('User Agent:', navigator.userAgent);
                 console.log('Service Worker Support:', 'serviceWorker' in navigator);
                 console.log('beforeinstallprompt Support:', 'onbeforeinstallprompt' in window);
+                console.log('HTTPS:', location.protocol === 'https:');
+                console.log('Display Mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
                 
                 if ('serviceWorker' in navigator) {
                   navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -117,15 +119,70 @@ export default function RootLayout({
                   fetch(manifestLink.href)
                     .then(response => response.json())
                     .then(manifest => {
-                      console.log('Manifest:', manifest);
-                      console.log('Icons:', manifest.icons);
+                      console.log('Manifest válido:', manifest);
+                      console.log('Icons disponibles:', manifest.icons?.length || 0);
                       console.log('Display:', manifest.display);
                       console.log('Start URL:', manifest.start_url);
                     })
-                    .catch(err => console.log('Error cargando manifest:', err));
+                    .catch(err => console.log('❌ Error cargando manifest:', err));
                 }
+                
+                // Test de rutas críticas
+                testCriticalRoutes();
+                
               }, 2000);
             });
+            
+            // Test de rutas críticas para PWA
+            async function testCriticalRoutes() {
+              const criticalRoutes = ['/estadisticas', '/unir-imagenes', '/nueva-revision'];
+              console.log('🧪 Testing rutas críticas...');
+              
+              for (const route of criticalRoutes) {
+                try {
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 5000);
+                  
+                  const response = await fetch(route, { 
+                    method: 'HEAD',
+                    signal: controller.signal
+                  });
+                  
+                  clearTimeout(timeoutId);
+                  
+                  if (response.ok) {
+                    console.log(\`✅ Ruta \${route}: OK\`);
+                  } else {
+                    console.log(\`⚠️ Ruta \${route}: \${response.status}\`);
+                  }
+                } catch (error) {
+                  if (error.name === 'AbortError') {
+                    console.log(\`⏱️ Ruta \${route}: Timeout\`);
+                  } else {
+                    console.log(\`❌ Ruta \${route}: \${error.message}\`);
+                  }
+                }
+              }
+            }
+            
+            // Manejo de errores de esquema
+            window.addEventListener('error', (e) => {
+              if (e.message && e.message.includes('schema cache')) {
+                console.error('🔥 Error de esquema Supabase detectado:', e.message);
+                console.log('💡 Sugerencia: El esquema de la base de datos puede estar desactualizado');
+              }
+            });
+            
+            // Interceptar fetch errors para debugging
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+              return originalFetch.apply(this, args).catch(error => {
+                if (error.message.includes('Failed to fetch')) {
+                  console.warn('🌐 Error de conectividad:', args[0]);
+                }
+                throw error;
+              });
+            };
           `
         }} />
       </head>

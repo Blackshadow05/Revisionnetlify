@@ -4,7 +4,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
 // --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v4';
+const STATIC_CACHE = 'static-v5';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -410,8 +410,12 @@ self.addEventListener('fetch', event => {
         if (event.request.mode === 'navigate') {
           return caches.match('/');
         }
-        // Para otros recursos, devuelve una respuesta vacía pero válida
-        return new Response('', { status: 204, statusText: 'No Content' });
+        // Para otros recursos, devuelve una respuesta 404 válida
+        return new Response('Resource not found', { 
+          status: 404, 
+          statusText: 'Not Found',
+          headers: {'Content-Type': 'text/plain'}
+        });
       });
     })
   );

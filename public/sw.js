@@ -4,7 +4,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
 // --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v3';
+const STATIC_CACHE = 'static-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -406,10 +406,12 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cachedRes => {
       return cachedRes || fetch(event.request).catch(() => {
-        // Si es navegación, devuelve el index.html cacheado
+        // Si es navegación, devuelve la página principal cacheada
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('/');
         }
+        // Para otros recursos, devuelve una respuesta vacía pero válida
+        return new Response('', { status: 204, statusText: 'No Content' });
       });
     })
   );

@@ -137,7 +137,7 @@ interface RevisionData {
   evidencia_01: File | string;       // 📸 Imagen 1
   evidencia_02: File | string;       // 📸 Imagen 2
   evidencia_03: File | string;       // 📸 Imagen 3
-  faltantes: string;                 // 📝 Observaciones
+  notas: string;                     // 📝 Notas y observaciones
 }
 ```
 

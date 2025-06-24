@@ -27,7 +27,7 @@ interface RevisionData {
   controles_tv: string;
   secadora: string;
   accesorios_secadora: string;
-  faltantes: string;
+
   steamer: string;
   bolsa_vapor: string;
   plancha_cabello: string;

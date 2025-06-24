@@ -22,7 +22,6 @@ export interface RevisionData {
   evidencia_01: File | string;
   evidencia_02: File | string;
   evidencia_03: File | string;
-  faltantes: string;
   notas: string;
 }
 

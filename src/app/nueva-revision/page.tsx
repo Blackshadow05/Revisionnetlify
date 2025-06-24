@@ -56,10 +56,9 @@ const initialFormData: RevisionData = {
   camas_ordenadas: '',
   cola_caballo: '',
   evidencia_01: '',
-  evidencia_02: '',
-  evidencia_03: '',
-  faltantes: '',
-  notas: '',
+      evidencia_02: '',
+    evidencia_03: '',
+    notas: '',
 };
 
 const initialFileData: FileData = {
@@ -503,7 +502,7 @@ export default function NuevaRevision() {
         evidencia_01: submitData.evidencia_01,
         evidencia_02: submitData.evidencia_02,
         evidencia_03: submitData.evidencia_03,
-        faltantes: submitData.faltantes,
+        notas: submitData.notas,
         created_at: fechaLocal,
       };
 
@@ -880,7 +879,7 @@ export default function NuevaRevision() {
             <fieldset>
               <legend className="sr-only">Notas adicionales</legend>
               <FormField
-                label="Faltantes o notas adicionales"
+                label="Notas y observaciones adicionales"
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
@@ -889,9 +888,9 @@ export default function NuevaRevision() {
               >
                 <textarea
                   className="form-input min-h-[100px] resize-y"
-                  value={formData.faltantes}
-                  onChange={(e) => handleInputChange('faltantes', e.target.value)}
-                  placeholder="Elementos faltantes, observaciones adicionales..."
+                  value={formData.notas}
+                  onChange={(e) => handleInputChange('notas', e.target.value)}
+                  placeholder="Observaciones, notas adicionales, comentarios..."
                 />
               </FormField>
             </fieldset>

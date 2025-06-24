@@ -67,6 +67,21 @@ export default function RootLayout({
         {/* PWA Service Worker Registration */}
         <script dangerouslySetInnerHTML={{
           __html: `
+            // PWA Install Detection
+            let deferredPrompt;
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+              console.log('🎉 beforeinstallprompt evento detectado - PWA es instalable!');
+              e.preventDefault();
+              deferredPrompt = e;
+              // Aquí podrías mostrar tu propio botón de instalación
+            });
+            
+            window.addEventListener('appinstalled', (evt) => {
+              console.log('✅ PWA fue instalada exitosamente');
+            });
+            
+            // Service Worker Registration
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -78,6 +93,39 @@ export default function RootLayout({
                   });
               });
             }
+            
+            // Diagnóstico PWA después de cargar
+            window.addEventListener('load', () => {
+              setTimeout(() => {
+                console.log('=== DIAGNÓSTICO PWA ===');
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Service Worker Support:', 'serviceWorker' in navigator);
+                console.log('beforeinstallprompt Support:', 'onbeforeinstallprompt' in window);
+                
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(registrations => {
+                    console.log('Service Workers registrados:', registrations.length);
+                    registrations.forEach((reg, index) => {
+                      console.log(\`SW \${index}:\`, reg.scope, reg.active ? 'activated' : 'not active');
+                    });
+                  });
+                }
+                
+                // Verificar manifest
+                const manifestLink = document.querySelector('link[rel="manifest"]');
+                if (manifestLink) {
+                  fetch(manifestLink.href)
+                    .then(response => response.json())
+                    .then(manifest => {
+                      console.log('Manifest:', manifest);
+                      console.log('Icons:', manifest.icons);
+                      console.log('Display:', manifest.display);
+                      console.log('Start URL:', manifest.start_url);
+                    })
+                    .catch(err => console.log('Error cargando manifest:', err));
+                }
+              }, 2000);
+            });
           `
         }} />
       </head>

@@ -4,10 +4,9 @@ const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
 // --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v1';
+const STATIC_CACHE = 'static-v2';
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',

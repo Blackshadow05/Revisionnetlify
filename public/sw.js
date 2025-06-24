@@ -1,34 +1,294 @@
-const CACHE_NAME = 'revision-casitas-v1';
+// ===== ACTUALIZACIÓN 2024 - ESTRATEGIAS MODERNAS DE CACHE =====
+const CACHE_NAME = 'revision-casitas-v2'; // Incrementar versión
+const STATIC_CACHE = 'static-v8'; // Incrementar versión
+const DYNAMIC_CACHE = 'dynamic-v3'; // Nuevo cache dinámico
 const DB_NAME = 'RevisionCasitasDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
 
-// --- CACHEO DE ARCHIVOS ESTÁTICOS PARA FUNCIONAMIENTO OFFLINE ---
-const STATIC_CACHE = 'static-v6';
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-144x144.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/maskable-icon-192x192.png',
-  '/icons/maskable-icon-512x512.png',
-  '/output.css',
-  // Solo archivos que realmente existen en public/
-];
+// Configuración de cache por tipos de recursos
+const CACHE_STRATEGIES = {
+  // Assets estáticos - Cache First con expiración
+  STATIC_ASSETS: [
+    '/',
+    '/manifest.json',
+    '/icons/icon-72x72.png',
+    '/icons/icon-96x96.png', 
+    '/icons/icon-144x144.png',
+    '/icons/icon-192x192.png',
+    '/icons/icon-512x512.png',
+    '/icons/maskable-icon-192x192.png',
+    '/icons/maskable-icon-512x512.png',
+    '/output.css'
+  ],
+  
+  // Rutas de navegación - Network First con cache fallback
+  NAVIGATION_ROUTES: [
+    '/',
+    '/nueva-revision',
+    '/estadisticas',
+    '/unir-imagenes', 
+    '/subidas-pendientes',
+    '/gestion-usuarios',
+    '/nueva-nota'
+  ],
+  
+  // APIs - Stale While Revalidate
+  API_ROUTES: [
+    '/api/'
+  ],
+  
+  // Recursos dinámicos - Network First
+  DYNAMIC_RESOURCES: [
+    '/detalles/'
+  ]
+};
 
-// Rutas de Next.js que deben funcionar offline
-const NEXTJS_ROUTES = [
-  '/',
-  '/nueva-revision',
-  '/estadisticas', 
-  '/unir-imagenes',
-  '/subidas-pendientes',
-  '/gestion-usuarios',
-  '/nueva-nota'
-];
+// Configuración de expiración de cache
+const CACHE_EXPIRATION = {
+  STATIC_MAX_AGE: 7 * 24 * 60 * 60 * 1000, // 7 días
+  DYNAMIC_MAX_AGE: 1 * 60 * 60 * 1000, // 1 hora
+  API_MAX_AGE: 5 * 60 * 1000 // 5 minutos
+};
+
+// ===== INSTALACIÓN DEL SERVICE WORKER =====
+self.addEventListener('install', (event) => {
+  console.log('🔄 Service Worker instalando versión v2...');
+  
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then(cache => {
+        console.log('📦 Pre-cacheando assets estáticos');
+        return cache.addAll(CACHE_STRATEGIES.STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('✅ Assets pre-cacheados exitosamente');
+        // Forzar activación inmediata
+        return self.skipWaiting();
+      })
+      .catch(error => {
+        console.error('❌ Error pre-cacheando assets:', error);
+      })
+  );
+});
+
+// ===== ACTIVACIÓN DEL SERVICE WORKER =====
+self.addEventListener('activate', (event) => {
+  console.log('🚀 Service Worker activando v2...');
+  
+  event.waitUntil(
+    Promise.all([
+      // Limpiar caches antiguos
+      caches.keys().then(cacheNames => {
+        const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, CACHE_NAME];
+        return Promise.all(
+          cacheNames
+            .filter(cacheName => !validCaches.includes(cacheName))
+            .map(cacheName => {
+              console.log('🗑️ Eliminando cache obsoleto:', cacheName);
+              return caches.delete(cacheName);
+            })
+        );
+      }),
+      
+      // Tomar control inmediatamente
+      self.clients.claim(),
+      
+      // Procesar cola de subidas pendientes
+      processUploadQueue()
+    ])
+  );
+});
+
+// ===== ESTRATEGIA MODERNA DE FETCH =====
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  
+  // Solo interceptar requests del mismo origin
+  if (url.origin !== location.origin) {
+    return;
+  }
+  
+  // Solo manejar requests GET
+  if (request.method !== 'GET') {
+    return;
+  }
+  
+  event.respondWith(handleRequest(request));
+});
+
+// ===== MANEJADOR PRINCIPAL DE REQUESTS =====
+async function handleRequest(request) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  
+  try {
+    // 1. ASSETS ESTÁTICOS - Cache First con validación de frescura
+    if (isStaticAsset(pathname)) {
+      return await cacheFirstWithExpiration(request, STATIC_CACHE, CACHE_EXPIRATION.STATIC_MAX_AGE);
+    }
+    
+    // 2. NAVEGACIÓN - Network First con cache fallback
+    if (request.mode === 'navigate' || isNavigationRoute(pathname)) {
+      return await networkFirstWithFallback(request, DYNAMIC_CACHE);
+    }
+    
+    // 3. APIs - Stale While Revalidate
+    if (isApiRoute(pathname)) {
+      return await staleWhileRevalidate(request, DYNAMIC_CACHE, CACHE_EXPIRATION.API_MAX_AGE);
+    }
+    
+    // 4. RECURSOS DINÁMICOS - Network First
+    if (isDynamicResource(pathname)) {
+      return await networkFirstWithFallback(request, DYNAMIC_CACHE);
+    }
+    
+    // 5. FALLBACK - Network only
+    return await fetch(request);
+    
+  } catch (error) {
+    console.error('❌ Error manejando request:', error);
+    return await getOfflineFallback(request);
+  }
+}
+
+// ===== ESTRATEGIAS DE CACHE MODERNAS =====
+
+// Cache First con expiración
+async function cacheFirstWithExpiration(request, cacheName, maxAge) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  if (cachedResponse) {
+    const cachedDate = new Date(cachedResponse.headers.get('date') || 0);
+    const now = new Date();
+    
+    // Si el cache no ha expirado, devolverlo
+    if ((now - cachedDate) < maxAge) {
+      console.log('📦 Sirviendo desde cache:', request.url);
+      return cachedResponse;
+    }
+  }
+  
+  // Fetch desde la red y actualizar cache
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const responseClone = networkResponse.clone();
+      await cache.put(request, responseClone);
+      console.log('🌐 Actualizado en cache desde red:', request.url);
+    }
+    return networkResponse;
+  } catch (error) {
+    // Si hay error de red, devolver cache aunque esté expirado
+    if (cachedResponse) {
+      console.log('⚠️ Red fallida, sirviendo cache expirado:', request.url);
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
+
+// Network First con cache fallback
+async function networkFirstWithFallback(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const responseClone = networkResponse.clone();
+      await cache.put(request, responseClone);
+      console.log('🌐 Sirviendo desde red y cacheando:', request.url);
+    }
+    return networkResponse;
+  } catch (error) {
+    console.log('⚠️ Red fallida, intentando cache:', request.url);
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      console.log('📦 Sirviendo desde cache fallback:', request.url);
+      return cachedResponse;
+    }
+    throw error;
+  }
+}
+
+// Stale While Revalidate
+async function staleWhileRevalidate(request, cacheName, maxAge) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  // Fetch en background para actualizar cache
+  const fetchPromise = fetch(request).then(networkResponse => {
+    if (networkResponse.ok) {
+      const responseClone = networkResponse.clone();
+      cache.put(request, responseClone);
+      console.log('🔄 Cache actualizado en background:', request.url);
+    }
+    return networkResponse;
+  }).catch(error => {
+    console.log('⚠️ Error actualizando cache en background:', error);
+  });
+  
+  // Si hay cache, devolverlo inmediatamente
+  if (cachedResponse) {
+    console.log('📦 Sirviendo desde cache, actualizando en background:', request.url);
+    return cachedResponse;
+  }
+  
+  // Si no hay cache, esperar por la red
+  return await fetchPromise;
+}
+
+// ===== FUNCIONES DE UTILIDAD =====
+
+function isStaticAsset(pathname) {
+  return CACHE_STRATEGIES.STATIC_ASSETS.some(asset => 
+    pathname === asset || pathname.startsWith('/icons/') || 
+    pathname.endsWith('.css') || pathname.endsWith('.js') ||
+    pathname.endsWith('.png') || pathname.endsWith('.jpg') ||
+    pathname.endsWith('.svg') || pathname.endsWith('.ico')
+  );
+}
+
+function isNavigationRoute(pathname) {
+  return CACHE_STRATEGIES.NAVIGATION_ROUTES.some(route => 
+    pathname === route || pathname.startsWith(route)
+  );
+}
+
+function isApiRoute(pathname) {
+  return CACHE_STRATEGIES.API_ROUTES.some(route => 
+    pathname.startsWith(route)
+  );
+}
+
+function isDynamicResource(pathname) {
+  return CACHE_STRATEGIES.DYNAMIC_RESOURCES.some(route => 
+    pathname.startsWith(route)
+  );
+}
+
+async function getOfflineFallback(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  
+  if (request.mode === 'navigate') {
+    // Para navegación, devolver página principal
+    return await cache.match('/') || new Response(
+      '<!DOCTYPE html><html><body><h1>Sin conexión</h1><p>Verifica tu conexión a internet</p></body></html>',
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }
+  
+  // Para otros recursos, devolver respuesta de error
+  return new Response('Recurso no disponible offline', { 
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: { 'Content-Type': 'text/plain' }
+  });
+}
+
+// ===== FUNCIONES EXISTENTES DE INDEXEDDB Y SUBIDAS =====
 
 // Abrir IndexedDB
 function openDB() {
@@ -242,48 +502,6 @@ async function getImageKitConfig() {
   });
 }
 
-// Event Listeners
-self.addEventListener('install', (event) => {
-  console.log('Service Worker instalado');
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then(cache => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker activado');
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== STATIC_CACHE && key !== CACHE_NAME)
-            .map(key => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('message', (event) => {
-  const { type, data } = event.data;
-  
-  switch (type) {
-    case 'ADD_TO_QUEUE':
-      addToUploadQueue(data);
-      break;
-    case 'PROCESS_QUEUE':
-      processUploadQueue();
-      break;
-    case 'GET_QUEUE_STATUS':
-      getQueueStatus().then(status => {
-        event.ports[0].postMessage(status);
-      });
-      break;
-  }
-});
-
 // Agregar a cola de subidas
 async function addToUploadQueue(uploadData) {
   try {
@@ -351,29 +569,6 @@ async function getQueueStatus() {
   }
 }
 
-// Procesar cola periódicamente
-setInterval(() => {
-  processUploadQueue();
-}, 30000); // Cada 30 segundos
-
-// Mantener el Service Worker activo
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-upload') {
-    event.waitUntil(processUploadQueue());
-  }
-});
-
-// Procesar cola cuando el SW se activa
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker activado');
-  event.waitUntil(
-    Promise.all([
-      self.clients.claim(),
-      processUploadQueue() // Procesar cola pendiente al activarse
-    ])
-  );
-});
-
 // Mantener SW vivo con mensajes periódicos
 let keepAliveInterval;
 
@@ -411,41 +606,64 @@ async function checkAndStartKeepAlive() {
 // Verificar keep-alive periódicamente
 setInterval(checkAndStartKeepAlive, 60000); // Cada minuto
 
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+// Procesar cola periódicamente
+setInterval(() => {
+  processUploadQueue();
+}, 30000); // Cada 30 segundos
+
+// Mantener el Service Worker activo
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-upload') {
+    event.waitUntil(processUploadQueue());
+  }
+});
+
+// ===== MANEJO DE MENSAJES MODERNOS =====
+self.addEventListener('message', (event) => {
+  const { type, data } = event.data || {};
   
-  const url = new URL(event.request.url);
-  
-  // Solo interceptar requests del mismo origin
-  if (url.origin !== location.origin) return;
-  
-  event.respondWith(
-    caches.match(event.request).then(cachedRes => {
-      if (cachedRes) return cachedRes;
+  switch (type) {
+    case 'SKIP_WAITING':
+      self.skipWaiting();
+      break;
       
-      return fetch(event.request).catch(() => {
-        // Si es navegación a una ruta conocida de Next.js
-        if (event.request.mode === 'navigate') {
-          const pathname = url.pathname;
-          
-          // Si es una ruta de Next.js conocida, devolver la página principal
-          if (NEXTJS_ROUTES.includes(pathname) || 
-              pathname.startsWith('/detalles/') ||
-              pathname.startsWith('/api/')) {
-            return caches.match('/');
-          }
-          
-          // Para otras navegaciones, también devolver la página principal
-          return caches.match('/');
-        }
-        
-        // Para recursos estáticos, devolver 404
-        return new Response('Resource not found', { 
-          status: 404, 
-          statusText: 'Not Found',
-          headers: {'Content-Type': 'text/plain'}
+    case 'CLEAR_CACHE':
+      clearAllCaches().then(() => {
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'CACHE_CLEARED' });
+          });
         });
       });
-    })
-  );
-}); 
+      break;
+      
+    case 'FORCE_UPDATE':
+      // Forzar actualización de cache
+      caches.keys().then(cacheNames => {
+        Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+      }).then(() => {
+        return caches.open(STATIC_CACHE).then(cache => {
+          return cache.addAll(CACHE_STRATEGIES.STATIC_ASSETS);
+        });
+      });
+      break;
+      
+    // Casos existentes para subidas
+    case 'ADD_TO_QUEUE':
+      addToUploadQueue(data);
+      break;
+    case 'PROCESS_QUEUE':
+      processUploadQueue();
+      break;
+    case 'GET_QUEUE_STATUS':
+      getQueueStatus().then(status => {
+        event.ports[0].postMessage(status);
+      });
+      break;
+  }
+});
+
+async function clearAllCaches() {
+  const cacheNames = await caches.keys();
+  return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+} 

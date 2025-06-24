@@ -81,18 +81,75 @@ export default function RootLayout({
               console.log('✅ PWA fue instalada exitosamente');
             });
             
-            // Service Worker Registration
+            // Service Worker Registration con manejo de actualizaciones modernas
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                   .then((registration) => {
                     console.log('✅ SW registered: ', registration);
+                    
+                    // Manejar actualizaciones
+                    registration.addEventListener('updatefound', () => {
+                      const newWorker = registration.installing;
+                      if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Nueva versión disponible
+                            console.log('🔄 Nueva versión disponible');
+                            
+                            // Mostrar notificación de actualización
+                            if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
+                              newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                          }
+                        });
+                      }
+                    });
+                    
+                    // Verificar actualizaciones periódicamente
+                    setInterval(() => {
+                      registration.update();
+                    }, 60000); // Cada minuto
+                    
                   })
                   .catch((registrationError) => {
                     console.log('❌ SW registration failed: ', registrationError);
                   });
               });
+              
+              // Escuchar cuando el SW se actualiza
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Controlador de SW actualizado');
+                window.location.reload();
+              });
+              
+              // Escuchar mensajes del SW
+              navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'CACHE_CLEARED') {
+                  console.log('🗑️ Cache limpiado');
+                }
+              });
             }
+            
+            // Funciones globales para debugging y control manual
+            window.clearPWACache = function() {
+              if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+                console.log('🗑️ Solicitando limpieza de cache...');
+              } else {
+                console.log('❌ No hay Service Worker activo');
+              }
+            };
+            
+            window.forceUpdatePWA = function() {
+              if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'FORCE_UPDATE' });
+                console.log('🔄 Forzando actualización de PWA...');
+                setTimeout(() => window.location.reload(), 2000);
+              } else {
+                console.log('❌ No hay Service Worker activo');
+              }
+            };
             
             // Diagnóstico PWA completo después de cargar
             window.addEventListener('load', () => {

@@ -7,7 +7,13 @@ import { ToastProvider } from '@/context/ToastContext'
 import UploadIndicator from '@/components/UploadIndicator'
 import UploadRecovery from '@/components/UploadRecovery'
 
-const inter = Inter({ subsets: ['latin'] })
+// 🚀 OPTIMIZADO: Solo las variantes esenciales con font-display swap
+const inter = Inter({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600'], // Reducido de 5 a 3 variantes
+  display: 'swap', // Evita FOIT - Flash of Invisible Text
+  preload: true
+})
 
 export const metadata: Metadata = {
   title: 'Sistema de Revisión de Casitas',
@@ -29,10 +35,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        {/* 🚀 OPTIMIZACIÓN: Preconnect para recursos críticos */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         
@@ -106,10 +112,28 @@ export default function RootLayout({
                       }
                     });
                     
-                    // Verificar actualizaciones periódicamente
-                    setInterval(() => {
-                      registration.update();
-                    }, 60000); // Cada minuto
+                    // 🚀 OPTIMIZADO: Verificar actualizaciones menos frecuentemente y solo cuando es necesario
+                    let updateCheckInterval: NodeJS.Timeout | null = null;
+                    const scheduleUpdateCheck = () => {
+                      if (updateCheckInterval) clearInterval(updateCheckInterval);
+                      updateCheckInterval = setTimeout(() => {
+                        if (document.visibilityState === 'visible' && navigator.onLine) {
+                          registration.update();
+                        }
+                        scheduleUpdateCheck();
+                      }, 600000); // 🚀 OPTIMIZADO: Cada 10 minutos en lugar de 5
+                    };
+                    
+                    // Solo verificar cuando la página sea visible
+                    document.addEventListener('visibilitychange', () => {
+                      if (document.visibilityState === 'visible') {
+                        scheduleUpdateCheck();
+                      } else if (updateCheckInterval) {
+                        clearInterval(updateCheckInterval);
+                      }
+                    });
+                    
+                    scheduleUpdateCheck();
                     
                   })
                   .catch((registrationError) => {

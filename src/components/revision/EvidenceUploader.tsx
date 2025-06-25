@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import CompressionIndicator from './CompressionIndicator';
 
 interface CompressionStatus {
@@ -22,6 +22,7 @@ interface Props {
   onFileSelect: (field: 'evidencia_01' | 'evidencia_02' | 'evidencia_03', file: File | null) => void;
   onClearFile: (field: 'evidencia_01' | 'evidencia_02' | 'evidencia_03') => void;
   onImageClick: (imageUrl: string) => void;
+  required?: boolean;
 }
 
 export default function EvidenceUploader({
@@ -32,9 +33,11 @@ export default function EvidenceUploader({
   fileSizes,
   onFileSelect,
   onClearFile,
-  onImageClick
+  onImageClick,
+  required = false
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageUrlRef = useRef<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -60,6 +63,29 @@ export default function EvidenceUploader({
   const imageUrl = compressedFile ? URL.createObjectURL(compressedFile) : 
                    file ? URL.createObjectURL(file) : null;
 
+  useEffect(() => {
+    if (imageUrlRef.current) {
+      URL.revokeObjectURL(imageUrlRef.current);
+    }
+    
+    imageUrlRef.current = imageUrl;
+    
+    return () => {
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
+      }
+    };
+  }, [imageUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-3">
       <label className="form-label">
@@ -68,6 +94,7 @@ export default function EvidenceUploader({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         {getFieldLabel()}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
       <div className="space-y-3">

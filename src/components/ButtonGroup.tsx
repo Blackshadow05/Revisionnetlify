@@ -122,18 +122,18 @@ export default function ButtonGroup({
             key={option}
             type="button"
             onClick={() => onSelect(option)}
-                          className={`
-              px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors duration-200 shadow-md
+            className={`
+              px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[60px]
               ${selectedValue === option
-                ? 'bg-gradient-to-br from-pink-500 to-orange-400 text-white border-pink-300/40 shadow-orange-500/25'
-                : 'bg-gradient-to-br from-[#1e2538] to-[#2a3347] text-[#ff8c42] border-[#3d4659] shadow-black/10'
+                ? 'bg-gradient-to-br from-pink-500 to-orange-400 text-white border-pink-300/40 shadow-orange-500/25 shadow-lg'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-[#ff8c42]/50 hover:text-[#ff8c42] hover:bg-[#ff8c42]/5 shadow-gray-100'
               }
             `}
           >
             <span className="flex items-center justify-center gap-1.5">
               {/* Icono de check para opción seleccionada */}
               {selectedValue === option && (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               )}

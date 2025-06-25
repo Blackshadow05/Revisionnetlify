@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
+
 
 interface Usuario {
   id: string | null;
@@ -21,7 +21,7 @@ interface Usuario {
 export default function GestionUsuarios() {
   const router = useRouter();
   const { userRole } = useAuth();
-  const spectacularBg = useSpectacularBackground();
+
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -193,14 +193,14 @@ export default function GestionUsuarios() {
     setEditingId(null);
   };
 
-  if (loading) return <div style={spectacularBg} className="flex items-center justify-center text-white min-h-screen">Cargando...</div>;
-  if (error) return <div style={spectacularBg} className="flex items-center justify-center text-red-500 min-h-screen">Error: {error}</div>;
+  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Cargando...</div>;
+  if (error) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-red-500">Error: {error}</div>;
 
   return (
-    <main style={spectacularBg} className="py-8">
+    <main className="min-h-screen bg-slate-900 py-8">
       {/* Modal de confirmación de eliminación */}
       {showDeleteModal && usuarioToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-[#1e2538] rounded-lg p-6 max-w-md w-full mx-4">
             <div className="text-center mb-6">
               <svg className="mx-auto h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

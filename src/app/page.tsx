@@ -9,8 +9,9 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
+
 import Sidebar from '@/components/Sidebar';
+import ImageModal from '@/components/revision/ImageModal';
 
 interface RevisionData {
   id?: string;
@@ -59,11 +60,6 @@ export default function Home() {
   const [cajaFuerteFilter, setCajaFuerteFilter] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const imgRef = useRef<HTMLImageElement>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginData, setLoginData] = useState({
     usuario: '',
@@ -95,8 +91,7 @@ export default function Home() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  // Hook para el fondo espectacular
-  const spectacularBg = useSpectacularBackground();
+
 
   useEffect(() => {
     fetchRevisiones();
@@ -200,99 +195,15 @@ export default function Home() {
 
   const openModal = (imgUrl: string) => {
     setModalImg(imgUrl);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setModalImg(null);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
   };
 
-  // Efecto para manejar tecla ESC
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && modalOpen) {
-        closeModal();
-      }
-    };
-
-    if (modalOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden'; // Prevenir scroll del fondo
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [modalOpen]);
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY;
-    const newZoom = delta < 0 ? zoom * 1.1 : zoom / 1.1;
-    setZoom(Math.min(Math.max(1, newZoom), 5));
-  };
-
-  const handleMouseDownImage = (e: React.MouseEvent) => {
-    if (zoom > 1) {
-      e.preventDefault();
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-    }
-  };
-
-  const handleMouseMoveImage = (e: React.MouseEvent) => {
-    if (isDragging && zoom > 1) {
-      e.preventDefault();
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      
-      // Obtener las dimensiones de la imagen
-      const img = imgRef.current;
-      if (img) {
-        const rect = img.getBoundingClientRect();
-        const scaledWidth = rect.width * zoom;
-        const scaledHeight = rect.height * zoom;
-        
-        // Calcular los límites de arrastre
-        const maxX = (scaledWidth - rect.width) / 2;
-        const maxY = (scaledHeight - rect.height) / 2;
-        
-        // Limitar el arrastre a los límites de la imagen
-        setPosition({
-          x: Math.min(Math.max(-maxX, newX), maxX),
-          y: Math.min(Math.max(-maxY, newY), maxY)
-        });
-      }
-    }
-  };
-
-  const handleMouseUpImage = () => {
-    setIsDragging(false);
-  };
-
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev * 1.2, 5));
-  };
-
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev / 1.2, 1));
-    if (zoom <= 1) {
-      setPosition({ x: 0, y: 0 });
-    }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
+  // Modal functions simplified - using ImageModal component
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (tableContainerRef.current) {
@@ -453,7 +364,7 @@ export default function Home() {
 
 
   return (
-    <main style={spectacularBg} className="relative overflow-hidden">
+    <main className="min-h-screen bg-slate-900 relative overflow-hidden">
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Botón del menú lateral en posición fija */}
@@ -893,170 +804,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Modal de imagen mejorado */}
-        {modalOpen && modalImg && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 overflow-hidden">
-            <div className="relative w-full h-full max-w-7xl max-h-screen overflow-hidden">
-              {/* Barra superior con controles */}
-              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-lg">Evidencia Fotográfica</h3>
-                      <p className="text-gray-300 text-sm">Zoom: {Math.round(zoom * 100)}%</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {/* Controles de zoom */}
-                    <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-lg p-1">
-                      <button
-                        onClick={handleZoomOut}
-                        className="w-8 h-8 text-white hover:bg-white/20 rounded-md flex items-center justify-center transition-all duration-200"
-                        title="Alejar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                      </button>
-                      <div className="px-2 py-1 text-white text-xs font-medium min-w-[50px] text-center">
-                        {Math.round(zoom * 100)}%
-                      </div>
-                      <button
-                        onClick={handleZoomIn}
-                        className="w-8 h-8 text-white hover:bg-white/20 rounded-md flex items-center justify-center transition-all duration-200"
-                        title="Acercar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setZoom(1);
-                          setPosition({ x: 0, y: 0 });
-                        }}
-                        className="ml-1 px-2 py-1 text-white hover:bg-white/20 rounded-md text-xs transition-all duration-200"
-                        title="Restablecer"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botón cerrar - SIEMPRE visible con z-index alto */}
-              <button
-                onClick={closeModal}
-                className="fixed top-4 right-4 z-[60] w-12 h-12 bg-red-500/90 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm border-2 border-white/20 shadow-2xl"
-                title="Cerrar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              {/* Contenedor de imagen */}
-              <div className="w-full h-full flex items-center justify-center p-4 pt-20">
-                <img
-                  ref={imgRef}
-                  src={modalImg}
-                  alt="Evidencia"
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                  style={{
-                    transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
-                    cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                    touchAction: 'none'
-                  }}
-                  onWheel={handleWheel}
-                  onMouseDown={handleMouseDownImage}
-                  onMouseMove={handleMouseMoveImage}
-                  onMouseUp={handleMouseUpImage}
-                  onMouseLeave={handleMouseUpImage}
-                  onTouchStart={(e) => {
-                    if (e.touches.length === 2) {
-                      e.preventDefault();
-                      const touch1 = e.touches[0];
-                      const touch2 = e.touches[1];
-                      const initialDistance = Math.hypot(
-                        touch2.clientX - touch1.clientX,
-                        touch2.clientY - touch1.clientY
-                      );
-                      setDragStart({ x: initialDistance, y: 0 });
-                    } else if (e.touches.length === 1 && zoom > 1) {
-                      e.preventDefault();
-                      setIsDragging(true);
-                      setDragStart({
-                        x: e.touches[0].clientX - position.x,
-                        y: e.touches[0].clientY - position.y
-                      });
-                    }
-                  }}
-                  onTouchMove={(e) => {
-                    if (e.touches.length === 2) {
-                      e.preventDefault();
-                      const touch1 = e.touches[0];
-                      const touch2 = e.touches[1];
-                      const currentDistance = Math.hypot(
-                        touch2.clientX - touch1.clientX,
-                        touch2.clientY - touch1.clientY
-                      );
-                      const scaleChange = currentDistance / dragStart.x;
-                      const newZoom = Math.max(1, Math.min(5, zoom * scaleChange));
-                      setZoom(newZoom);
-                      setDragStart({ x: currentDistance, y: 0 });
-                    } else if (e.touches.length === 1 && isDragging && zoom > 1) {
-                      e.preventDefault();
-                      const touch = e.touches[0];
-                      const newX = touch.clientX - dragStart.x;
-                      const newY = touch.clientY - dragStart.y;
-                      
-                      const img = imgRef.current;
-                      if (img) {
-                        const rect = img.getBoundingClientRect();
-                        const scaledWidth = rect.width * zoom;
-                        const scaledHeight = rect.height * zoom;
-                        
-                        const maxX = (scaledWidth - rect.width) / 2;
-                        const maxY = (scaledHeight - rect.height) / 2;
-                        
-                        setPosition({
-                          x: Math.min(Math.max(-maxX, newX), maxX),
-                          y: Math.min(Math.max(-maxY, newY), maxY)
-                        });
-                      }
-                    }
-                  }}
-                  onTouchEnd={() => {
-                    setIsDragging(false);
-                  }}
-                  onContextMenu={handleContextMenu}
-                />
-              </div>
-
-              {/* Indicador de instrucciones - Solo para móviles */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm">
-                  <div className="flex items-center justify-center text-xs">
-                    <span className="flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                      </svg>
-                      Pellizcar para hacer zoom • Arrastrar para mover
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Modal de imagen simplificado */}
+        <ImageModal 
+          isOpen={modalOpen}
+          imageUrl={modalImg}
+          onClose={closeModal}
+        />
 
         {/* Modal de Login Modernizado */}
         {showLoginModal && (

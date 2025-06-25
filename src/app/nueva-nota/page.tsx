@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { getWeek } from 'date-fns';
-import { uploadToImageKitClient } from '@/lib/imagekit-client';
+import { uploadNotaToCloudinary } from '@/lib/cloudinary';
 
 interface NotaData {
   fecha: string;
@@ -143,12 +143,12 @@ export default function NuevaNota() {
       let evidenciaUrl = null;
 
       if (formData.evidencia) {
-        console.log('📸 Subiendo imagen a ImageKit.io...');
+        console.log('📸 Subiendo imagen de nota a Cloudinary...');
         const compressedImage = await compressImage(formData.evidencia);
         
-        // Subir directamente a ImageKit.io con organización automática por carpetas
-        evidenciaUrl = await uploadToImageKitClient(compressedImage, 'notas');
-        console.log('✅ Imagen subida exitosamente:', evidenciaUrl);
+        // Subir directamente a Cloudinary en la carpeta notas
+        evidenciaUrl = await uploadNotaToCloudinary(compressedImage);
+        console.log('✅ Imagen de nota subida exitosamente a Cloudinary/notas:', evidenciaUrl);
       }
 
       // Obtener fecha y hora local del dispositivo
@@ -193,7 +193,7 @@ export default function NuevaNota() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#1a1f35] to-[#2d364c] py-8 md:py-12">
+    <main className="min-h-screen bg-slate-900 py-8 md:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={handleSubmit} className="bg-[#2a3347] rounded-xl shadow-2xl p-4 md:p-8 border border-[#3d4659]">
           <div className="flex justify-between items-center mb-6 md:mb-8">

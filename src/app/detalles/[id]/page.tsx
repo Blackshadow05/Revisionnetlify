@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo, memo } from 'react';
+import { useEffect, useState, useRef, useMemo, memo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -8,9 +8,10 @@ import { supabase } from '@/lib/supabase';
 import { compressImage as compressImageUtil } from '@/lib/imageUtils';
 import { getWeek } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
-import { uploadToImageKitClient } from '@/lib/imagekit-client';
-import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
+import { uploadNotaToCloudinary } from '@/lib/cloudinary';
+
 import { useToast } from '@/context/ToastContext';
+import ImageModal from '@/components/revision/ImageModal';
 
 // Componente memoizado para las imágenes de evidencia
 const EvidenceImage = memo(({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) => (
@@ -86,17 +87,15 @@ interface RegistroEdicion {
 export default function DetalleRevision({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
-  const spectacularBg = useSpectacularBackground();
   const [revision, setRevision] = useState<Revision | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const imgRef = useRef<HTMLImageElement>(null);
+  
+  // 🚀 OPTIMIZACIÓN: Refs para evitar consultas DOM repetitivas
+  const galeriaInputRef = useRef<HTMLInputElement>(null);
+  const camaraInputRef = useRef<HTMLInputElement>(null);
   const [notasModalOpen, setNotasModalOpen] = useState(false);
   const [notas, setNotas] = useState<Nota[]>([]);
   const [notasLoading, setNotasLoading] = useState(false);
@@ -251,11 +250,14 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
       if (nuevaNota.evidencia) {
         try {
-          // Usar ImageKit.io en lugar de Cloudinary
-          evidenciaUrl = await uploadToImageKitClient(nuevaNota.evidencia, 'notas');
+          // Comprimir imagen antes de subir a Cloudinary (carpeta notas)
+          const compressedImage = await comprimirImagenWebP(nuevaNota.evidencia);
+          // Subir a Cloudinary en la carpeta notas
+          evidenciaUrl = await uploadNotaToCloudinary(compressedImage);
+          console.log('✅ Imagen de nota subida exitosamente a Cloudinary/notas:', evidenciaUrl);
         } catch (uploadError) {
-          console.error('Error al subir imagen a ImageKit:', uploadError);
-          throw new Error('Error al subir la imagen');
+          console.error('❌ Error al subir imagen a Cloudinary:', uploadError);
+          throw new Error('Error al subir la imagen a Cloudinary');
         }
       }
 
@@ -327,96 +329,15 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
   const openModal = (imgUrl: string) => {
     setModalImg(imgUrl);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setModalImg(null);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
   };
 
-  // Efecto para manejar tecla ESC
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && modalOpen) {
-        closeModal();
-      }
-    };
-
-    if (modalOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden'; // Prevenir scroll del fondo
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [modalOpen]);
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY;
-    const newZoom = delta < 0 ? zoom * 1.1 : zoom / 1.1;
-    setZoom(Math.min(Math.max(1, newZoom), 5));
-  };
-
-  const handleMouseDownImage = (e: React.MouseEvent) => {
-    if (zoom > 1) {
-      e.preventDefault();
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-    }
-  };
-
-  const handleMouseMoveImage = (e: React.MouseEvent) => {
-    if (isDragging && zoom > 1) {
-      e.preventDefault();
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      
-      const img = imgRef.current;
-      if (img) {
-        const rect = img.getBoundingClientRect();
-        const scaledWidth = rect.width * zoom;
-        const scaledHeight = rect.height * zoom;
-        
-        const maxX = (scaledWidth - rect.width) / 2;
-        const maxY = (scaledHeight - rect.height) / 2;
-        
-        setPosition({
-          x: Math.min(Math.max(-maxX, newX), maxX),
-          y: Math.min(Math.max(-maxY, newY), maxY)
-        });
-      }
-    }
-  };
-
-  const handleMouseUpImage = () => {
-    setIsDragging(false);
-  };
-
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev * 1.2, 5));
-  };
-
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev / 1.2, 1));
-    if (zoom <= 1) {
-      setPosition({ x: 0, y: 0 });
-    }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-  };
+  // Modal functions simplified - using ImageModal component
 
   const handleEdit = () => {
     if (!revision) return;
@@ -514,62 +435,93 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
     setEditedData({ ...editedData, [field]: value });
   };
 
-  // Función para comprimir imagen usando canvas (configuración estándar)
-  const compressImage = (file: File): Promise<File> => {
+  // Función de compresión de imágenes para notas
+  const comprimirImagenWebP = useCallback((file: File): Promise<File> => {
+    console.log('🚀 INICIANDO COMPRESIÓN:', file.name, file.type, `${(file.size / 1024).toFixed(1)} KB`);
+    
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
+      let objectUrl: string | null = null;
       
       img.onload = () => {
-        // Mantener proporción original, limitando el ancho máximo a 1920px (configuración estándar)
-        const maxWidth = 1920;
+        // 🧹 LIMPIEZA: Liberar Object URL inmediatamente después de cargar
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+        
+        // Configurar dimensiones máximas para notas (más pequeñas que evidencias)
+        const maxWidth = 1200;
+        const maxHeight = 1200;
         let { width, height } = img;
         
-        if (width > maxWidth) {
-          const ratio = maxWidth / width;
-          width = maxWidth;
-          height = height * ratio;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
         }
         
         canvas.width = width;
         canvas.height = height;
         
         if (ctx) {
-          // Configurar contexto para mejor calidad (configuración estándar)
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          
-          // Dibujar imagen manteniendo su proporción original
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Convertir a blob WebP con calidad 70% (configuración estándar)
-          canvas.toBlob((blob) => {
-            if (!blob) {
-              reject(new Error('No se pudo comprimir la imagen'));
-              return;
-            }
-            
-            // Crear nombre con extensión .webp
-            const originalName = file.name.replace(/\.[^/.]+$/, '');
-            const webpName = `${originalName}.webp`;
-            
-            const compressedFile = new File([blob], webpName, {
-              type: 'image/webp',
-              lastModified: Date.now()
-            });
-            
-            resolve(compressedFile);
-          }, 'image/webp', 0.70); // Calidad 70% - configuración estándar
+          const compressRecursively = (quality: number, attempt: number = 1): void => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const sizeKB = blob.size / 1024;
+                  console.log(`📊 Intento ${attempt}: calidad ${(quality * 100).toFixed(0)}% = ${sizeKB.toFixed(1)} KB`);
+                  
+                  if (sizeKB <= 250 || attempt >= 8) {
+                    const compressedFile = new File([blob], file.name, {
+                      type: 'image/webp',
+                      lastModified: Date.now(),
+                    });
+                    
+                    console.log(`✅ COMPRESIÓN COMPLETADA: ${sizeKB.toFixed(1)} KB (${attempt} intentos)`);
+                    resolve(compressedFile);
+                  } else {
+                    const newQuality = Math.max(0.1, quality - 0.1);
+                    compressRecursively(newQuality, attempt + 1);
+                  }
+                } else {
+                  reject(new Error('No se pudo generar el blob de la imagen'));
+                }
+              },
+              'image/webp',
+              quality
+            );
+          };
+          
+          compressRecursively(0.8);
         } else {
           reject(new Error('No se pudo obtener el contexto del canvas'));
         }
       };
       
-      img.onerror = () => reject(new Error('Error al cargar la imagen'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        // 🧹 LIMPIEZA: Liberar Object URL en caso de error
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+        reject(new Error('Error al cargar la imagen'));
+      };
+      
+      // 🧹 SEGURIDAD: Crear Object URL y guardarlo para limpiar después
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
     });
-  };
+  }, []);
 
   const renderField = (key: keyof Revision, value: any) => {
     // Ocultar campos vacíos (excepto los que ya tienen lógica especial)
@@ -792,43 +744,91 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
             {/* Info general skeleton */}
             <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
-                    <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
-                    <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
-                  </div>
-                ))}
+                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
+                </div>
               </div>
             </div>
             
             {/* Accesorios skeleton */}
             <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                    <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                    <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                  </div>
-                ))}
+                {/* Optimizado: JSX estático en lugar de Array.map */}
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                </div>
               </div>
             </div>
             
             {/* Evidencias skeleton */}
             <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                    <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                    <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
-                  </div>
-                ))}
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
+                </div>
+                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
         
         {/* Loading indicator */}
-        <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-[#1e2538]/90 backdrop-blur-sm rounded-full px-4 py-3 border border-[#3d4659]/50">
+                  {/* 🚀 OPTIMIZADO: Eliminado backdrop-blur costoso */}
+          <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-[#1e2538] rounded-full px-4 py-3 border border-[#3d4659]/50">
           <div className="w-5 h-5 border-2 border-[#c9a45c]/30 border-t-[#c9a45c] rounded-full animate-spin"></div>
           <span className="text-[#c9a45c] font-medium text-sm">Cargando detalles...</span>
         </div>
@@ -871,172 +871,14 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
   );
 
   return (
-    <main style={spectacularBg} className="relative overflow-hidden">
+          <main className="min-h-screen bg-slate-900 relative overflow-hidden">
 
-      {/* Modal de imagen mejorado */}
-      {modalOpen && modalImg && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 overflow-hidden">
-          <div className="relative w-full h-full max-w-7xl max-h-screen overflow-hidden">
-            {/* Barra superior con controles */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">Evidencia Fotográfica</h3>
-                    <p className="text-gray-300 text-sm">Zoom: {Math.round(zoom * 100)}%</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {/* Controles de zoom */}
-                  <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-lg p-1">
-                    <button
-                      onClick={handleZoomOut}
-                      className="w-8 h-8 text-white hover:bg-white/20 rounded-md flex items-center justify-center transition-all duration-200"
-                      title="Alejar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                      </svg>
-                    </button>
-                    <div className="px-2 py-1 text-white text-xs font-medium min-w-[50px] text-center">
-                      {Math.round(zoom * 100)}%
-                    </div>
-                    <button
-                      onClick={handleZoomIn}
-                      className="w-8 h-8 text-white hover:bg-white/20 rounded-md flex items-center justify-center transition-all duration-200"
-                      title="Acercar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setZoom(1);
-                        setPosition({ x: 0, y: 0 });
-                      }}
-                      className="ml-1 px-2 py-1 text-white hover:bg-white/20 rounded-md text-xs transition-all duration-200"
-                      title="Restablecer"
-                    >
-                      Reset
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón cerrar - SIEMPRE visible con z-index alto */}
-            <button
-              onClick={closeModal}
-              className="fixed top-4 right-4 z-[60] w-12 h-12 bg-red-500/90 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm border-2 border-white/20 shadow-2xl"
-              title="Cerrar"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Contenedor de imagen */}
-            <div className="w-full h-full flex items-center justify-center p-4 pt-20">
-              <img
-                ref={imgRef}
-                src={modalImg}
-                alt="Evidencia"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                style={{
-                  transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
-                  cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                  transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                  touchAction: 'none'
-                }}
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDownImage}
-                onMouseMove={handleMouseMoveImage}
-                onMouseUp={handleMouseUpImage}
-                onMouseLeave={handleMouseUpImage}
-                onTouchStart={(e) => {
-                  if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    const initialDistance = Math.hypot(
-                      touch2.clientX - touch1.clientX,
-                      touch2.clientY - touch1.clientY
-                    );
-                    setDragStart({ x: initialDistance, y: 0 });
-                  } else if (e.touches.length === 1 && zoom > 1) {
-                    e.preventDefault();
-                    setIsDragging(true);
-                    setDragStart({
-                      x: e.touches[0].clientX - position.x,
-                      y: e.touches[0].clientY - position.y
-                    });
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (e.touches.length === 2) {
-                    e.preventDefault();
-                    const touch1 = e.touches[0];
-                    const touch2 = e.touches[1];
-                    const currentDistance = Math.hypot(
-                      touch2.clientX - touch1.clientX,
-                      touch2.clientY - touch1.clientY
-                    );
-                    const scaleChange = currentDistance / dragStart.x;
-                    const newZoom = Math.max(1, Math.min(5, zoom * scaleChange));
-                    setZoom(newZoom);
-                    setDragStart({ x: currentDistance, y: 0 });
-                  } else if (e.touches.length === 1 && isDragging && zoom > 1) {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    const newX = touch.clientX - dragStart.x;
-                    const newY = touch.clientY - dragStart.y;
-                    
-                    const img = imgRef.current;
-                    if (img) {
-                      const rect = img.getBoundingClientRect();
-                      const scaledWidth = rect.width * zoom;
-                      const scaledHeight = rect.height * zoom;
-                      
-                      const maxX = (scaledWidth - rect.width) / 2;
-                      const maxY = (scaledHeight - rect.height) / 2;
-                      
-                      setPosition({
-                        x: Math.min(Math.max(-maxX, newX), maxX),
-                        y: Math.min(Math.max(-maxY, newY), maxY)
-                      });
-                    }
-                  }
-                }}
-                onTouchEnd={() => {
-                  setIsDragging(false);
-                }}
-                onContextMenu={handleContextMenu}
-              />
-            </div>
-
-            {/* Indicador de instrucciones - Solo para móviles */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-              <div className="bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm">
-                <div className="flex items-center justify-center text-xs">
-                  <span className="flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                    </svg>
-                    Pellizcar para hacer zoom • Arrastrar para mover
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de imagen simplificado */}
+      <ImageModal 
+        isOpen={modalOpen} 
+        imageUrl={modalImg} 
+        onClose={closeModal} 
+      />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden">
@@ -1246,7 +1088,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                         
                         {/* Input oculto para galería */}
                         <input
-                          id="galeria-input"
+                          ref={galeriaInputRef}
                           type="file"
                           accept="image/*"
                           className="hidden"
@@ -1254,7 +1096,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                             const file = e.target.files?.[0];
                             if (file) {
                               try {
-                                const compressedFile = await compressImage(file);
+                                const compressedFile = await comprimirImagenWebP(file);
                                 setNuevaNota({ ...nuevaNota, evidencia: compressedFile });
                               } catch (error) {
                                 console.error('Error al comprimir imagen:', error);
@@ -1266,7 +1108,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                         
                         {/* Input oculto para cámara */}
                         <input
-                          id="camara-input"
+                          ref={camaraInputRef}
                           type="file"
                           accept="image/*"
                           capture="environment"
@@ -1275,7 +1117,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                             const file = e.target.files?.[0];
                             if (file) {
                               try {
-                                const compressedFile = await compressImage(file);
+                                const compressedFile = await comprimirImagenWebP(file);
                                 setNuevaNota({ ...nuevaNota, evidencia: compressedFile });
                               } catch (error) {
                                 console.error('Error al comprimir imagen:', error);
@@ -1290,9 +1132,12 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                           <button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('galeria-input') as HTMLInputElement;
-                              input.value = '';
-                              input.click();
+                              // 🚀 OPTIMIZADO: Uso de useRef en lugar de getElementById repetitivo
+                              const input = galeriaInputRef.current;
+                              if (input) {
+                                input.value = '';
+                                input.click();
+                              }
                             }}
                             className="flex-1 px-3 py-2.5 bg-gradient-to-r from-[#1e2538] to-[#2a3347] border border-[#3d4659] rounded-xl text-white hover:from-[#2a3347] hover:to-[#34404d] transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm font-medium"
                           >
@@ -1305,9 +1150,12 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                           <button
                             type="button"
                             onClick={() => {
-                              const input = document.getElementById('camara-input') as HTMLInputElement;
-                              input.value = '';
-                              input.click();
+                              // 🚀 OPTIMIZADO: Uso de useRef en lugar de getElementById repetitivo
+                              const input = camaraInputRef.current;
+                              if (input) {
+                                input.value = '';
+                                input.click();
+                              }
                             }}
                             className="flex-1 px-3 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 border border-purple-500/20 rounded-xl text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2 text-sm font-medium"
                           >

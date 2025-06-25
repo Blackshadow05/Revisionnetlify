@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import ButtonGroup from '@/components/ButtonGroup';
 import { getWeek } from 'date-fns';
-import { uploadToImageKitClient } from '@/lib/imagekit-client';
+import { uploadEvidenciaToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
+
 
 // Importar nuevos componentes
 import FormField from '@/components/revision/FormField';
@@ -85,11 +85,34 @@ const requiredFields: (keyof RevisionData)[] = [
   'sombrero', 'bolso_yute', 'camas_ordenadas', 'cola_caballo'
 ];
 
+// 🔍 NUEVO: Mapeo de nombres técnicos a nombres amigables
+const fieldLabels: Record<string, string> = {
+  'casita': 'Casita',
+  'quien_revisa': 'Quien revisa',
+  'caja_fuerte': 'Caja fuerte',
+  'puertas_ventanas': 'Puertas/Ventanas',
+  'chromecast': 'Chromecast',
+  'binoculares': 'Binoculares',
+  'trapo_binoculares': 'Trapo Binoculares',
+  'speaker': 'Speaker',
+  'usb_speaker': 'USB Speaker',
+  'controles_tv': 'Controles TV',
+  'secadora': 'Secadora',
+  'accesorios_secadora': 'Accesorios Secadora',
+  'steamer': 'Steamer',
+  'bolsa_vapor': 'Bolsa Vapor',
+  'plancha_cabello': 'Plancha Cabello',
+  'bulto': 'Bulto',
+  'sombrero': 'Sombrero',
+  'bolso_yute': 'Bolso Yute',
+  'camas_ordenadas': 'Camas Ordenadas',
+  'cola_caballo': 'Cola Caballo'
+};
+
 export default function NuevaRevision() {
   const router = useRouter();
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
-  const spectacularBg = useSpectacularBackground();
   
   // Hook para manejo offline
   const { 
@@ -100,8 +123,9 @@ export default function NuevaRevision() {
   
   // Estados principales
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // Combinar estado de loading local y offline
   const isFormLoading = loading || isOfflineSubmitting;
@@ -222,8 +246,15 @@ export default function NuevaRevision() {
     }
   }, [user, debouncedSave]);
 
+  // Efecto de hidratación - DEBE EJECUTARSE PRIMERO
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   // Efecto para cargar datos del localStorage O limpiar si es un formulario nuevo
   useEffect(() => {
+    if (!isHydrated) return; // Esperar a que se complete la hidratación
+    
     // 🆕 Solo limpiar si específicamente viene del botón "Nueva Revisión" con parámetro
     const urlParams = new URLSearchParams(window.location.search);
     const isNewFormFromButton = urlParams.get('new') === 'true';
@@ -267,11 +298,16 @@ export default function NuevaRevision() {
         console.log('📝 Formulario iniciado sin datos previos');
       }
     }
-  }, [user]);
+  }, [user, isHydrated]);
 
   // 🧹 Función para limpiar manualmente el formulario
   const limpiarFormulario = useCallback(() => {
+    console.log('🧹 INICIANDO LIMPIEZA COMPLETA DEL FORMULARIO...');
+    
+    // 1. 🧹 Limpiar localStorage
     clearLocalStorage();
+    
+    // 2. 🧹 Resetear estados del formulario
     setFormData({ ...initialFormData, quien_revisa: user || '' });
     setFileData(initialFileData);
     setCompressedFiles(initialFileData);
@@ -286,18 +322,29 @@ export default function NuevaRevision() {
       evidencia_03: { original: 0, compressed: 0 },
     });
     setHighlightedField('casita');
-    if (error) setError(null);
-    console.log('🧹 Formulario limpiado manualmente');
-  }, [user, error]);
+    
+    // 3. 🧹 Estados limpiados
+    
+    // 4. 🧹 Forzar garbage collection si está disponible (solo en desarrollo)
+    if (typeof window !== 'undefined' && 'gc' in window && process.env.NODE_ENV === 'development') {
+      try {
+        (window as any).gc();
+        console.log('🗑️ Garbage collection forzado (desarrollo)');
+      } catch {
+        // Silenciar error si gc no está disponible
+      }
+    }
+    
+    console.log('✅ LIMPIEZA COMPLETA TERMINADA - Memoria liberada');
+  }, [user]);
 
   // 🚀 OPTIMIZACIÓN 4: Input handler simplificado y optimizado
   const handleInputChange = useCallback((field: keyof RevisionData, value: string) => {
-    if (error) setError(null);
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
     
     debouncedSave(newFormData);
-  }, [formData, error, debouncedSave]);
+  }, [formData, debouncedSave]);
 
   // Función de compresión de imágenes
   const comprimirImagenWebP = useCallback((file: File): Promise<File> => {
@@ -307,10 +354,17 @@ export default function NuevaRevision() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
+      let objectUrl: string | null = null;
       
       img.onload = () => {
-        const maxWidth = 1600;
-        const maxHeight = 1600;
+        // 🧹 LIMPIEZA: Liberar Object URL inmediatamente después de cargar
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+        
+        const maxWidth = 1200;
+        const maxHeight = 1200;
         let { width, height } = img;
         
         if (width > height) {
@@ -365,8 +419,17 @@ export default function NuevaRevision() {
         }
       };
       
-      img.onerror = () => reject(new Error('Error al cargar la imagen'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        // 🧹 LIMPIEZA: Liberar Object URL en caso de error
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+        reject(new Error('Error al cargar la imagen'));
+      };
+      
+      // 🧹 SEGURIDAD: Crear Object URL y guardarlo para limpiar después
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
     });
   }, []);
 
@@ -375,6 +438,11 @@ export default function NuevaRevision() {
     if (!file.type.startsWith('image/')) {
       showError('Por favor selecciona un archivo de imagen válido');
       return;
+    }
+
+    // 🧹 LIMPIEZA: Si ya había un archivo, limpiar estado anterior
+    if (fileData[field] || compressedFiles[field]) {
+      console.log(`🧹 Limpiando archivo anterior en ${field}`);
     }
 
     // Actualizar estado del archivo original
@@ -417,12 +485,12 @@ export default function NuevaRevision() {
   };
 
   const handleFileChange = (field: EvidenceField, file: File | null) => {
-    if (error) setError(null);
     
     if (file) {
       manejarArchivoSeleccionado(field, file);
     } else {
-      // Limpiar archivo
+      // 🧹 LIMPIEZA COMPLETA: Limpiar archivo y todos los estados relacionados
+      console.log(`🧹 Limpiando completamente campo ${field}`);
       setFileData(prev => ({ ...prev, [field]: null }));
       setCompressedFiles(prev => ({ ...prev, [field]: null }));
       setCompressionStatus(prev => ({
@@ -437,6 +505,7 @@ export default function NuevaRevision() {
   };
 
   const clearFile = (field: EvidenceField) => {
+    console.log(`🧹 Limpiando archivo de ${field}`);
     handleFileChange(field, null);
   };
 
@@ -479,13 +548,24 @@ export default function NuevaRevision() {
     
     // Usar loading del hook offline si está disponible, sino el local
     setLoading(true);
-    setError(null);
 
     try {
       // Validar campos requeridos
       const emptyFields = requiredFields.filter(field => !formData[field]);
       if (emptyFields.length > 0) {
-        throw new Error(`Campos requeridos faltantes: ${emptyFields.join(', ')}`);
+        const friendlyFieldNames = emptyFields.map(field => fieldLabels[field] || field).join(', ');
+        throw new Error(`Faltan completar campos requeridos: ${friendlyFieldNames}`);
+      }
+
+      // 📸 VALIDACIÓN CONDICIONAL: Evidencia 1 obligatoria para Check in y Upsell
+      const requiresEvidencia01 = ['Check in', 'Upsell'].includes(formData.caja_fuerte);
+      if (requiresEvidencia01 && !compressedFiles.evidencia_01) {
+        // Destacar el campo de evidencia_01 y mostrarlo en pantalla
+        const evidenciaSection = document.querySelector('[data-section="evidencia-fotografica"]');
+        if (evidenciaSection) {
+          evidenciaSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        throw new Error(`Evidencia 1 es obligatoria cuando el estado de la caja fuerte es "${formData.caja_fuerte}"`);
       }
 
       // Preparar datos para envío
@@ -495,16 +575,17 @@ export default function NuevaRevision() {
       
       // Solo subir imágenes si estamos online
       if (isOnline) {
-        // Subir imágenes comprimidas
+        // Subir imágenes comprimidas a Cloudinary/Evidencias
         for (const field of evidenceFields) {
           const compressedFile = compressedFiles[field];
           if (compressedFile) {
             try {
-              const uploadedUrl = await uploadToImageKitClient(compressedFile, 'evidencias', `revision_${Date.now()}_${field}`);
+              const uploadedUrl = await uploadEvidenciaToCloudinary(compressedFile);
               submitData[field] = uploadedUrl;
+              console.log(`✅ ${field} subida exitosamente a Cloudinary/Evidencias:`, uploadedUrl);
             } catch (uploadError) {
-              console.error(`Error subiendo ${field}:`, uploadError);
-              showError(`Error al subir ${field}`);
+              console.error(`❌ Error subiendo ${field} a Cloudinary/Evidencias:`, uploadError);
+              showError(`Error al subir ${field} a Cloudinary/Evidencias`);
               return;
             }
           }
@@ -576,8 +657,14 @@ export default function NuevaRevision() {
 
     } catch (error) {
       console.error('Error al guardar revisión:', error);
-      setError(error instanceof Error ? error.message : 'Error desconocido');
-      showError('Error al guardar la revisión');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      // 🔍 MEJORADO: Mostrar mensaje específico con campos faltantes en el toast
+      if (errorMessage.includes('Faltan completar campos requeridos')) {
+        showError(`Error al guardar la revisión: ${errorMessage}`);
+      } else {
+        showError('Error al guardar la revisión');
+      }
     } finally {
       setLoading(false);
     }
@@ -585,8 +672,23 @@ export default function NuevaRevision() {
 
   const showEvidenceFields = ['Check in', 'Upsell', 'Back to Back'].includes(formData.caja_fuerte);
 
+  // Evitar problemas de hidratación - no renderizar hasta que esté hidratado
+  if (!isHydrated) {
+    return (
+      <main className="min-h-screen bg-slate-900 py-8 md:py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]">
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-pulse text-[#c9a45c] text-lg">Cargando...</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main style={spectacularBg} className="py-8 md:py-12">
+    <main className="min-h-screen bg-slate-900 py-8 md:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={handleSubmit} className="bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]">
           {/* Header */}
@@ -885,7 +987,7 @@ export default function NuevaRevision() {
 
             {/* Evidencia fotográfica */}
             {showEvidenceFields && (
-              <fieldset>
+              <fieldset data-section="evidencia-fotografica">
                 <legend className="sr-only">Evidencia fotográfica</legend>
                 <div className="space-y-6">
                   <h3 className="text-xl font-semibold text-[#ff8c42] flex items-center gap-2">
@@ -894,6 +996,12 @@ export default function NuevaRevision() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Evidencia Fotográfica
+                    {/* 📸 Indicador de obligatorio para Check in/Upsell */}
+                    {['Check in', 'Upsell'].includes(formData.caja_fuerte) && (
+                      <span className="text-sm bg-gradient-to-r from-pink-500 to-orange-400 text-white px-2 py-1 rounded-full">
+                        Evidencia 1 obligatoria
+                      </span>
+                    )}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -908,6 +1016,7 @@ export default function NuevaRevision() {
                         onFileSelect={handleFileChange}
                         onClearFile={clearFile}
                         onImageClick={openModal}
+                        required={field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)}
                       />
                     ))}
                   </div>
@@ -935,18 +1044,6 @@ export default function NuevaRevision() {
               </FormField>
             </fieldset>
 
-            {/* Error display */}
-            {error && (
-              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-200">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              </div>
-            )}
-
             {/* Submit button con estado offline */}
             <div className="space-y-3">
               {/* Indicador de conexión */}
@@ -956,6 +1053,20 @@ export default function NuevaRevision() {
                   {isOnline ? 'En línea - Envío directo' : 'Sin conexión - Se guardará offline'}
                 </span>
               </div>
+
+              {/* 🔍 Indicador de campos pendientes (café claro/naranja) */}
+              {nextEmptyField && (
+                <div className="bg-orange-500/20 border border-orange-500/50 rounded-xl p-3 text-orange-200">
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>
+                      Faltan completar campos requeridos. Siguiente: {fieldLabels[nextEmptyField] || nextEmptyField}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"

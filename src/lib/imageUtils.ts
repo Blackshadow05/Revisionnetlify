@@ -6,7 +6,7 @@ export const compressImage = async (file: File): Promise<File> => {
     
     img.onload = () => {
       // Mantener proporción original, limitando el ancho máximo a 1920px (configuración estándar)
-      const maxWidth = 1920;
+      const maxWidth = 1200;
       let { width, height } = img;
       
       if (width > maxWidth) {

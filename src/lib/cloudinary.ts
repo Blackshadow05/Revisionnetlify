@@ -1,10 +1,16 @@
 import { getWeek } from 'date-fns';
 
-export const uploadToCloudinary = async (file: File): Promise<string> => {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const week = `semana_${getWeek(now, { weekStartsOn: 1 })}`;
-  const folder = `prueba-imagenes/${month}/${week}`;
+export const uploadToCloudinary = async (file: File, customFolder?: string): Promise<string> => {
+  let folder: string;
+  
+  if (customFolder) {
+    folder = customFolder;
+  } else {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const week = `semana_${getWeek(now, { weekStartsOn: 1 })}`;
+    folder = `prueba-imagenes/${month}/${week}`;
+  }
 
   const formData = new FormData();
   formData.append('file', file);
@@ -36,6 +42,41 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
     console.error('Error en uploadToCloudinary:', error);
     throw error;
   }
+};
+
+/**
+ * Función específica para subir notas a la carpeta "notas"
+ * @param file - Archivo a subir
+ * @returns URL optimizada de Cloudinary
+ */
+export const uploadNotaToCloudinary = async (file: File): Promise<string> => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const folder = `notas/${year}/${month}`;
+
+  return uploadToCloudinary(file, folder);
+};
+
+/**
+ * Función específica para subir evidencias a la carpeta "Evidencias"
+ * @param file - Archivo a subir
+ * @returns URL optimizada de Cloudinary
+ */
+export const uploadEvidenciaToCloudinary = async (file: File): Promise<string> => {
+  const now = new Date();
+  const year = now.getFullYear();
+  
+  // Array con nombres de meses en español
+  const meses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  
+  const mesNombre = meses[now.getMonth()];
+  const folder = `Evidencias/${mesNombre} ${year}`;
+
+  return uploadToCloudinary(file, folder);
 };
 
 /**

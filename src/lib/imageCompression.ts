@@ -37,7 +37,7 @@ export class ImageCompressor {
     options: CompressionOptions = {}
   ): Promise<{ file: File; originalSize: number; compressedSize: number; compressionRatio: number }> {
     const {
-      maxWidth = 1920,      // Configuración estándar
+      maxWidth = 1200,      // Mayor compresión
       maxHeight = undefined,  // Solo limitamos por ancho
       quality = 0.70,       // Configuración estándar: 70%
       format = 'webp',      // Configuración estándar: WebP

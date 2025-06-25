@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useSpectacularBackground } from '@/hooks/useSpectacularBackground';
+
 
 interface ImageData {
   file: File | null;
@@ -12,7 +12,7 @@ interface ImageData {
 }
 
 export default function UnirImagenes() {
-  const spectacularBg = useSpectacularBackground();
+
   const [imagen1, setImagen1] = useState<ImageData>({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
   const [imagen2, setImagen2] = useState<ImageData>({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
   const [imagenUnida, setImagenUnida] = useState<string | null>(null);
@@ -50,46 +50,91 @@ export default function UnirImagenes() {
   const imgRef = useRef<HTMLImageElement>(null);
 
   // Funcion para comprimir imagen optimizada (sin metadatos)
-  const comprimirImagen = useCallback((file: File): Promise<string> => {
+  const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
+      let objectUrl: string | null = null;
       
       img.onload = () => {
-        // Mantener proporcion original, limitando el ancho maximo a 1920px
-        const maxWidth = 1920;
+        // 🧹 LIMPIEZA: Liberar Object URL inmediatamente después de cargar
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+        
+        // Configuración de tamaño máximo (1200px para mayor compresión)
+        const maxWidth = 1200;
+        const maxHeight = 1200;
         let { width, height } = img;
         
-        if (width > maxWidth) {
-          const ratio = maxWidth / width;
-          width = maxWidth;
-          height = height * ratio;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
         }
         
         canvas.width = width;
         canvas.height = height;
         
         if (ctx) {
-          // Configurar contexto para mejor calidad
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          
-          // Dibujar imagen manteniendo su proporcion original
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Comprimir con calidad 70% (buen balance calidad/tamaño)
-          const dataURL = canvas.toDataURL('image/webp', 0.70);
-          resolve(dataURL);
+          const compressRecursively = (quality: number, attempt: number = 1): void => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const sizeKB = blob.size / 1024;
+                  console.log(`📊 Intento ${attempt}: calidad ${(quality * 100).toFixed(0)}% = ${sizeKB.toFixed(1)} KB`);
+                  
+                  // 🎯 Objetivo: máximo 250KB
+                  if (sizeKB <= 250 || attempt >= 8) {
+                    const compressedFile = new File([blob], file.name, {
+                      type: 'image/webp',
+                      lastModified: Date.now(),
+                    });
+                    
+                    console.log(`✅ COMPRESIÓN COMPLETADA: ${sizeKB.toFixed(1)} KB (${attempt} intentos)`);
+                    resolve(compressedFile);
+                  } else {
+                    const newQuality = Math.max(0.1, quality - 0.1);
+                    compressRecursively(newQuality, attempt + 1);
+                  }
+                } else {
+                  reject(new Error('No se pudo generar el blob de la imagen'));
+                }
+              },
+              'image/webp',
+              quality
+            );
+          };
+          
+          compressRecursively(0.8);
         } else {
           reject(new Error('No se pudo obtener el contexto del canvas'));
         }
       };
       
-      img.onerror = () => reject(new Error('Error al cargar la imagen'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        // 🧹 LIMPIEZA: Liberar Object URL en caso de error
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+        reject(new Error('Error al cargar la imagen'));
+      };
+      
+      // 🧹 SEGURIDAD: Crear Object URL y guardarlo para limpiar después
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
     });
-  }, []);
+  };
 
   // Funcion para unir las imagenes manteniendo proporciones
   const unirImagenes = useCallback(async () => {
@@ -163,16 +208,16 @@ export default function UnirImagenes() {
     setLoading(prev => ({ ...prev, [tipo]: true }));
 
     try {
-      const comprimida = await comprimirImagen(file);
+      const comprimida = await compressImage(file);
       
       // Calcular tamaños
       const originalSize = file.size;
-      const compressedSize = Math.round((comprimida.length * 3) / 4);
+      const compressedSize = Math.round((comprimida.size * 3) / 4);
       
       if (tipo === 'img1') {
-        setImagen1({ file, compressed: comprimida, originalSize, compressedSize });
+        setImagen1({ file: comprimida, compressed: null, originalSize, compressedSize });
       } else {
-        setImagen2({ file, compressed: comprimida, originalSize, compressedSize });
+        setImagen2({ file: comprimida, compressed: null, originalSize, compressedSize });
       }
     } catch (error) {
       console.error('Error al comprimir imagen:', error);
@@ -220,25 +265,48 @@ export default function UnirImagenes() {
       video.srcObject = stream;
       video.setAttribute('playsinline', 'true');
       
-      // Crear modal para mostrar preview
-      const modal = document.createElement('div');
-      modal.className = 'fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4';
-      modal.innerHTML = `
-        <div class="relative">
-          <video autoplay playsinline class="max-w-full max-h-[70vh] rounded-lg"></video>
-          <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
-            <button id="capture-btn" class="px-6 py-3 bg-green-500 text-white rounded-lg font-medium">Capturar</button>
-            <button id="cancel-btn" class="px-6 py-3 bg-red-500 text-white rounded-lg font-medium">Cancelar</button>
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-      const modalVideo = modal.querySelector('video') as HTMLVideoElement;
-      modalVideo.srcObject = stream;
-      
-      const captureBtn = modal.querySelector('#capture-btn') as HTMLButtonElement;
-      const cancelBtn = modal.querySelector('#cancel-btn') as HTMLButtonElement;
+              // 🚀 OPTIMIZADO: Usar DocumentFragment para evitar múltiples reflows
+        const fragment = document.createDocumentFragment();
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4';
+        
+        // Crear estructura sin innerHTML para mejor performance
+        const modalContent = document.createElement('div');
+        modalContent.className = 'relative';
+        
+        const modalVideo = document.createElement('video');
+        modalVideo.autoplay = true;
+        modalVideo.playsInline = true;
+        modalVideo.className = 'max-w-full max-h-[70vh] rounded-lg';
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4';
+        
+        const captureBtnElement = document.createElement('button');
+        captureBtnElement.id = 'capture-btn';
+        captureBtnElement.className = 'px-6 py-3 bg-green-500 text-white rounded-lg font-medium';
+        captureBtnElement.textContent = 'Capturar';
+        
+        const cancelBtnElement = document.createElement('button');
+        cancelBtnElement.id = 'cancel-btn';
+        cancelBtnElement.className = 'px-6 py-3 bg-red-500 text-white rounded-lg font-medium';
+        cancelBtnElement.textContent = 'Cancelar';
+        
+        // Construir estructura usando DocumentFragment
+        buttonContainer.appendChild(captureBtnElement);
+        buttonContainer.appendChild(cancelBtnElement);
+        modalContent.appendChild(modalVideo);
+        modalContent.appendChild(buttonContainer);
+        modal.appendChild(modalContent);
+        fragment.appendChild(modal);
+        
+        // Una sola operación DOM
+        document.body.appendChild(fragment);
+              // 🚀 OPTIMIZADO: Ya tenemos referencias directas, no necesitamos querySelector
+        modalVideo.srcObject = stream;
+        
+        const captureBtn = captureBtnElement;
+        const cancelBtn = cancelBtnElement;
       
       const cleanup = () => {
         stream.getTracks().forEach(track => track.stop());
@@ -387,7 +455,7 @@ export default function UnirImagenes() {
   };
 
   return (
-    <main style={spectacularBg} className="relative overflow-hidden">
+          <main className="min-h-screen bg-slate-900 relative overflow-hidden">
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
@@ -697,7 +765,7 @@ export default function UnirImagenes() {
         )}
 
         {modalVisible && imagenUnida && (
-          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm" style={{ touchAction: 'none' }}>
+                     <div className="fixed inset-0 z-40 bg-black/95" style={{ touchAction: 'none' }}>
             {/* Barra superior con controles */}
             <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4">
               <div className="flex items-center justify-between">
@@ -755,7 +823,7 @@ export default function UnirImagenes() {
             {/* Botón cerrar - SIEMPRE visible con z-index alto */}
             <button
               onClick={closeModal}
-              className="fixed top-4 right-4 z-[60] w-12 h-12 bg-red-500/90 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm border-2 border-white/20 shadow-2xl"
+              className="fixed top-4 right-4 z-41 w-12 h-12 bg-red-500 text-white rounded-full flex items-center justify-center transition-all duration-200 border-2 border-white/20 shadow-2xl"
               title="Cerrar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

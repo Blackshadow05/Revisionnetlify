@@ -358,13 +358,13 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
       console.log('Fecha local generada:', fechaFormateada);
       console.log('Iniciando actualización...');
 
-      // Actualizar los datos en revisiones_casitas
+      // Preparar datos para actualizar (sin modificar created_at)
+      const { created_at, ...dataToUpdate } = editedData;
+      
+      // Actualizar los datos en revisiones_casitas (preservando fecha original)
       const { error: updateError } = await supabase
         .from('revisiones_casitas')
-        .update({
-          ...editedData,
-          created_at: fechaFormateada
-        })
+        .update(dataToUpdate)
         .eq('id', revision.id);
 
       if (updateError) {
@@ -376,18 +376,19 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
       // Guardar el registro de cambios en Registro_ediciones
       const cambios = Object.entries(editedData).reduce((acc, [key, value]) => {
+        // Excluir campos que no deben generar registros de edición
         if (key === 'id' || key === 'created_at' || key === 'fecha_edicion' || 
             key === 'quien_edito' || key === 'datos_anteriores' || key === 'datos_actuales') {
           return acc;
         }
         const valorAnterior = revision[key as keyof Revision];
         if (value !== valorAnterior) {
-                  const registro = {
-          "Usuario que Edito": user || 'Usuario',
-          Dato_anterior: `[${revision.id}] ${key}: ${String(valorAnterior || '')}`,
-          Dato_nuevo: `[${revision.id}] ${key}: ${String(value || '')}`,
-          created_at: fechaFormateada
-        };
+          const registro = {
+            "Usuario que Edito": user || 'Usuario',
+            Dato_anterior: `[${revision.id}] ${key}: ${String(valorAnterior || '')}`,
+            Dato_nuevo: `[${revision.id}] ${key}: ${String(value || '')}`,
+            created_at: fechaFormateada // Solo el registro de edición lleva fecha actual
+          };
           console.log('Registro a insertar:', registro);
           acc.push(registro);
         }

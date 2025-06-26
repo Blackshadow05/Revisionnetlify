@@ -1,16 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import CompressionIndicator from './CompressionIndicator';
+import { CompressionStatus, FileSizes } from '@/types/revision';
 
-interface CompressionStatus {
-  status: 'idle' | 'compressing' | 'completed' | 'error';
-  progress: number;
-  stage: string;
-  error?: string;
-}
-
-interface FileSizes {
-  original: number;
-  compressed: number;
+interface CompressionProgress {
+  attempt: number;
+  currentSize: number;
+  targetSize: number;
+  quality: number;
+  resolution: string;
+  status: 'compressing' | 'compressed' | 'timeout' | 'error';
 }
 
 interface Props {
@@ -23,6 +21,8 @@ interface Props {
   onClearFile: (field: 'evidencia_01' | 'evidencia_02' | 'evidencia_03') => void;
   onImageClick: (imageUrl: string) => void;
   required?: boolean;
+  compressionProgress?: CompressionProgress | null;
+  isCompressing?: boolean;
 }
 
 export default function EvidenceUploader({
@@ -34,7 +34,9 @@ export default function EvidenceUploader({
   onFileSelect,
   onClearFile,
   onImageClick,
-  required = false
+  required = false,
+  compressionProgress,
+  isCompressing
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageUrlRef = useRef<string | null>(null);
@@ -145,11 +147,15 @@ export default function EvidenceUploader({
       </div>
 
       {/* Indicador de compresión */}
-      <CompressionIndicator 
-        status={compressionStatus}
-        fileSizes={fileSizes}
-        fieldName={fieldName}
-      />
+      {(compressionProgress || isCompressing || compressionStatus.status !== 'idle') && (
+        <CompressionIndicator 
+          isCompressing={isCompressing || compressionStatus.status === 'compressing'}
+          progress={compressionProgress || undefined}
+          originalSize={fileSizes.original}
+          fileName={file?.name}
+          className="mt-3"
+        />
+      )}
 
       {/* Vista previa de imagen */}
       {imageUrl && (

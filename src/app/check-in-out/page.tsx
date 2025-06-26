@@ -37,6 +37,23 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T
   }) as T;
 }
 
+// 📱 Detección de dispositivo móvil
+const isMobile = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         window.innerWidth <= 768;
+};
+
+// ⏱️ Configuración de timeouts específicos por dispositivo
+const getTimeoutConfig = () => {
+  const mobile = isMobile();
+  return {
+    queryTimeout: mobile ? 15000 : 10000, // 15s para móviles, 10s para desktop
+    retryDelay: mobile ? 2000 : 1000,     // 2s para móviles, 1s para desktop
+    maxRetries: mobile ? 2 : 3            // Menos reintentos en móviles
+  };
+};
+
 export default function CheckInOutPage() {
   const router = useRouter();
   const { isLoggedIn, userRole, isLoading: authLoading } = useAuth();
@@ -59,138 +76,337 @@ export default function CheckInOutPage() {
     }
   }, [authLoading, isLoggedIn, router]);
 
-  // 🚀 Función de carga de datos optimizada
+  // 🚀 Función de carga de datos optimizada con manejo de errores mejorado
   const loadData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      
-      const { data, error: supabaseError } = await supabase
-        .from('revisiones_casitas')
-        .select('id, quien_revisa, caja_fuerte, casita, created_at')
-        .order('created_at', { ascending: false });
+    const { queryTimeout, retryDelay, maxRetries } = getTimeoutConfig();
+    let retryCount = 0;
 
-      if (supabaseError) {
-        console.error('❌ Error fetching data:', supabaseError);
-        throw supabaseError;
-      }
+    const attemptLoad = async (): Promise<void> => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+        
+        // ✅ Verificar conexión primero
+        console.log(`🔍 Verificando conexión a Supabase... (Intento ${retryCount + 1}/${maxRetries + 1})`);
+        
+        // ✅ Crear promise con timeout
+        const queryPromise = supabase
+          .from('revisiones_casitas')
+          .select('id, quien_revisa, caja_fuerte, casita, created_at', { count: 'exact' })
+          .not('id', 'is', null) // ✅ Asegurar que el ID existe
+          .not('casita', 'is', null) // ✅ Asegurar que casita existe
+          .order('created_at', { ascending: false })
+          .limit(1000); // ✅ Limitar resultados para evitar sobrecarga
 
-      setRevisioinesData(data as RevisionCasita[] || []);
-      console.log(`✅ Cargados ${data?.length || 0} registros`);
-      
-    } catch (err) {
-      const errorMessage = 'Error al cargar datos. Verifica tu conexión.';
-      setError(errorMessage);
-      console.error('❌ Error en loadData:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout: La consulta tardó demasiado en responder')), queryTimeout);
+        });
+
+        // ✅ Ejecutar con timeout
+        const { data, error: supabaseError, count } = await Promise.race([
+          queryPromise,
+          timeoutPromise
+        ]) as any;
+
+        if (supabaseError) {
+          console.error('❌ Error específico de Supabase:', supabaseError);
+          console.error('❌ Código de error:', supabaseError.code);
+          console.error('❌ Mensaje:', supabaseError.message);
+          console.error('❌ Detalles:', supabaseError.details);
+          
+          // ✅ Manejo de errores más específico
+          if (supabaseError.code === 'PGRST116') {
+            throw new Error('Error de consulta: múltiples resultados inesperados. Intenta actualizar la página.');
+          } else if (supabaseError.code === 'PGRST301') {
+            throw new Error('Problema de permisos en la base de datos. Contacta al administrador.');
+          } else if (supabaseError.message.includes('JSON')) {
+            throw new Error('Error de formato de datos. La aplicación se actualizará automáticamente.');
+          } else {
+            throw supabaseError;
+          }
+        }
+
+        // ✅ Validar que data es un array
+        if (!Array.isArray(data)) {
+          console.error('❌ Los datos recibidos no son un array:', data);
+          throw new Error('Formato de datos incorrecto recibido del servidor.');
+        }
+
+        // ✅ Filtrar datos válidos
+        const validData = data.filter(item => 
+          item && 
+          item.id !== null && 
+          item.id !== undefined &&
+          typeof item.casita === 'string' &&
+          item.casita.trim() !== ''
+        );
+
+        console.log(`✅ Datos válidos: ${validData.length} de ${data.length} registros totales`);
+        console.log(`✅ Total en BD: ${count || 'desconocido'} registros`);
+
+        setRevisioinesData(validData as RevisionCasita[]);
+        console.log(`✅ Cargados ${validData.length} registros válidos`);
+        
+      } catch (err: any) {
+        console.error(`❌ Error en intento ${retryCount + 1}:`, err);
+
+        // ✅ Retry logic para errores de red o timeout
+        if (retryCount < maxRetries && 
+           (err.message?.includes('fetch') || 
+            err.message?.includes('Timeout') || 
+            err.message?.includes('network') ||
+            err.message?.includes('Failed to fetch'))) {
+          
+          retryCount++;
+          console.log(`🔄 Reintentando en ${retryDelay}ms... (${retryCount}/${maxRetries})`);
+          
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return attemptLoad();
+        }
+
+        let errorMessage = 'Error al cargar datos. Verifica tu conexión.';
+        
+        // ✅ Mensajes de error más específicos para móviles
+        if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+          errorMessage = 'Error de conexión. Verifica tu señal de internet y reinténtalo.';
+        } else if (err.message?.includes('JSON')) {
+          errorMessage = 'Error de formato de datos. Cierra y vuelve a abrir la aplicación.';
+        } else if (err.message?.includes('timeout') || err.message?.includes('Timeout')) {
+          errorMessage = 'Tiempo de espera agotado. Tu conexión puede ser lenta, reinténtalo.';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        setError(errorMessage);
+        console.error('❌ Error detallado en loadData:', {
+          error: err,
+          message: err.message,
+          code: err.code,
+          details: err.details,
+          stack: err.stack,
+          retryCount,
+          isMobileDevice: isMobile()
+        });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    };
+
+    return attemptLoad();
   }, []);
 
-  // 🎯 Debounced refresh para evitar múltiples llamadas
+  // 🌐 Verificación de conectividad inicial
+  useEffect(() => {
+    const checkConnectionAndLoad = async () => {
+      if (!authLoading && isLoggedIn) {
+        const { queryTimeout } = getTimeoutConfig();
+        
+        try {
+          console.log('🔍 Verificando conectividad inicial...');
+          console.log('📱 Dispositivo móvil:', isMobile());
+          
+          // ✅ Test de conectividad con consulta mínima y timeout
+          const connectivityPromise = supabase
+            .from('revisiones_casitas')
+            .select('id')
+            .limit(1);
+
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout en verificación inicial')), queryTimeout);
+          });
+
+          const { data: testData, error: testError } = await Promise.race([
+            connectivityPromise,
+            timeoutPromise
+          ]) as any;
+
+          if (testError) {
+            console.error('❌ Error de conectividad inicial:', testError);
+            if (testError.message.includes('JSON') || testError.code === 'PGRST116') {
+              setError('Error de conectividad. Por favor, cierra y abre la aplicación nuevamente.');
+            } else if (testError.message.includes('timeout') || testError.message.includes('Timeout')) {
+              setError('Conexión lenta detectada. Revisa tu señal de internet.');
+            } else {
+              setError('Error de conexión inicial. Verifica tu conexión a internet.');
+            }
+            setLoading(false);
+            return;
+          }
+
+          console.log('✅ Conectividad verificada, cargando datos...');
+          loadData();
+        } catch (error: any) {
+          console.error('❌ Error verificando conectividad:', error);
+          if (error.message?.includes('Timeout')) {
+            setError('Tiempo de espera agotado. Tu conexión es muy lenta.');
+          } else {
+            setError('Error de red. Verifica tu conexión a internet y reinténtalo.');
+          }
+          setLoading(false);
+        }
+      }
+    };
+
+    checkConnectionAndLoad();
+  }, [authLoading, isLoggedIn, loadData]);
+
+  // 🎯 Debounced refresh para evitar múltiples llamadas (optimizado para móviles)
   const debouncedRefresh = useMemo(
-    () => debounce(() => loadData(true), 300),
+    () => debounce(() => loadData(true), 500), // ✅ Delay más largo para móviles
     [loadData]
   );
 
-  // Efecto inicial de carga
-  useEffect(() => {
-    if (!authLoading && isLoggedIn) {
-      console.log('✅ Usuario autenticado, cargando datos...');
-      loadData();
-    }
-  }, [authLoading, isLoggedIn, loadData]);
-
-  // 🕒 Función para obtener el rango de fechas (18:00 día anterior hasta 12:00 día actual)
-  const getTimeRange = useCallback(() => {
+  // 🕒 Función para obtener rangos de fechas específicos por tipo
+  const getTimeRanges = useCallback(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    // 18:00 del día anterior
-    const startTime = new Date(yesterday);
-    startTime.setHours(18, 0, 0, 0);
+    // ✅ Check In: 18:00 del día anterior hasta 12:00 del día actual
+    const checkInStart = new Date(yesterday);
+    checkInStart.setHours(18, 0, 0, 0);
+    const checkInEnd = new Date(today);
+    checkInEnd.setHours(12, 0, 0, 0);
     
-    // 12:00 del día actual
-    const endTime = new Date(today);
-    endTime.setHours(12, 0, 0, 0);
+    // ✅ Upsell: 18:00 del día anterior hasta 22:00 del día actual
+    const upsellStart = new Date(yesterday);
+    upsellStart.setHours(18, 0, 0, 0);
+    const upsellEnd = new Date(today);
+    upsellEnd.setHours(22, 0, 0, 0);
     
-    return { startTime, endTime };
+    return { 
+      checkIn: { startTime: checkInStart, endTime: checkInEnd },
+      upsell: { startTime: upsellStart, endTime: upsellEnd }
+    };
   }, []);
 
-  // 📋 Procesamiento de datos con horarios específicos
+  // 📋 Procesamiento de datos con horarios específicos y validación mejorada
   const processedData = useMemo(() => {
-    const { startTime, endTime } = getTimeRange();
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    // ✅ Validar que tenemos datos antes de procesar
+    if (!Array.isArray(revisioinesData) || revisioinesData.length === 0) {
+      console.log('⚠️ No hay datos para procesar');
+      return { checkIns: [], checkOuts: [], upsells: [] };
+    }
 
-    // Check Ins: 18:00 día anterior hasta 12:00 día actual
-    const checkIns = revisioinesData
-      .filter(item => {
-        if (!item.created_at || item.caja_fuerte !== CHECK_IN_VALUE) return false;
-        const itemDate = new Date(item.created_at);
-        return itemDate >= startTime && itemDate <= endTime;
-      })
-      .map(item => ({
-        id: item.id,
-        casita: item.casita || 'N/A',
-        fecha: item.created_at ? new Date(item.created_at) : null,
-        revisor: item.quien_revisa || 'N/A',
-        tipo: 'Check In' as const
-      }))
-      .sort((a, b) => {
-        if (!a.fecha || !b.fecha) return 0;
-        return b.fecha.getTime() - a.fecha.getTime();
+    try {
+      const timeRanges = getTimeRanges();
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = new Date(todayStart);
+      todayEnd.setDate(todayEnd.getDate() + 1);
+
+      console.log('🕒 Procesando datos con rangos específicos:', {
+        checkIn: timeRanges.checkIn,
+        upsell: timeRanges.upsell,
+        todayStart,
+        todayEnd
       });
 
-    // Check Outs: Solo día actual completo
-    const checkOuts = revisioinesData
-      .filter(item => {
-        if (!item.created_at || item.caja_fuerte !== CHECK_OUT_VALUE) return false;
-        const itemDate = new Date(item.created_at);
-        return itemDate >= todayStart && itemDate < todayEnd;
-      })
-      .map(item => ({
-        id: item.id,
-        casita: item.casita || 'N/A',
-        fecha: item.created_at ? new Date(item.created_at) : null,
-        revisor: item.quien_revisa || 'N/A',
-        tipo: 'Check Out' as const
-      }))
-      .sort((a, b) => {
-        if (!a.fecha || !b.fecha) return 0;
-        return b.fecha.getTime() - a.fecha.getTime();
-      });
+      // ✅ Función helper para validar y crear item de revisión
+      const createRevisionItem = (item: RevisionCasita, tipo: 'Check In' | 'Check Out' | 'Upsell') => {
+        // Validar datos requeridos
+        if (!item || !item.created_at) {
+          console.warn('⚠️ Item sin fecha válida:', item);
+          return null;
+        }
 
-    // Upsells: 18:00 día anterior hasta 12:00 día actual
-    const upsells = revisioinesData
-      .filter(item => {
-        if (!item.created_at || item.caja_fuerte !== UPSELL_VALUE) return false;
-        const itemDate = new Date(item.created_at);
-        return itemDate >= startTime && itemDate <= endTime;
-      })
-      .map(item => ({
-        id: item.id,
-        casita: item.casita || 'N/A',
-        fecha: item.created_at ? new Date(item.created_at) : null,
-        revisor: item.quien_revisa || 'N/A',
-        tipo: 'Upsell' as const
-      }))
-      .sort((a, b) => {
-        if (!a.fecha || !b.fecha) return 0;
-        return b.fecha.getTime() - a.fecha.getTime();
-      });
+        try {
+          const fecha = new Date(item.created_at);
+          
+          // Validar que la fecha es válida
+          if (isNaN(fecha.getTime())) {
+            console.warn('⚠️ Fecha inválida en item:', item);
+            return null;
+          }
 
-    return { checkIns, checkOuts, upsells };
-  }, [revisioinesData, getTimeRange]);
+          return {
+            id: item.id,
+            casita: String(item.casita || 'N/A').trim(),
+            fecha,
+            revisor: String(item.quien_revisa || 'N/A').trim(),
+            tipo
+          };
+        } catch (error) {
+          console.error('❌ Error procesando item:', item, error);
+          return null;
+        }
+      };
+
+      // Check Ins: 18:00 día anterior hasta 12:00 día actual
+      const checkIns = revisioinesData
+        .filter(item => {
+          try {
+            if (!item?.created_at || item.caja_fuerte !== CHECK_IN_VALUE) return false;
+            const itemDate = new Date(item.created_at);
+            return !isNaN(itemDate.getTime()) && 
+                   itemDate >= timeRanges.checkIn.startTime && 
+                   itemDate <= timeRanges.checkIn.endTime;
+          } catch (error) {
+            console.warn('⚠️ Error filtrando Check In:', item, error);
+            return false;
+          }
+        })
+        .map(item => createRevisionItem(item, 'Check In'))
+        .filter(item => item !== null) // Remover items inválidos
+        .sort((a, b) => {
+          if (!a?.fecha || !b?.fecha) return 0;
+          return b.fecha.getTime() - a.fecha.getTime();
+        });
+
+      // Check Outs: Solo día actual completo
+      const checkOuts = revisioinesData
+        .filter(item => {
+          try {
+            if (!item?.created_at || item.caja_fuerte !== CHECK_OUT_VALUE) return false;
+            const itemDate = new Date(item.created_at);
+            return !isNaN(itemDate.getTime()) && itemDate >= todayStart && itemDate < todayEnd;
+          } catch (error) {
+            console.warn('⚠️ Error filtrando Check Out:', item, error);
+            return false;
+          }
+        })
+        .map(item => createRevisionItem(item, 'Check Out'))
+        .filter(item => item !== null) // Remover items inválidos
+        .sort((a, b) => {
+          if (!a?.fecha || !b?.fecha) return 0;
+          return b.fecha.getTime() - a.fecha.getTime();
+        });
+
+      // Upsells: 18:00 día anterior hasta 22:00 día actual
+      const upsells = revisioinesData
+        .filter(item => {
+          try {
+            if (!item?.created_at || item.caja_fuerte !== UPSELL_VALUE) return false;
+            const itemDate = new Date(item.created_at);
+            return !isNaN(itemDate.getTime()) && 
+                   itemDate >= timeRanges.upsell.startTime && 
+                   itemDate <= timeRanges.upsell.endTime;
+          } catch (error) {
+            console.warn('⚠️ Error filtrando Upsell:', item, error);
+            return false;
+          }
+        })
+        .map(item => createRevisionItem(item, 'Upsell'))
+        .filter(item => item !== null) // Remover items inválidos
+        .sort((a, b) => {
+          if (!a?.fecha || !b?.fecha) return 0;
+          return b.fecha.getTime() - a.fecha.getTime();
+        });
+
+      console.log(`✅ Datos procesados - Check Ins: ${checkIns.length}, Check Outs: ${checkOuts.length}, Upsells: ${upsells.length}`);
+
+      return { checkIns, checkOuts, upsells };
+    } catch (error) {
+      console.error('❌ Error procesando datos:', error);
+      return { checkIns: [], checkOuts: [], upsells: [] };
+    }
+  }, [revisioinesData, getTimeRanges]);
 
   // 🛡️ Guards de renderizado
   if (authLoading) {
@@ -362,8 +578,9 @@ export default function CheckInOutPage() {
     </section>
   );
 
-  const { startTime, endTime } = getTimeRange();
-  const timeRangeText = `Desde ${startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${endTime.toLocaleDateString('es-ES')} a las 12:00`;
+  const timeRanges = getTimeRanges();
+  const checkInTimeText = `Desde ${timeRanges.checkIn.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.checkIn.endTime.toLocaleDateString('es-ES')} a las 12:00`;
+  const upsellTimeText = `Desde ${timeRanges.upsell.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.upsell.endTime.toLocaleDateString('es-ES')} a las 22:00`;
   const todayText = `Día actual: ${new Date().toLocaleDateString('es-ES')}`;
 
   return (
@@ -420,7 +637,7 @@ export default function CheckInOutPage() {
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
           </svg>,
-          timeRangeText
+          checkInTimeText
         )}
 
         {renderSection(
@@ -448,7 +665,7 @@ export default function CheckInOutPage() {
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>,
-          timeRangeText
+          upsellTimeText
         )}
 
         {/* Footer */}

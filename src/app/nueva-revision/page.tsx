@@ -9,6 +9,8 @@ import { uploadEvidenciaToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 
+// 🚀 NUEVO: Importar función de compresión avanzada
+import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@/lib/imageUtils';
 
 // Importar nuevos componentes
 import FormField from '@/components/revision/FormField';
@@ -150,6 +152,26 @@ export default function NuevaRevision() {
     evidencia_01: { original: 0, compressed: 0 },
     evidencia_02: { original: 0, compressed: 0 },
     evidencia_03: { original: 0, compressed: 0 },
+  });
+
+  // 🚀 NUEVO: Estados para compresión avanzada
+  const [compressionProgress, setCompressionProgress] = useState<Record<EvidenceField, {
+    attempt: number;
+    currentSize: number;
+    targetSize: number;
+    quality: number;
+    resolution: string;
+    status: 'compressing' | 'compressed' | 'timeout' | 'error';
+  } | null>>({
+    evidencia_01: null,
+    evidencia_02: null,
+    evidencia_03: null,
+  });
+
+  const [isCompressing, setIsCompressing] = useState<Record<EvidenceField, boolean>>({
+    evidencia_01: false,
+    evidencia_02: false,
+    evidencia_03: false,
   });
   
   // Estados para modal
@@ -304,10 +326,22 @@ export default function NuevaRevision() {
   const limpiarFormulario = useCallback(() => {
     console.log('🧹 INICIANDO LIMPIEZA COMPLETA DEL FORMULARIO...');
     
-    // 1. 🧹 Limpiar localStorage
+    // 1. 🧹 Revocar URLs de imágenes antes de limpiar
+    (['evidencia_01', 'evidencia_02', 'evidencia_03'] as EvidenceField[]).forEach(field => {
+      if (compressedFiles[field]) {
+        try {
+          const url = URL.createObjectURL(compressedFiles[field]!);
+          revokeImagePreview(url);
+        } catch (error) {
+          // Silenciar error si no se puede revocar
+        }
+      }
+    });
+    
+    // 2. 🧹 Limpiar localStorage
     clearLocalStorage();
     
-    // 2. 🧹 Resetear estados del formulario
+    // 3. 🧹 Resetear estados del formulario
     setFormData({ ...initialFormData, quien_revisa: user || '' });
     setFileData(initialFileData);
     setCompressedFiles(initialFileData);
@@ -321,11 +355,24 @@ export default function NuevaRevision() {
       evidencia_02: { original: 0, compressed: 0 },
       evidencia_03: { original: 0, compressed: 0 },
     });
+    
+    // 4. 🚀 NUEVO: Resetear estados avanzados
+    setCompressionProgress({
+      evidencia_01: null,
+      evidencia_02: null,
+      evidencia_03: null,
+    });
+    setIsCompressing({
+      evidencia_01: false,
+      evidencia_02: false,
+      evidencia_03: false,
+    });
+    
     setHighlightedField('casita');
     
-    // 3. 🧹 Estados limpiados
+    // 5. 🧹 Estados limpiados
     
-    // 4. 🧹 Forzar garbage collection si está disponible (solo en desarrollo)
+    // 6. 🧹 Forzar garbage collection si está disponible (solo en desarrollo)
     if (typeof window !== 'undefined' && 'gc' in window && process.env.NODE_ENV === 'development') {
       try {
         (window as any).gc();
@@ -336,7 +383,7 @@ export default function NuevaRevision() {
     }
     
     console.log('✅ LIMPIEZA COMPLETA TERMINADA - Memoria liberada');
-  }, [user]);
+  }, [user, compressedFiles]);
 
   // 🚀 OPTIMIZACIÓN 4: Input handler simplificado y optimizado
   const handleInputChange = useCallback((field: keyof RevisionData, value: string) => {
@@ -346,141 +393,145 @@ export default function NuevaRevision() {
     debouncedSave(newFormData);
   }, [formData, debouncedSave]);
 
-  // Función de compresión de imágenes
-  const comprimirImagenWebP = useCallback((file: File): Promise<File> => {
-    console.log('🚀 INICIANDO COMPRESIÓN:', file.name, file.type, `${(file.size / 1024).toFixed(1)} KB`);
-    
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      let objectUrl: string | null = null;
-      
-      img.onload = () => {
-        // 🧹 LIMPIEZA: Liberar Object URL inmediatamente después de cargar
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-          objectUrl = null;
-        }
-        
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
-            height = maxHeight;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          const compressRecursively = (quality: number, attempt: number = 1): void => {
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  const sizeKB = blob.size / 1024;
-                  console.log(`📊 Intento ${attempt}: calidad ${(quality * 100).toFixed(0)}% = ${sizeKB.toFixed(1)} KB`);
-                  
-                  if (sizeKB <= 250 || attempt >= 8) {
-                    const compressedFile = new File([blob], file.name, {
-                      type: 'image/webp',
-                      lastModified: Date.now(),
-                    });
-                    
-                    console.log(`✅ COMPRESIÓN COMPLETADA: ${sizeKB.toFixed(1)} KB (${attempt} intentos)`);
-                    resolve(compressedFile);
-                  } else {
-                    const newQuality = Math.max(0.1, quality - 0.1);
-                    compressRecursively(newQuality, attempt + 1);
-                  }
-                } else {
-                  reject(new Error('No se pudo generar el blob de la imagen'));
-                }
-              },
-              'image/webp',
-              quality
-            );
-          };
-          
-          compressRecursively(0.8);
-        } else {
-          reject(new Error('No se pudo obtener el contexto del canvas'));
-        }
-      };
-      
-      img.onerror = () => {
-        // 🧹 LIMPIEZA: Liberar Object URL en caso de error
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-        }
-        reject(new Error('Error al cargar la imagen'));
-      };
-      
-      // 🧹 SEGURIDAD: Crear Object URL y guardarlo para limpiar después
-      objectUrl = URL.createObjectURL(file);
-      img.src = objectUrl;
-    });
-  }, []);
-
-  // Manejar selección de archivos
+  // 🚀 NUEVA: Función de manejo de archivos con compresión avanzada
   const manejarArchivoSeleccionado = async (field: EvidenceField, file: File) => {
     if (!file.type.startsWith('image/')) {
       showError('Por favor selecciona un archivo de imagen válido');
       return;
     }
 
+    console.log(`🚀 Iniciando compresión avanzada para ${field}:`, {
+      nombre: file.name,
+      tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,
+      tipo: file.type
+    });
+
     // 🧹 LIMPIEZA: Si ya había un archivo, limpiar estado anterior
     if (fileData[field] || compressedFiles[field]) {
       console.log(`🧹 Limpiando archivo anterior en ${field}`);
+      if (compressedFiles[field]) {
+        // Revocar URL anterior si existe
+        try {
+          const oldUrl = URL.createObjectURL(compressedFiles[field]!);
+          revokeImagePreview(oldUrl);
+        } catch (error) {
+          // Silenciar error si no se puede revocar
+        }
+      }
     }
 
     // Actualizar estado del archivo original
     setFileData(prev => ({ ...prev, [field]: file }));
     setFileSizes(prev => ({ ...prev, [field]: { ...prev[field], original: file.size } }));
+    setIsCompressing(prev => ({ ...prev, [field]: true }));
+    setCompressionProgress(prev => ({ ...prev, [field]: null }));
 
     try {
-      // Iniciar compresión
-      setCompressionStatus(prev => ({
-        ...prev,
-        [field]: { status: 'compressing', progress: 50, stage: 'Comprimiendo imagen...' }
-      }));
+      // 🎯 Configuración personalizada para evidencias
+      const compressionConfig = {
+        targetSizeKB: 200,      // Objetivo más agresivo para evidencias
+        maxResolution: 1600,    // Resolución máxima
+        maxQuality: 0.85,       // Calidad máxima
+        minQuality: 0.35,       // Calidad mínima
+        maxAttempts: 10,        // Más intentos para mejor resultado
+        timeout: 30000,         // 30 segundos timeout
+        format: 'webp' as const // Formato WebP para mejor compresión
+      };
 
-      const compressedFile = await comprimirImagenWebP(file);
+      // 📈 Callback de progreso para mostrar estado en tiempo real
+      const onProgress = (progress: {
+        attempt: number;
+        currentSize: number;
+        targetSize: number;
+        quality: number;
+        resolution: string;
+        status: 'compressing' | 'compressed' | 'timeout' | 'error';
+      }) => {
+        console.log(`📊 Progreso ${field}:`, {
+          intento: `${progress.attempt}/10`,
+          tamaño_actual: `${(progress.currentSize / 1024).toFixed(1)}KB`,
+          objetivo: `${(progress.targetSize / 1024).toFixed(1)}KB`,
+          calidad: `${Math.round(progress.quality * 100)}%`,
+          resolución: progress.resolution,
+          estado: progress.status
+        });
 
-      // Actualizar estado de compresión completada
+        setCompressionProgress(prev => ({ ...prev, [field]: progress }));
+
+        // Actualizar estado legacy para compatibilidad con EvidenceUploader
+        if (progress.status === 'compressing') {
+          setCompressionStatus(prev => ({
+            ...prev,
+            [field]: { 
+              status: 'compressing', 
+              progress: Math.min(90, (progress.attempt / 10) * 100), 
+              stage: `Comprimiendo... (Intento ${progress.attempt})` 
+            }
+          }));
+        }
+      };
+
+      // 🚀 Ejecutar compresión avanzada
+      const compressedFile = await compressImageAdvanced(file, compressionConfig, onProgress);
+
+      console.log(`✅ Compresión completada para ${field}:`, {
+        tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,
+        tamaño_comprimido: `${(compressedFile.size / 1024).toFixed(1)}KB`,
+        reducción: `${(((file.size - compressedFile.size) / file.size) * 100).toFixed(1)}%`,
+        formato: compressedFile.type
+      });
+
+      // Actualizar estados con resultado exitoso
       setCompressedFiles(prev => ({ ...prev, [field]: compressedFile }));
       setFileSizes(prev => ({ 
         ...prev, 
         [field]: { ...prev[field], compressed: compressedFile.size } 
       }));
+      
+      // Estado legacy para compatibilidad
       setCompressionStatus(prev => ({
         ...prev,
         [field]: { status: 'completed', progress: 100, stage: 'Compresión completada' }
       }));
 
-    } catch (error) {
-      console.error('Error en compresión:', error);
+    } catch (error: any) {
+      console.error(`❌ Error en compresión avanzada de ${field}:`, error);
+
+      // Actualizar estado de error
+      setCompressionProgress(prev => ({
+        ...prev,
+        [field]: {
+          attempt: 0,
+          currentSize: file.size,
+          targetSize: 200 * 1024,
+          quality: 0,
+          resolution: 'N/A',
+          status: 'error'
+        }
+      }));
+
+      // Estado legacy para compatibilidad
       setCompressionStatus(prev => ({
         ...prev,
         [field]: { 
           status: 'error', 
           progress: 0, 
           stage: 'Error en compresión',
-          error: error instanceof Error ? error.message : 'Error desconocido'
+          error: error.message || 'Error desconocido'
         }
       }));
-      showError('Error al comprimir la imagen');
+
+      // Determinar mensaje de error específico
+      let errorMessage = 'Error al comprimir la imagen';
+      if (error.message?.includes('Timeout')) {
+        errorMessage = 'La compresión tardó demasiado. Intenta con una imagen más pequeña.';
+      } else if (error.message?.includes('load')) {
+        errorMessage = 'No se pudo cargar la imagen. Verifica que sea un archivo válido.';
+      }
+
+      showError(errorMessage);
+    } finally {
+      setIsCompressing(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -491,6 +542,17 @@ export default function NuevaRevision() {
     } else {
       // 🧹 LIMPIEZA COMPLETA: Limpiar archivo y todos los estados relacionados
       console.log(`🧹 Limpiando completamente campo ${field}`);
+      
+      // Revocar URL si existe
+      if (compressedFiles[field]) {
+        try {
+          const url = URL.createObjectURL(compressedFiles[field]!);
+          revokeImagePreview(url);
+        } catch (error) {
+          // Silenciar error si no se puede revocar
+        }
+      }
+      
       setFileData(prev => ({ ...prev, [field]: null }));
       setCompressedFiles(prev => ({ ...prev, [field]: null }));
       setCompressionStatus(prev => ({
@@ -501,6 +563,10 @@ export default function NuevaRevision() {
         ...prev,
         [field]: { original: 0, compressed: 0 }
       }));
+      
+      // 🚀 NUEVO: Limpiar estados avanzados
+      setCompressionProgress(prev => ({ ...prev, [field]: null }));
+      setIsCompressing(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -1017,6 +1083,8 @@ export default function NuevaRevision() {
                         onClearFile={clearFile}
                         onImageClick={openModal}
                         required={field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)}
+                        compressionProgress={compressionProgress[field]}
+                        isCompressing={isCompressing[field]}
                       />
                     ))}
                   </div>

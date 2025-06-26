@@ -107,7 +107,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
           show: userRole === 'SuperAdmin'
         },
         {
-          name: 'Check In/Out Revisiones',
+          name: 'Revisiones In/Out',
           href: '/check-in-out',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -127,7 +127,8 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
           ),
           color: 'text-yellow-400',
           show: isLoggedIn
-        }
+        },
+
       ]
     },
     {
@@ -248,7 +249,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                           {'href' in item ? (
                             <button
                               onClick={() => handleLinkClick(item.href)}
-                              className="w-full flex items-center gap-4 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
+                              className="w-full flex items-center gap-3 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
                             >
                               {/* Efecto de hover brillante */}
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
@@ -263,7 +264,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                           ) : (
                             <button
                               onClick={item.onClick}
-                              className="w-full flex items-center gap-4 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
+                              className="w-full flex items-center gap-3 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
                             >
                               {/* Efecto de hover brillante */}
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
@@ -291,7 +292,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                     logout();
                     onClose();
                   }}
-                  className="w-full flex items-center gap-4 px-3 py-3 text-red-300 hover:text-red-200 rounded-xl transition-all duration-300 hover:bg-red-500/10 group relative overflow-hidden"
+                  className="w-full flex items-center gap-3 px-3 py-3 text-red-300 hover:text-red-200 rounded-xl transition-all duration-300 hover:bg-red-500/10 group relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
                   

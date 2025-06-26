@@ -147,13 +147,11 @@ export default function EvidenceUploader({
       </div>
 
       {/* Indicador de compresión */}
-      {(compressionProgress || isCompressing || compressionStatus.status !== 'idle') && (
+      {compressionStatus.status !== 'idle' && (
         <CompressionIndicator 
-          isCompressing={isCompressing || compressionStatus.status === 'compressing'}
-          progress={compressionProgress || undefined}
-          originalSize={fileSizes.original}
-          fileName={file?.name}
-          className="mt-3"
+          status={compressionStatus}
+          fileSizes={fileSizes}
+          fieldName={getFieldLabel()}
         />
       )}
 

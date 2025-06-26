@@ -11,6 +11,15 @@ interface CompressionOptions {
   maxSizeKB?: number;
 }
 
+interface CompressionProgress {
+  attempt: number;
+  currentSize: number;
+  targetSize: number;
+  quality: number;
+  resolution: string;
+  status: 'compressing' | 'compressed' | 'timeout' | 'error';
+}
+
 export class ImageCompressor {
   private static canvas: HTMLCanvasElement | null = null;
   private static ctx: CanvasRenderingContext2D | null = null;

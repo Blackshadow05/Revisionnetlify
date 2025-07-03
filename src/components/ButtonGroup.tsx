@@ -111,29 +111,36 @@ export default function ButtonGroup({
 
   return (
     <div className="space-y-3">
-      <label className="block text-base font-semibold text-[#ff8c42] flex items-center gap-2">
+      <label className="block text-base font-semibold bg-black/40 text-white px-3 py-1 rounded-lg shadow-sm flex items-center gap-2">
         {getIcon()}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <div className={`flex flex-wrap gap-3 ${highlight ? 'animate-pulse border-2 border-[#00ff00] shadow-green-500/50 shadow-lg p-3 rounded-xl backdrop-blur-sm' : ''}`}>
+      {/* Contenedor de botones: wrap para ajustarse a pantallas pequeñas */}
+      <div
+        className={`flex flex-wrap gap-2 ${
+          highlight ?
+            'border-2 border-[#00ff00] shadow-green-500/50 shadow-lg p-2 rounded-xl backdrop-blur-sm' : ''
+        }`}
+      >
         {options.map(option => (
           <button
             key={option}
             type="button"
             onClick={() => onSelect(option)}
             className={`
-              px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[60px]
+              px-5 py-3 rounded-xl text-sm font-semibold border-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[72px]
               ${selectedValue === option
-                ? 'bg-gradient-to-br from-pink-500 to-orange-400 text-white border-pink-300/40 shadow-orange-500/25 shadow-lg'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-[#ff8c42]/50 hover:text-[#ff8c42] hover:bg-[#ff8c42]/5 shadow-gray-100'
+                ? 'bg-gradient-to-br from-[#c9a45c] to-[#f0c987] text-[#1a1f35] border-[#c9a45c]/60 shadow-lg'
+                : 'bg-[#1e2538]/70 text-gray-300 border-[#3d4659]/40 hover:bg-[#2a3347]/80 hover:border-[#3d4659]/60'
               }
             `}
+            aria-pressed={selectedValue === option}
           >
             <span className="flex items-center justify-center gap-1.5">
               {/* Icono de check para opción seleccionada */}
               {selectedValue === option && (
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-[#1a1f35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               )}

@@ -4,6 +4,7 @@ import { useUpload } from '@/context/UploadContext';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import PageTitle from '@/components/ui/PageTitle';
 
 export default function SubidasPendientes() {
   const router = useRouter();
@@ -72,7 +73,7 @@ export default function SubidasPendientes() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-[#c9a45c]">Monitor de Subidas</h1>
+              <PageTitle size="sm">Monitor de Subidas</PageTitle>
               <p className="text-gray-400 mt-1">Seguimiento de todas las subidas de imágenes</p>
             </div>
             <div className="flex gap-2">

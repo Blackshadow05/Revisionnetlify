@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Roboto } from 'next/font/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { UploadProvider } from '@/context/UploadContext'
 import { ToastProvider } from '@/context/ToastContext'
@@ -8,9 +8,9 @@ import UploadIndicator from '@/components/UploadIndicator'
 import UploadRecovery from '@/components/UploadRecovery'
 
 // 🚀 OPTIMIZADO: Solo las variantes esenciales con font-display swap
-const inter = Inter({ 
+const roboto = Roboto({ 
   subsets: ['latin'],
-  weight: ['400', '500', '600'], // Reducido de 5 a 3 variantes
+  weight: ['400', '500', '700'], // Usando pesos comunes para Roboto
   display: 'swap', // Evita FOIT - Flash of Invisible Text
   preload: true
 })
@@ -267,7 +267,7 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body className={inter.className}>
+      <body className={roboto.className}>
         <AuthProvider>
           <ToastProvider>
                       <UploadProvider>

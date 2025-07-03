@@ -255,30 +255,123 @@ export default function CheckInOutPage() {
     checkConnectionAndLoad();
   }, [authLoading, isLoggedIn, loadData]);
 
+  // 🔄 Sistema de actualización automática en horas clave
+  useEffect(() => {
+    if (!isLoggedIn || loading) return;
+
+    const setupAutoRefresh = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+      
+      // Calcular próxima hora clave (12:00 o 22:00)
+      let nextRefreshTime = new Date(now);
+      
+      if (currentHour < 12) {
+        // Próximo refresh a las 12:00
+        nextRefreshTime.setHours(12, 0, 0, 0);
+      } else if (currentHour < 22) {
+        // Próximo refresh a las 22:00
+        nextRefreshTime.setHours(22, 0, 0, 0);
+      } else {
+        // Próximo refresh a las 12:00 del día siguiente
+        nextRefreshTime.setDate(nextRefreshTime.getDate() + 1);
+        nextRefreshTime.setHours(12, 0, 0, 0);
+      }
+      
+      const timeUntilRefresh = nextRefreshTime.getTime() - now.getTime();
+      
+      console.log(`🔄 Programando actualización automática en ${Math.round(timeUntilRefresh / 1000 / 60)} minutos (a las ${nextRefreshTime.toLocaleTimeString('es-ES')})`);
+      
+      const timeout = setTimeout(() => {
+        console.log('🔄 Actualizando automáticamente por cambio de período de tiempo...');
+        loadData(true);
+        setupAutoRefresh(); // Programar el siguiente refresh
+      }, timeUntilRefresh);
+      
+      return timeout;
+    };
+
+    const timeoutId = setupAutoRefresh();
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isLoggedIn, loading, loadData]);
+
   // 🎯 Debounced refresh para evitar múltiples llamadas (optimizado para móviles)
   const debouncedRefresh = useMemo(
     () => debounce(() => loadData(true), 500), // ✅ Delay más largo para móviles
     [loadData]
   );
 
-  // 🕒 Función para obtener rangos de fechas específicos por tipo
+  // 🕒 Función para obtener rangos de fechas específicos por tipo con ventana deslizante
   const getTimeRanges = useCallback(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const currentHour = now.getHours();
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    // ✅ Check In: 18:00 del día anterior hasta 12:00 del día actual
-    const checkInStart = new Date(yesterday);
+    // 🔄 Lógica de ventana deslizante para Check In
+    // Si ya pasaron las 12:00, usar el período actual (hoy 18:00 → mañana 12:00)
+    // Si no han llegado las 12:00, usar el período anterior (ayer 18:00 → hoy 12:00)
+    let checkInStartDate, checkInEndDate;
+    
+    if (currentHour >= 12) {
+      // Ya pasaron las 12:00 - mostrar período actual hasta mañana 12:00
+      checkInStartDate = new Date(currentDate);
+      checkInEndDate = new Date(currentDate);
+      checkInEndDate.setDate(checkInEndDate.getDate() + 1);
+    } else {
+      // Aún no llegan las 12:00 - mostrar período anterior hasta hoy 12:00
+      checkInStartDate = new Date(currentDate);
+      checkInStartDate.setDate(checkInStartDate.getDate() - 1);
+      checkInEndDate = new Date(currentDate);
+    }
+    
+    const checkInStart = new Date(checkInStartDate);
     checkInStart.setHours(18, 0, 0, 0);
-    const checkInEnd = new Date(today);
+    const checkInEnd = new Date(checkInEndDate);
     checkInEnd.setHours(12, 0, 0, 0);
     
-    // ✅ Upsell: 18:00 del día anterior hasta 22:00 del día actual
-    const upsellStart = new Date(yesterday);
+    // 🔄 Lógica de ventana deslizante para Upsell (período extendido de 28 horas)
+    // Siempre desde 18:00 del día anterior hasta 22:00 del día actual
+    // Solo cambia de período cuando pasan las 22:00 del día actual
+    let upsellStartDate, upsellEndDate;
+    
+    if (currentHour >= 22) {
+      // Ya pasaron las 22:00 - cambiar al siguiente período (hoy 18:00 → mañana 22:00)
+      upsellStartDate = new Date(currentDate);
+      upsellEndDate = new Date(currentDate);
+      upsellEndDate.setDate(upsellEndDate.getDate() + 1);
+    } else {
+      // Antes de las 22:00 - período actual extendido (ayer 18:00 → hoy 22:00)
+      upsellStartDate = new Date(currentDate);
+      upsellStartDate.setDate(upsellStartDate.getDate() - 1);
+      upsellEndDate = new Date(currentDate);
+    }
+    
+    const upsellStart = new Date(upsellStartDate);
     upsellStart.setHours(18, 0, 0, 0);
-    const upsellEnd = new Date(today);
+    const upsellEnd = new Date(upsellEndDate);
     upsellEnd.setHours(22, 0, 0, 0);
+    
+    console.log('🕒 Rangos de tiempo actualizados automáticamente:', {
+      currentTime: now.toLocaleString('es-ES'),
+      currentHour,
+      checkIn: {
+        from: checkInStart.toLocaleString('es-ES'),
+        to: checkInEnd.toLocaleString('es-ES'),
+        status: currentHour >= 12 ? 'Período actual' : 'Período anterior'
+      },
+      upsell: {
+        from: upsellStart.toLocaleString('es-ES'),
+        to: upsellEnd.toLocaleString('es-ES'),
+        status: currentHour >= 22 ? 'Nuevo período' : 'Período extendido (28 horas)',
+        duration: '28 horas continuas'
+      }
+    });
     
     return { 
       checkIn: { startTime: checkInStart, endTime: checkInEnd },
@@ -406,7 +499,7 @@ export default function CheckInOutPage() {
       console.error('❌ Error procesando datos:', error);
       return { checkIns: [], checkOuts: [], upsells: [] };
     }
-  }, [revisioinesData, getTimeRanges]);
+  }, [revisioinesData, getTimeRanges, new Date().getHours()]); // 🔄 Actualizar cuando cambie la hora
 
   // 🛡️ Guards de renderizado
   if (authLoading) {
@@ -579,104 +672,117 @@ export default function CheckInOutPage() {
   );
 
   const timeRanges = getTimeRanges();
-  const checkInTimeText = `Desde ${timeRanges.checkIn.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.checkIn.endTime.toLocaleDateString('es-ES')} a las 12:00`;
-  const upsellTimeText = `Desde ${timeRanges.upsell.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.upsell.endTime.toLocaleDateString('es-ES')} a las 22:00`;
-  const todayText = `Día actual: ${new Date().toLocaleDateString('es-ES')}`;
+  const now = new Date();
+  const currentHour = now.getHours();
+  
+  // 📅 Textos dinámicos que se actualizan según la hora actual
+  const checkInTimeText = `Desde ${timeRanges.checkIn.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.checkIn.endTime.toLocaleDateString('es-ES')} a las 12:00 ${currentHour >= 12 ? '(Período actual)' : '(Período anterior)'}`;
+  const upsellTimeText = `Desde ${timeRanges.upsell.startTime.toLocaleDateString('es-ES')} a las 18:00 hasta ${timeRanges.upsell.endTime.toLocaleDateString('es-ES')} a las 22:00 ${currentHour >= 22 ? '(Nuevo período)' : '(Período extendido 28h)'}`;
+  const todayText = `Día actual: ${now.toLocaleDateString('es-ES')} - ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="bg-[#2a3347]/95 rounded-2xl border border-[#c9a45c]/20 p-6 md:p-8 shadow-2xl">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-[#ff8c42] bg-clip-text text-transparent">
-                  Check In/Out Revisiones
-                </h1>
-                <p className="text-gray-300 mt-2">Monitoreo de actividades de revisión</p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {/* Botón de refresh */}
-                <button
-                  onClick={debouncedRefresh}
-                  disabled={refreshing}
-                  className="px-4 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-xl transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {refreshing ? 'Actualizando...' : 'Actualizar'}
-                </button>
+    <main
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        background: '#334d50',
+        backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)',
+        ['WebkitBackgroundImage' as any]: '-webkit-linear-gradient(to left, #cbcaa5, #334d50)'
+      }}
+    >
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <header className="mb-8">
+            <div className="bg-[#2a3347]/95 rounded-2xl border border-[#c9a45c]/20 p-6 md:p-8 shadow-2xl">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-[#ff8c42] bg-clip-text text-transparent">
+                    Check In/Out Revisiones
+                  </h1>
+                  <p className="text-gray-300 mt-2">Monitoreo de actividades de revisión</p>
+                </div>
                 
-                {/* Botón volver */}
-                <button
-                  onClick={() => router.push('/')}
-                  className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 border border-gray-500/40 text-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Volver
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Botón de refresh */}
+                  <button
+                    onClick={debouncedRefresh}
+                    disabled={refreshing}
+                    className="px-4 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-xl transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {refreshing ? 'Actualizando...' : 'Actualizar'}
+                  </button>
+                  
+                  {/* Botón volver */}
+                  <button
+                    onClick={() => router.push('/')}
+                    className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 border border-gray-500/40 text-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Secciones de datos */}
-        {renderSection(
-          'Check Ins',
-          processedData.checkIns,
-          {
-            bg: 'bg-green-500/20',
-            text: 'text-green-400',
-            border: 'border border-green-500/20'
-          },
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-          </svg>,
-          checkInTimeText
-        )}
+          {/* Secciones de datos */}
+          {renderSection(
+            'Check Ins',
+            processedData.checkIns,
+            {
+              bg: 'bg-green-500/20',
+              text: 'text-green-400',
+              border: 'border border-green-500/20'
+            },
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>,
+            checkInTimeText
+          )}
 
-        {renderSection(
-          'Check Outs',
-          processedData.checkOuts,
-          {
-            bg: 'bg-orange-500/20',
-            text: 'text-orange-400',
-            border: 'border border-orange-500/20'
-          },
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>,
-          todayText
-        )}
+          {renderSection(
+            'Check Outs',
+            processedData.checkOuts,
+            {
+              bg: 'bg-orange-500/20',
+              text: 'text-orange-400',
+              border: 'border border-orange-500/20'
+            },
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>,
+            todayText
+          )}
 
-        {renderSection(
-          'Upsells',
-          processedData.upsells,
-          {
-            bg: 'bg-blue-500/20',
-            text: 'text-blue-400',
-            border: 'border border-blue-500/20'
-          },
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>,
-          upsellTimeText
-        )}
+          {renderSection(
+            'Upsells',
+            processedData.upsells,
+            {
+              bg: 'bg-blue-500/20',
+              text: 'text-blue-400',
+              border: 'border border-blue-500/20'
+            },
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>,
+            upsellTimeText
+          )}
 
-        {/* Footer */}
-        <footer className="mt-12 text-center">
-          <div className="bg-[#2a3347]/95 rounded-2xl border border-[#c9a45c]/20 p-4 shadow-2xl">
-            <p className="text-sm text-gray-400">
-              © {new Date().getFullYear()} Revision Casitas AG. Todos los derechos reservados.
-            </p>
-          </div>
-        </footer>
+          {/* Footer */}
+          <footer className="mt-12 text-center">
+            <div className="bg-[#2a3347]/95 rounded-2xl border border-[#c9a45c]/20 p-4 shadow-2xl">
+              <p className="text-sm text-gray-400">
+                © {new Date().getFullYear()} Revision Casitas AG. Todos los derechos reservados.
+              </p>
+            </div>
+          </footer>
+        </div>
       </div>
-    </div>
+    </main>
   );
 } 

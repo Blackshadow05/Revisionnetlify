@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 
 import Sidebar from '@/components/Sidebar';
 import ImageModal from '@/components/revision/ImageModal';
+import PageTitle from '@/components/ui/PageTitle';
 
 interface RevisionData {
   id?: string;
@@ -73,7 +74,7 @@ export default function Home() {
   
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50); // Por defecto PC
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Función para manejar el toggle del menú
   const handleMenuToggle = () => {
@@ -108,7 +109,7 @@ export default function Home() {
   useEffect(() => {
     const updateItemsPerPage = () => {
       const isMobile = window.innerWidth < 768;
-      setItemsPerPage(isMobile ? 20 : 50);
+      setItemsPerPage(isMobile ? 10 : 20);
       setCurrentPage(1); // Reset página al cambiar tamaño
     };
 
@@ -364,22 +365,42 @@ export default function Home() {
 
 
   return (
-    <main className="min-h-screen bg-slate-900 relative overflow-hidden">
+    <main className="min-h-screen relative overflow-hidden" style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}>
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Botón del menú lateral en posición fija */}
-        <button 
-          className="fixed top-8 left-8 z-50 w-12 h-12 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-all duration-200 group"
-          onClick={handleMenuToggle}
-          type="button"
-          aria-label="Abrir menú lateral"
-        >
-          <div className="flex flex-col gap-1">
-            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-opacity duration-200 ${showSidebar ? 'opacity-0' : ''}`}></div>
-            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+        {/* Hero Section */}
+        <div className="relative text-center mb-12 pl-16 sm:pl-0">
+          {/* Botón del menú lateral dentro del hero */}
+          <button 
+            className="absolute left-0 z-20 w-11 h-11 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-all duration-200 group top-4 md:top-2"
+            onClick={handleMenuToggle}
+            type="button"
+            aria-label="Abrir menú lateral"
+          >
+            <div className="flex flex-col gap-1">
+              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? 'rotate-45 translate-y-1.5' : ''}`}></div>
+              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-opacity duration-200 ${showSidebar ? 'opacity-0' : ''}`}></div>
+              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+            </div>
+          </button>
+
+          {/* Efecto de resplandor de fondo */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-3xl rounded-full transform scale-150"></div>
+          
+          {/* Título principal uniforme */}
+          <PageTitle size="md">
+            Revisión de<br />Casitas
+          </PageTitle>
+
+          {/* Línea decorativa animada */}
+          <div className="relative mt-6 h-1 w-32 mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
           </div>
-        </button>
+        </div>
 
         {/* Sidebar */}
         <Sidebar 
@@ -387,30 +408,6 @@ export default function Home() {
           onClose={() => setShowSidebar(false)}
           onShowReportModal={() => setShowReportModal(true)}
         />
-
-                {/* Hero Section */}
-        <div className="text-center mb-12">
-          <div className="relative">
-            {/* Efecto de resplandor de fondo */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-3xl rounded-full transform scale-150"></div>
-            
-            {/* Título principal con efectos modernos */}
-            <h1 className="relative text-4xl md:text-6xl lg:text-7xl font-black tracking-tight">
-              <span className="block bg-gradient-to-r from-white via-[#f0c987] to-[#c9a45c] bg-clip-text text-transparent drop-shadow-2xl">
-                Revisión
-              </span>
-              <span className="block bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-white bg-clip-text text-transparent mt-2 transform -translate-x-2">
-                de Casitas
-              </span>
-            </h1>
-            
-            {/* Línea decorativa animada */}
-            <div className="relative mt-6 h-1 w-32 mx-auto">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
 
         {/* Barra de Acciones Mejorada */}
         <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-6 border border-[#3d4659]/50 mb-8">
@@ -487,7 +484,7 @@ export default function Home() {
         <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-6 border border-[#3d4659]/50 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Búsqueda Principal */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative order-2 lg:order-1">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -516,7 +513,7 @@ export default function Home() {
             </div>
 
             {/* Filtro por Caja Fuerte */}
-            <div className="relative">
+            <div className="relative order-1 lg:order-2">
               <select
                 value={cajaFuerteFilter}
                 onChange={(e) => setCajaFuerteFilter(e.target.value)}
@@ -559,7 +556,7 @@ export default function Home() {
                 <div className="overflow-hidden rounded-xl shadow-[0_8px_32px_rgb(0_0_0/0.2)] backdrop-blur-md bg-[#1e2538]/80 border border-[#3d4659]/50">
                   <div 
                     ref={tableContainerRef} 
-                    className="table-container overflow-x-auto relative cursor-grab"
+                    className="table-container overflow-x-auto overflow-y-auto relative cursor-grab h-[70vh] min-h-[500px] max-h-[800px]"
                     onMouseDown={handleMouseDown}
                     onMouseLeave={handleMouseLeave}
                     onMouseUp={handleMouseUp}
@@ -568,8 +565,8 @@ export default function Home() {
                     <table className="min-w-full divide-y divide-[#3d4659]/50">
                       <thead className="sticky top-0 z-30">
                         <tr className="bg-gradient-to-r from-[#1e2538]/90 to-[#2a3347]/90 backdrop-blur-md text-gray-300 text-left">
-                          <th className="fixed-column-1 bg-gradient-to-r from-[#1e2538]/90 to-[#2a3347]/90 backdrop-blur-md px-3 py-2 md:px-4 md:py-3 border-r border-[#3d4659]/50">Fecha</th>
-                          <th className="fixed-column-2 bg-gradient-to-r from-[#1e2538]/90 to-[#2a3347]/90 backdrop-blur-md px-3 py-2 md:px-4 md:py-3 border-r border-[#3d4659]/50">Casita</th>
+                          <th className="fixed-column-1 bg-gradient-to-r from-[#1e2538]/90 to-[#2a3347]/90 backdrop-blur-md px-3 py-3 md:px-4 md:py-4 border-r border-[#3d4659]/50">Fecha</th>
+                          <th className="fixed-column-2 bg-gradient-to-r from-[#1e2538]/90 to-[#2a3347]/90 backdrop-blur-md px-3 py-3 md:px-4 md:py-4 border-r border-[#3d4659]/50">Casita</th>
                           <th className="px-3 py-2 md:px-4 md:py-3">Quien revisa</th>
                           <th className="px-3 py-2 md:px-4 md:py-3">Caja fuerte</th>
                           <th className="px-3 py-2 md:px-4 md:py-3">Puertas/Ventanas</th>
@@ -646,7 +643,7 @@ export default function Home() {
                                 </span>
                               </div>
                             </td>
-                            <td className="fixed-column-2 bg-gradient-to-r from-[#1a1f35]/90 to-[#1c2138]/90 backdrop-blur-md px-3 py-2 md:px-4 md:py-3 border-r border-[#3d4659]/50">
+                            <td className="fixed-column-2 bg-gradient-to-r from-[#1a1f35]/90 to-[#1c2138]/90 backdrop-blur-md px-3 py-3 md:px-4 md:py-4 border-r border-[#3d4659]/50">
                               <button
                                 onClick={() => {
                                   console.log('ID de la revisión:', row.id);

@@ -12,6 +12,7 @@ import { uploadNotaToCloudinary } from '@/lib/cloudinary';
 
 import { useToast } from '@/context/ToastContext';
 import ImageModal from '@/components/revision/ImageModal';
+import InfoCard from '@/components/ui/InfoCard';
 
 // Componente memoizado para las imágenes de evidencia
 const EvidenceImage = memo(({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) => (
@@ -545,7 +546,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
     // Campos principales con estilo especial
     if (key === 'casita') {
       return (
-        <div key={key} className="bg-gradient-to-br from-[#c9a45c]/20 to-[#f0c987]/20 backdrop-blur-sm p-6 rounded-xl border border-[#c9a45c]/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#c9a45c]/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
@@ -568,7 +569,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
     if (key === 'created_at') {
       return (
-        <div key={key} className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm p-6 rounded-xl border border-blue-500/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
@@ -591,7 +592,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
     if (key === 'quien_revisa') {
       return (
-        <div key={key} className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-sm p-6 rounded-xl border border-green-500/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
@@ -614,7 +615,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
 
     if (key === 'caja_fuerte') {
       return (
-        <div key={key} className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm p-6 rounded-xl border border-purple-500/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
@@ -693,32 +694,27 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
       );
     }
 
-    // Campos regulares con estilo sutil
+    // Campos regulares: usar InfoCard para un estilo coherente
+    const editable = isEditing && !!editedData && !nonEditableFields.includes(key);
+    const displayValue = value && value !== '' && value !== '0' ? (value as string) : undefined;
+
+    // Determinar acento según valor (simple ejemplo)
+    let accent: 'default' | 'success' | 'error' = 'default';
+    if (typeof displayValue === 'string') {
+      const valLower = displayValue.toLowerCase();
+      if (['ok', 'bien', 'si', 'sí', 'listo'].includes(valLower)) accent = 'success';
+      if (['falta', 'no', 'mal'].includes(valLower)) accent = 'error';
+    }
+
     return (
-      <div key={key} className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-sm p-4 rounded-lg border border-gray-600/40 shadow-md hover:shadow-lg hover:border-gray-500/50 transition-all duration-300 relative group">
-        <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-gray-600/5 to-transparent rounded-full -translate-y-3 translate-x-3 group-hover:from-gray-500/10"></div>
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"></div>
-            <h3 className="text-sm font-semibold text-orange-400/90 group-hover:text-orange-400 transition-colors">{label}</h3>
-          </div>
-          {isEditing && editedData && !nonEditableFields.includes(key) ? (
-            <input
-              type="text"
-              value={editedData[key] as string}
-              onChange={(e) => handleInputChange(key, e.target.value)}
-              className="w-full px-3 py-2 bg-[#1e2538]/80 border border-gray-600/50 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400/50 transition-all backdrop-blur-sm"
-              placeholder={`Editar ${label.toLowerCase()}...`}
-            />
-          ) : (
-            <p className="text-gray-200 font-medium group-hover:text-white transition-colors">
-              {value && value !== '' && value !== '0' ? (value as string) : (
-                <span className="text-gray-500 italic">Sin información</span>
-              )}
-            </p>
-          )}
-        </div>
-      </div>
+      <InfoCard
+        key={key}
+        label={label}
+        value={displayValue}
+        editable={editable}
+        accent={accent}
+        onChange={(newVal) => handleInputChange(key, newVal)}
+      />
     );
   };
 
@@ -728,7 +724,12 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
       
       {/* Loading skeleton que simula la estructura real */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden"
+          style={{
+            background: '#334d50',
+            backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+          }}
+        >
           
           {/* Header skeleton */}
           <div className="bg-gradient-to-r from-[#c9a45c]/10 to-[#f0c987]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
@@ -872,7 +873,10 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
   );
 
   return (
-          <main className="min-h-screen bg-slate-900 relative overflow-hidden">
+    <main className="min-h-screen relative overflow-hidden" style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}>
 
       {/* Modal de imagen simplificado */}
       <ImageModal 
@@ -882,7 +886,12 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
       />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden">
+        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden"
+          style={{
+            background: '#334d50',
+            backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+          }}
+        >
           {/* Header con gradiente y efectos */}
           <div className="bg-gradient-to-r from-[#c9a45c]/10 to-[#f0c987]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -897,13 +906,8 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                   <div className="absolute -inset-2 bg-gradient-to-r from-[#c9a45c]/10 via-[#f0c987]/10 to-[#c9a45c]/10 blur-xl rounded-2xl"></div>
                   
                   <div className="relative">
-                    <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-                      <span className="block bg-gradient-to-r from-white via-[#f0c987] to-[#c9a45c] bg-clip-text text-transparent drop-shadow-lg">
-                        Detalles de
-                      </span>
-                      <span className="block bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-white bg-clip-text text-transparent mt-1 transform translate-x-1">
-                        la Revisión
-                      </span>
+                    <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] leading-tight">
+                      Detalles de la Revisión
                     </h1>
                     
                     {/* Badge moderno para la casita */}
@@ -997,7 +1001,12 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                 </h2>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                style={{
+                  background: '#334d50',
+                  backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+                }}
+              >
                 {[
                   'casita', 'quien_revisa', 'created_at', 'caja_fuerte',
                   'puertas_ventanas', 'chromecast', 'binoculares', 'trapo_binoculares',
@@ -1006,7 +1015,6 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                   'bulto', 'sombrero', 'bolso_yute', 'camas_ordenadas', 'cola_caballo',
                   'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas'
                 ].filter((key) => {
-                  // Mostrar siempre los campos especiales, los demás solo si tienen valor válido
                   if ([
                     'casita', 'quien_revisa', 'created_at', 'caja_fuerte',
                     'notas'

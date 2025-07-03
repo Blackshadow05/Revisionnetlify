@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@/lib/imageUtils';
 import CompressionIndicator from '@/components/revision/CompressionIndicator';
 import ImageModal from '@/components/revision/ImageModal';
+import PageTitle from '@/components/ui/PageTitle';
 
 interface ImageData {
   file: File | null;
@@ -487,38 +488,71 @@ const closeModal = () => {
   setPosition({ x: 0, y: 0 });
 };
 
+// 🧹 Función global para limpiar todos los campos y liberar recursos
+const limpiarCampos = () => {
+  // Liberar URLs de objeto de imágenes individuales
+  if (imagen1.compressed) revokeImagePreview(imagen1.compressed);
+  if (imagen2.compressed) revokeImagePreview(imagen2.compressed);
+
+  // Revocar posible blob de la imagen unida (por si cambiamos a createObjectURL en el futuro)
+  if (imagenUnida && imagenUnida.startsWith('blob:')) {
+    URL.revokeObjectURL(imagenUnida);
+  }
+
+  // Resetear estados de imágenes
+  setImagen1({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
+  setImagen2({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
+  setImagenUnida(null);
+
+  // Resetear progreso de compresión y controles
+  setCompressionProgress1(null);
+  setCompressionProgress2(null);
+  setIsCompressing1(false);
+  setIsCompressing2(false);
+
+  // Resetear zoom, posición y orientación
+  setZoom(1);
+  setPosition({ x: 0, y: 0 });
+  setOrientacion('vertical');
+
+  // Limpiar inputs de archivo
+  if (fileInputRef1.current) fileInputRef1.current.value = '';
+  if (fileInputRef2.current) fileInputRef2.current.value = '';
+
+  // Cerrar modal si estuviera abierto y limpiar referencia de imagen
+  setModalVisible(false);
+  setModalImg(null);
+
+  console.log('🧹 Todos los campos e imágenes han sido limpiados');
+};
+
 return (
-  <main className="min-h-screen bg-slate-900 relative overflow-hidden">
+  <main
+    className="min-h-screen relative overflow-hidden"
+    style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}
+  >
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="relative flex items-center justify-between mb-8">
         <Link
           href="/"
-          className="flex items-center justify-center gap-3 text-white hover:text-[#c9a45c] transition-colors duration-300 relative overflow-hidden rounded-xl font-medium"
-          style={{ padding: '10px 18px' }}
+          className="flex items-center justify-center gap-2 text-white hover:text-[#c9a45c] transition-colors duration-300 relative overflow-hidden rounded-xl font-medium px-4 py-2 text-base"
         >
           {/* Efecto de brillo continuo */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0cb35]/80 to-transparent animate-[slide_2s_ease-in-out_infinite] z-0"></div>
-          <div className="relative z-10 flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-            </svg>
-            <span className="font-medium">Volver al inicio</span>
+          <div className="relative z-10">
+            <span className="font-medium">Volver</span>
           </div>
         </Link>
         
-        <div className="relative text-center">
+        <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
           {/* Efecto de resplandor de fondo */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/15 via-[#f0c987]/15 to-[#c9a45c]/15 blur-2xl rounded-full transform scale-125"></div>
           
-          {/* Título principal con efectos modernos */}
-          <h1 className="relative text-3xl md:text-5xl lg:text-6xl font-black tracking-tight">
-            <span className="block bg-gradient-to-r from-white via-[#f0c987] to-[#c9a45c] bg-clip-text text-transparent drop-shadow-xl">
-              Unir
-            </span>
-            <span className="block bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-white bg-clip-text text-transparent mt-1 transform translate-x-1">
-              Imágenes
-            </span>
-          </h1>
+          {/* Título uniforme */}
+          <PageTitle size="md">Unir Imágenes</PageTitle>
           
           {/* Línea decorativa animada */}
           <div className="relative mt-4 h-0.5 w-24 mx-auto">
@@ -526,7 +560,17 @@ return (
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
           </div>
         </div>
-        <div className="w-32"></div>
+        {/* Botón pequeñito para limpiar campos y liberar memoria */}
+        <button
+          onClick={limpiarCampos}
+          className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg text-xs font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md active:scale-95 absolute right-0 -top-3 sm:static sm:mt-0"
+          title="Limpiar campos y memoria"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Limpiar
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

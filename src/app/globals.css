@@ -729,14 +729,26 @@ button, [role="button"] {
 /* Estilos específicos para móvil */
 @media (max-width: 768px) {
   .animate-shimmer {
-    animation: shimmer 1.5s infinite;
-    -webkit-animation: shimmer 1.5s infinite;
-    will-change: transform;
+    animation: shimmer-mobile 1.2s ease-in-out infinite;
   }
-
+  
   .animate-spin {
     animation: spin 1s linear infinite;
-    -webkit-animation: spin 1s linear infinite;
-    will-change: transform;
   }
+}
+
+/* 🔥 ANIMACIÓN SLIDE-DOWN PARA INDICADORES */
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out forwards;
 } 

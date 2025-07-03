@@ -31,6 +31,8 @@ import type {
   EvidenceField 
 } from '@/types/revision';
 
+import PageTitle from '@/components/ui/PageTitle';
+
 // 🚀 Función debounce custom ligera (siguiendo principio de JavaScript mínimo)
 function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
   let timeoutId: NodeJS.Timeout;
@@ -741,7 +743,10 @@ export default function NuevaRevision() {
   // Evitar problemas de hidratación - no renderizar hasta que esté hidratado
   if (!isHydrated) {
     return (
-      <main className="min-h-screen bg-slate-900 py-8 md:py-12">
+      <main className="min-h-screen relative overflow-hidden" style={{
+        background: '#334d50',
+        backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+      }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]">
             <div className="flex justify-center items-center h-64">
@@ -754,22 +759,21 @@ export default function NuevaRevision() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-900 py-8 md:py-12">
+    <main className="min-h-screen relative overflow-hidden" style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <form onSubmit={handleSubmit} className="bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]">
+        <form onSubmit={handleSubmit} className="rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]" style={{
+          background: '#334d50',
+          backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+        }}>
           {/* Header */}
           <header className="flex justify-between items-center mb-6 md:mb-8">
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-lg rounded-xl"></div>
               
-              <h1 className="relative text-2xl md:text-4xl lg:text-5xl font-black tracking-tight">
-                <span className="block bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-[#ff8c42] bg-clip-text text-transparent drop-shadow-md">
-                  Nueva
-                </span>
-                <span className="block bg-gradient-to-r from-[#f0c987] via-[#c9a45c] to-[#ff8c42] bg-clip-text text-transparent mt-1 transform translate-x-1">
-                  Revisión
-                </span>
-              </h1>
+              <PageTitle size="md">Nueva Revisión</PageTitle>
               
               <div className="relative mt-2 h-0.5 w-20">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>

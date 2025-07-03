@@ -763,16 +763,16 @@ export default function Puesto01Page() {
                 {showAllDates ? 'Filtrar fecha' : 'Todas las fechas'}
               </button>
               {/* Botón Guardar ahora (desktop) */}
-              <button 
-                onClick={forceSave}
-                disabled={pendingChangesCount === 0}
-                className="hidden md:flex px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                Guardar Ahora
-              </button>
+                <button 
+                  onClick={forceSave}
+                  disabled={pendingChangesCount === 0}
+                  className="hidden md:flex px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Guardar Ahora
+                </button>
               {/* Botón Actualizar (desktop) */}
               <button 
                 onClick={loadRecords}
@@ -790,18 +790,18 @@ export default function Puesto01Page() {
                 </svg>
                 Volver
               </Link>
-              {/* Fila de botones de acción solo móvil */}
-              <div className="md:hidden flex gap-2 w-full mt-2">
-                <button 
-                  onClick={handleAddRecord} 
-                  disabled={isSaving}
-                  className="flex-1 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {isSaving ? 'Guardando...' : 'Agregar'}
-                </button>
+            {/* Fila de botones de acción solo móvil */}
+            <div className="md:hidden flex gap-2 w-full mt-2">
+              <button 
+                onClick={handleAddRecord} 
+                disabled={isSaving}
+                className="flex-1 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {isSaving ? 'Guardando...' : 'Agregar'}
+              </button>
                 <button 
                   onClick={forceSave}
                   disabled={pendingChangesCount === 0}
@@ -812,32 +812,32 @@ export default function Puesto01Page() {
                   </svg>
                   Guardar
                 </button>
-                <Link href="/" className="flex-1 px-2 py-1 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600 transition-colors text-center text-xs flex items-center justify-center gap-1 min-w-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                  </svg>
-                  Volver
-                </Link>
-              </div>
-              {/* Información de estado mejorada - Solo después de montar */}
-              <div className="mt-2 space-y-1">
-                <div className="backdrop-blur-md bg-white/30 border border-white/40 text-slate-900 shadow-lg rounded-xl px-4 py-2 flex flex-col md:flex-row md:items-center md:gap-6">
-                  <p className={`flex items-center gap-2 font-semibold drop-shadow-sm` }>
-                    {pendingChangesCount > 0 ? (
-                      <>
-                        Guardando en <span className="text-slate-700 font-mono text-sm">{countdown}s</span>
-                      </>
-                    ) : (
-                      <>Últimos guardados</>
-                    )}
-                  </p>
-                  {isMounted && lastSaveTime && (
-                    <span className="text-slate-700 font-mono text-sm mt-1 md:mt-0">
-                      {`Hora: ${lastSaveTime.toLocaleTimeString()}`}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <Link href="/" className="flex-1 px-2 py-1 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600 transition-colors text-center text-xs flex items-center justify-center gap-1 min-w-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                Volver
+              </Link>
+            </div>
+          {/* Información de estado mejorada - Solo después de montar */}
+          <div className="mt-2 space-y-1">
+            <div className="backdrop-blur-md bg-white/30 border border-white/40 text-slate-900 shadow-lg rounded-xl px-4 py-2 flex flex-col md:flex-row md:items-center md:gap-6">
+              <p className={`flex items-center gap-2 font-semibold drop-shadow-sm` }>
+                {pendingChangesCount > 0 ? (
+                  <>
+                    Guardando en <span className="text-slate-700 font-mono text-sm">{countdown}s</span>
+                  </>
+                ) : (
+                  <>Últimos guardados</>
+                )}
+              </p>
+              {isMounted && lastSaveTime && (
+                <span className="text-slate-700 font-mono text-sm mt-1 md:mt-0">
+                  {`Hora: ${lastSaveTime.toLocaleTimeString()}`}
+                </span>
+              )}
+            </div>
+          </div>
             </div>
           </div>
         </header>
@@ -850,58 +850,58 @@ export default function Puesto01Page() {
           </div>
         ) : (
           <>
-            {/* Buscador */}
-            <div className="w-full mt-3 mb-6">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full md:w-80 px-2 py-2 bg-slate-800 text-white placeholder-gray-400 rounded-lg border border-gray-600 focus:border-[#c9a45c] focus:outline-none text-sm"
+        {/* Buscador */}
+        <div className="w-full mt-3 mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar..."
+            className="w-full md:w-80 px-2 py-2 bg-slate-800 text-white placeholder-gray-400 rounded-lg border border-gray-600 focus:border-[#c9a45c] focus:outline-none text-sm"
+          />
+        </div>
+        {/* "Tabla" de datos con diseño de tarjetas */}
+        <div className="space-y-2">
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a45c]"></div>
+              <span className="ml-3 text-gray-400">Cargando registros...</span>
+            </div>
+          )}
+          {/* Indicador de cambios pendientes */}
+          {pendingChangesCount > 0 && (
+            <div className="text-sm text-yellow-500 mt-2">
+              {pendingChangesCount} cambios pendientes por guardar
+            </div>
+          )}
+          {/* Lista de datos filtrada */}
+          {!isLoading && filteredRecords.map(item => {
+            const hasHoraIngreso = item.horaIngreso && item.horaIngreso.trim() !== '';
+            const hasHoraSalida = item.horaSalida && item.horaSalida.trim() !== '';
+            let statusColorClass = 'bg-white border-gray-200'; // Color por defecto (ningún horario)
+            if (hasHoraIngreso && hasHoraSalida) {
+              statusColorClass = 'bg-green-200 border-green-500';
+            } else if (hasHoraIngreso || hasHoraSalida) {
+              statusColorClass = 'bg-red-200 border-red-500';
+            }
+            return (
+              <PuestoDataCard 
+                key={item.id} 
+                item={item} 
+                onUpdate={handleUpdateRecord} 
+                onDelete={handleDeleteClick} 
+                statusColorClass={statusColorClass}
               />
-            </div>
-            {/* "Tabla" de datos con diseño de tarjetas */}
-            <div className="space-y-2">
-              {/* Loading state */}
-              {isLoading && (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a45c]"></div>
-                  <span className="ml-3 text-gray-400">Cargando registros...</span>
-                </div>
-              )}
-              {/* Indicador de cambios pendientes */}
-              {pendingChangesCount > 0 && (
-                <div className="text-sm text-yellow-500 mt-2">
-                  {pendingChangesCount} cambios pendientes por guardar
-                </div>
-              )}
-              {/* Lista de datos filtrada */}
-              {!isLoading && filteredRecords.map(item => {
-                const hasHoraIngreso = item.horaIngreso && item.horaIngreso.trim() !== '';
-                const hasHoraSalida = item.horaSalida && item.horaSalida.trim() !== '';
-                let statusColorClass = 'bg-white border-gray-200'; // Color por defecto (ningún horario)
-                if (hasHoraIngreso && hasHoraSalida) {
-                  statusColorClass = 'bg-green-200 border-green-500';
-                } else if (hasHoraIngreso || hasHoraSalida) {
-                  statusColorClass = 'bg-red-200 border-red-500';
-                }
-                return (
-                  <PuestoDataCard 
-                    key={item.id} 
-                    item={item} 
-                    onUpdate={handleUpdateRecord} 
-                    onDelete={handleDeleteClick} 
-                    statusColorClass={statusColorClass}
-                  />
-                );
-              })}
-            </div>
-            <ConfirmationModal
-              isOpen={isModalOpen}
-              message="¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer."
-              onConfirm={handleConfirmDelete}
-              onCancel={handleCancelDelete}
-            />
+            );
+          })}
+        </div>
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          message="¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer."
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
           </>
         )}
       </main>

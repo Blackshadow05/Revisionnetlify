@@ -374,31 +374,31 @@ export default function Home() {
         {/* Hero Section */}
         <div className="relative text-center mb-12 pl-16 sm:pl-0">
           {/* Botón del menú lateral dentro del hero */}
-          <button 
+        <button 
             className="absolute left-0 z-20 w-11 h-11 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-all duration-200 group top-4 md:top-2"
-            onClick={handleMenuToggle}
-            type="button"
-            aria-label="Abrir menú lateral"
-          >
-            <div className="flex flex-col gap-1">
-              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-opacity duration-200 ${showSidebar ? 'opacity-0' : ''}`}></div>
-              <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
-            </div>
-          </button>
+          onClick={handleMenuToggle}
+          type="button"
+          aria-label="Abrir menú lateral"
+        >
+          <div className="flex flex-col gap-1">
+            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? 'rotate-45 translate-y-1.5' : ''}`}></div>
+            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-opacity duration-200 ${showSidebar ? 'opacity-0' : ''}`}></div>
+            <div className={`w-5 h-0.5 bg-[#1a1f35] rounded transition-transform duration-200 ${showSidebar ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+          </div>
+        </button>
 
-          {/* Efecto de resplandor de fondo */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-3xl rounded-full transform scale-150"></div>
-          
+            {/* Efecto de resplandor de fondo */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-3xl rounded-full transform scale-150"></div>
+            
           {/* Título principal uniforme */}
           <PageTitle size="md">
             Revisión de<br />Casitas
           </PageTitle>
-
-          {/* Línea decorativa animada */}
-          <div className="relative mt-6 h-1 w-32 mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
+            
+            {/* Línea decorativa animada */}
+            <div className="relative mt-6 h-1 w-32 mx-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
           </div>
         </div>
 

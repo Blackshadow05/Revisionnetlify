@@ -6,6 +6,7 @@ import { UploadProvider } from '@/context/UploadContext'
 import { ToastProvider } from '@/context/ToastContext'
 import UploadIndicator from '@/components/UploadIndicator'
 import UploadRecovery from '@/components/UploadRecovery'
+import ChromeCompatibilityFix from '@/components/ChromeCompatibilityFix'
 
 // 🚀 OPTIMIZADO: Solo las variantes esenciales con font-display swap
 const roboto = Roboto({ 
@@ -268,6 +269,7 @@ export default function RootLayout({
         }} />
       </head>
       <body className={roboto.className}>
+        <ChromeCompatibilityFix />
         <AuthProvider>
           <ToastProvider>
                       <UploadProvider>

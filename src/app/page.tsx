@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
 import ImageModal from '@/components/revision/ImageModal';
 import PageTitle from '@/components/ui/PageTitle';
+import { PuestoService } from '@/lib/puesto-service';
 
 interface RevisionData {
   id?: string;
@@ -71,6 +72,7 @@ export default function Home() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportDateFrom, setReportDateFrom] = useState('');
   const [reportDateTo, setReportDateTo] = useState('');
+  const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
   
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
@@ -362,7 +364,40 @@ export default function Home() {
     }
   };
 
+  const handleExportPuesto01 = async () => {
+    try {
+      const data = await PuestoService.getAllRecords();
+      if (!data.length) {
+        alert('No hay registros de Puesto 01');
+        return;
+      }
+      // @ts-ignore - sheetjs types opcional
+      const XLSX = await import('xlsx');
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Puesto01');
+      const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Puesto01_${reportDateFrom || 'todos'}_${reportDateTo || 'todos'}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      alert('Reporte Puesto 01 exportado exitosamente');
+    } catch (err) {
+      console.error(err);
+      alert('Error al exportar reporte Puesto 01');
+    }
+  };
 
+  const handleExport = async () => {
+    if (reportType === 'Revisión Casitas') {
+      await handleExportExcel();
+    } else {
+      await handleExportPuesto01();
+    }
+  };
 
   return (
     <main className="min-h-screen relative overflow-hidden" style={{
@@ -953,11 +988,11 @@ export default function Home() {
                   </button>
                   <button
                     type="button"
-                    onClick={handleExportExcel}
+                    onClick={handleExport}
                     disabled={!reportDateFrom || !reportDateTo}
                     className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-green-500/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Exportar CSV
+                    Exportar
                   </button>
                 </div>
               </div>

@@ -1,7 +1,8 @@
 // ===== ACTUALIZACIÓN 2024 - ESTRATEGIAS MODERNAS DE CACHE =====
-const CACHE_NAME = 'revision-casitas-v4'; // Incrementar versión - EVIDENCIAS UPDATE
-const STATIC_CACHE = 'static-v10'; // Incrementar versión - EVIDENCIAS UPDATE
-const DYNAMIC_CACHE = 'dynamic-v3'; // Nuevo cache dinámico
+const CACHE_NAME = 'revision-casitas-v8-force-update'; // Incrementar versión - FORCE AUTO UPDATE
+const STATIC_CACHE = 'static-v14-force-update'; // Incrementar versión - FORCE AUTO UPDATE
+const DYNAMIC_CACHE = 'dynamic-v5-force-update'; // Incrementar versión - FORCE AUTO UPDATE
+const SW_VERSION = '2024.12.19.001'; // Versión específica del SW
 const DB_NAME = 'RevisionCasitasDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'uploadQueue';
@@ -30,7 +31,8 @@ const CACHE_STRATEGIES = {
     '/unir-imagenes', 
     '/subidas-pendientes',
     '/gestion-usuarios',
-    '/nueva-nota'
+    '/nueva-nota',
+    '/puesto-01'
   ],
   
   // APIs - Stale While Revalidate
@@ -51,34 +53,58 @@ const CACHE_EXPIRATION = {
   API_MAX_AGE: 5 * 60 * 1000 // 5 minutos
 };
 
+// Forzar actualización inmediata del Service Worker
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('🔄 Forzando actualización inmediata del Service Worker...');
+    self.skipWaiting();
+  }
+});
+
 // ===== INSTALACIÓN DEL SERVICE WORKER =====
 self.addEventListener('install', (event) => {
-  console.log('🔄 Service Worker instalando versión v4 con Evidencias...');
+  console.log(`🔄 Service Worker instalando versión ${SW_VERSION} - FORCE UPDATE...`);
   
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('📦 Pre-cacheando assets estáticos');
-        return cache.addAll(CACHE_STRATEGIES.STATIC_ASSETS);
+    Promise.all([
+      // Limpiar TODOS los caches anteriores inmediatamente
+      caches.keys().then(cacheNames => {
+        console.log('🗑️ Limpiando caches anteriores...');
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            console.log('🗑️ Eliminando cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      }),
+      // Pre-cachear solo assets críticos
+      caches.open(STATIC_CACHE).then(cache => {
+        console.log('📦 Pre-cacheando assets críticos...');
+        return cache.addAll([
+          '/manifest.json',
+          '/icons/icon-192x192.png',
+          '/icons/icon-512x512.png'
+        ]);
       })
+    ])
       .then(() => {
-        console.log('✅ Assets pre-cacheados exitosamente');
-        // Forzar activación inmediata
+      console.log('✅ Instalación completada, forzando activación inmediata...');
+      // Forzar activación inmediata sin esperar
         return self.skipWaiting();
       })
       .catch(error => {
-        console.error('❌ Error pre-cacheando assets:', error);
+      console.error('❌ Error en instalación:', error);
       })
   );
 });
 
 // ===== ACTIVACIÓN DEL SERVICE WORKER =====
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker activando v4 con Evidencias...');
+  console.log(`🚀 Service Worker activando versión ${SW_VERSION} - FORCE UPDATE...`);
   
   event.waitUntil(
     Promise.all([
-      // Limpiar caches antiguos
+      // Limpiar TODOS los caches existentes
       caches.keys().then(cacheNames => {
         const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, CACHE_NAME];
         return Promise.all(
@@ -91,12 +117,36 @@ self.addEventListener('activate', (event) => {
         );
       }),
       
-      // Tomar control inmediatamente
+      // Tomar control inmediatamente de TODAS las pestañas
       self.clients.claim(),
+      
+      // Notificar a todos los clientes sobre la actualización
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          console.log('📢 Notificando actualización a cliente:', client.url);
+          client.postMessage({
+            type: 'SW_UPDATED',
+            version: SW_VERSION,
+            message: 'Service Worker actualizado - Recargando página...'
+          });
+        });
+      }),
       
       // Procesar cola de subidas pendientes
       processUploadQueue()
     ])
+    .then(() => {
+      console.log('✅ Service Worker activado completamente');
+      // Forzar recarga de todas las pestañas abiertas
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          if (client.url.includes(self.location.origin)) {
+            console.log('🔄 Forzando recarga de cliente:', client.url);
+            client.navigate(client.url);
+          }
+        });
+      });
+    })
   );
 });
 
@@ -285,28 +335,56 @@ async function handleRequest(request) {
   const pathname = url.pathname;
   
   try {
-    // 1. ASSETS ESTÁTICOS - Cache First con validación de frescura
+    // 1. NAVEGACIÓN - Estrategia Network-Only ESTRICTA (NUNCA CACHE)
+    if (request.mode === 'navigate') {
+      console.log('🌐 NAVEGACIÓN DETECTADA - FORZANDO RED (NO CACHE):', request.url);
+      try {
+        // SIEMPRE ir a la red, NUNCA usar cache para navegación
+        const networkResponse = await fetch(request, { 
+          cache: 'no-store' // Forzar no usar cache del navegador
+        });
+        console.log('✅ Página cargada desde la red:', request.url);
+        return networkResponse;
+      } catch (error) {
+        console.error('❌ Red falló para navegación:', error);
+        // Solo en caso de error de red, mostrar fallback offline
+        return await getOfflineFallback(request);
+      }
+    }
+
+    // 2. RUTAS DE NAVEGACIÓN ESPECÍFICAS - También Network-Only
+    if (isNavigationRoute(pathname)) {
+      console.log('🌐 RUTA DE NAVEGACIÓN - FORZANDO RED (NO CACHE):', request.url);
+      try {
+        const networkResponse = await fetch(request, { 
+          cache: 'no-store' // Forzar no usar cache del navegador
+        });
+        console.log('✅ Ruta cargada desde la red:', request.url);
+        return networkResponse;
+      } catch (error) {
+        console.error('❌ Red falló para ruta de navegación:', error);
+        return await getOfflineFallback(request);
+      }
+    }
+
+    // 3. ASSETS ESTÁTICOS - Cache First con validación de frescura
     if (isStaticAsset(pathname)) {
       return await cacheFirstWithExpiration(request, STATIC_CACHE, CACHE_EXPIRATION.STATIC_MAX_AGE);
     }
     
-    // 2. NAVEGACIÓN - Network First con cache fallback
-    if (request.mode === 'navigate' || isNavigationRoute(pathname)) {
-      return await networkFirstWithFallback(request, DYNAMIC_CACHE);
-    }
-    
-    // 3. APIs - Stale While Revalidate
+    // 4. APIs - Stale While Revalidate
     if (isApiRoute(pathname)) {
       return await staleWhileRevalidate(request, DYNAMIC_CACHE, CACHE_EXPIRATION.API_MAX_AGE);
     }
     
-    // 4. RECURSOS DINÁMICOS - Network First
+    // 5. RECURSOS DINÁMICOS (Imágenes, etc.) - Network First
     if (isDynamicResource(pathname)) {
       return await networkFirstWithFallback(request, DYNAMIC_CACHE);
     }
     
-    // 5. FALLBACK - Network only
-    return await fetch(request);
+    // 6. FALLBACK - Network only para todo lo demás
+    console.log('🌐 FALLBACK - FORZANDO RED:', request.url);
+    return await fetch(request, { cache: 'no-store' });
     
   } catch (error) {
     console.error('❌ Error manejando request:', error);

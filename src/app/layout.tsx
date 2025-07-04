@@ -94,34 +94,32 @@ export default function RootLayout({
                   .then((registration) => {
                     console.log('✅ SW registered: ', registration);
                     
-                    // Manejar actualizaciones
+                    // Manejar actualizaciones automáticas
                     registration.addEventListener('updatefound', () => {
                       const newWorker = registration.installing;
                       if (newWorker) {
+                        console.log('🔄 Nueva versión del SW detectada, instalando...');
                         newWorker.addEventListener('statechange', () => {
                           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // Nueva versión disponible
-                            console.log('🔄 Nueva versión disponible');
-                            
-                            // Mostrar notificación de actualización
-                            if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
+                            console.log('🔄 Nueva versión instalada, activando automáticamente...');
+                            // Activar automáticamente sin preguntar al usuario
                               newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            }
                           }
                         });
                       }
                     });
                     
-                    // 🚀 OPTIMIZADO: Verificar actualizaciones menos frecuentemente y solo cuando es necesario
+                    // Verificar actualizaciones más frecuentemente para forzar la actualización
                     let updateCheckInterval: NodeJS.Timeout | null = null;
                     const scheduleUpdateCheck = () => {
                       if (updateCheckInterval) clearInterval(updateCheckInterval);
                       updateCheckInterval = setTimeout(() => {
                         if (document.visibilityState === 'visible' && navigator.onLine) {
+                          console.log('🔍 Verificando actualizaciones del SW...');
                           registration.update();
                         }
                         scheduleUpdateCheck();
-                      }, 600000); // 🚀 OPTIMIZADO: Cada 10 minutos en lugar de 5
+                      }, 30000); // Verificar cada 30 segundos para forzar actualización rápida
                     };
                     
                     // Solo verificar cuando la página sea visible
@@ -141,16 +139,27 @@ export default function RootLayout({
                   });
               });
               
-              // Escuchar cuando el SW se actualiza
+              // Escuchar cuando el SW se actualiza - RECARGA AUTOMÁTICA
               navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('🔄 Controlador de SW actualizado');
+                console.log('🔄 Service Worker actualizado - Recargando página automáticamente...');
                 window.location.reload();
               });
               
-              // Escuchar mensajes del SW
+              // Escuchar mensajes del SW - MANEJO DE ACTUALIZACIONES FORZADAS
               navigator.serviceWorker.addEventListener('message', (event) => {
+                console.log('📨 Mensaje recibido del SW:', event.data);
+                
+                if (event.data.type === 'SW_UPDATED') {
+                  console.log('🔄 SW actualizado a versión:', event.data.version);
+                  // Recargar automáticamente después de un breve delay
+                  setTimeout(() => {
+                    console.log('🔄 Recargando página por actualización del SW...');
+                    window.location.reload();
+                  }, 1000);
+                }
+                
                 if (event.data.type === 'CACHE_CLEARED') {
-                  console.log('🗑️ Cache limpiado');
+                  console.log('🗑️ Cache limpiado por el SW');
                 }
               });
             }

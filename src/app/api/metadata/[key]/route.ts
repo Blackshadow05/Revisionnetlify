@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// No uses el cliente del lado del cliente aquí.
-// Crea uno nuevo con la clave de servicio para operaciones seguras del lado del servidor.
+// Cliente de Supabase para operaciones del lado del servidor
+// Usar SERVICE_KEY si está disponible, sino usar ANON_KEY como fallback
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export async function GET(

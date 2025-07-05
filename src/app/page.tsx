@@ -360,37 +360,49 @@ export default function Home() {
       alert(`Reporte exportado exitosamente como CSV`);
     } catch (error) {
       console.error('Error al exportar:', error);
-      alert('Error al exportar el reporte');
     }
   };
 
-  const handleExportPuesto01 = async () => {
+  // Exportar reporte de Puesto_01 por rango de fechas en CSV
+  // Exportar reporte de Puesto_01 por rango de fechas en CSV
+function formatToDDMMYYYY(dateStr: string): string {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+const handleExportPuesto01 = async () => {
     try {
-      const data = await PuestoService.getAllRecords();
+      if (!reportDateFrom || !reportDateTo) {
+        alert('Debes seleccionar un rango de fechas para exportar el reporte de Puesto 01');
+        return;
+      }
+      const fechaDesde = formatToDDMMYYYY(reportDateFrom);
+    const fechaHasta = formatToDDMMYYYY(reportDateTo);
+    const data = await PuestoService.getRecordsByDateRange(fechaDesde, fechaHasta);
       if (!data.length) {
-        alert('No hay registros de Puesto 01');
+        alert('No hay registros de Puesto 01 en el rango de fechas seleccionado');
         return;
       }
       // @ts-ignore - sheetjs types opcional
       const XLSX = await import('xlsx');
       const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Puesto01');
-      const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const csv = XLSX.utils.sheet_to_csv(worksheet);
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Puesto01_${reportDateFrom || 'todos'}_${reportDateTo || 'todos'}.xlsx`;
+      link.download = `Puesto01_${reportDateFrom}_${reportDateTo}.csv`;
       link.click();
       window.URL.revokeObjectURL(url);
-      alert('Reporte Puesto 01 exportado exitosamente');
+      alert('Reporte Puesto 01 exportado exitosamente como CSV');
     } catch (err) {
       console.error(err);
       alert('Error al exportar reporte Puesto 01');
     }
   };
 
+  // Función para exportar el reporte adecuado
   const handleExport = async () => {
     if (reportType === 'Revisión Casitas') {
       await handleExportExcel();
@@ -942,6 +954,24 @@ export default function Home() {
               </div>
               
               <div className="space-y-6">
+  {/* Selector de tipo de reporte */}
+  <div className="space-y-2">
+    <label className="block text-sm font-semibold text-gray-300 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-green-400">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25z" />
+      </svg>
+      Tipo de Reporte
+    </label>
+    <select
+      value={reportType}
+      onChange={e => setReportType(e.target.value as 'Revisión Casitas' | 'Puesto 01')}
+      className="w-full px-4 py-3 bg-[#232a3e] border border-[#3d4659] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300 hover:border-green-500/30 appearance-none"
+      style={{ backgroundImage: 'none' }}
+    >
+      <option value="Revisión Casitas" style={{ background: '#232a3e', color: '#fff' }}>Revisión Casitas</option>
+      <option value="Puesto 01" style={{ background: '#232a3e', color: '#fff' }}>Puesto 01</option>
+    </select>
+  </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-300 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-green-400">
@@ -1004,4 +1034,4 @@ export default function Home() {
       </div>
     </main>
   );
-} 
+}

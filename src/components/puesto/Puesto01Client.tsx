@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import TextareaAutosize from 'react-textarea-autosize';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { PuestoService } from '@/lib/puesto-service';
@@ -308,8 +309,8 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
     }
   }, [item.id, onUpdate]);
 
-  useEffect(() => {
-    // Ajustar altura inicial de textareas
+  // Función para ajustar altura de todos los textareas
+  const autoResizeAllTextareas = useCallback(() => {
     Object.values(textareaRefs.current).forEach(textarea => {
       if (textarea) {
         textarea.style.height = 'auto';
@@ -318,15 +319,15 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
     });
   }, []);
 
-  // Efecto adicional para ajustar altura cuando cambian los datos (por ejemplo, tras cargar del servidor)
+  // Ajustar altura al montar y cada vez que cambie cualquier campo relevante
   useEffect(() => {
-    Object.values(textareaRefs.current).forEach(textarea => {
-      if (textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = `${textarea.scrollHeight}px`;
-      }
-    });
-  }, [localItem]);
+    autoResizeAllTextareas();
+  }, [localItem.nombre, localItem.detalle, localItem.oficialIngreso, localItem.oficialSalida]);
+
+  // También al montar
+  useEffect(() => {
+    autoResizeAllTextareas();
+  }, []);
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -346,13 +347,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
     const hasHoraSalida = localItem.horaSalida && localItem.horaSalida.trim() !== '';
 
     if (hasHoraIngreso && hasHoraSalida) {
-      // Ambas horas tienen valor - Verde OSCURO con transparencia
-      return 'bg-green-800/60 backdrop-blur-md border border-green-700/70 shadow-xl ring-1 ring-green-600/40';
-    } else if (hasHoraIngreso || hasHoraSalida) {
-      // Solo una hora tiene valor - Rojo glassmorphic MÁS INTENSO
-      return 'bg-red-200/70 backdrop-blur-md border border-red-300/80 shadow-xl ring-1 ring-red-400/30';
+      // Ambos campos tienen datos - Verde claro
+      return 'bg-green-100';
+    } else if ((hasHoraIngreso || hasHoraSalida) && !(hasHoraIngreso && hasHoraSalida)) {
+      // SOLO uno de los campos tiene datos (XOR) - Rojo claro
+      return 'bg-red-100';
     } else {
-      // Ninguna hora tiene valor - Blanco normal
+      // Ninguno tiene datos - Blanco puro
       return 'bg-white';
     }
   };
@@ -361,10 +362,10 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
   const commonInputStyles = "w-full bg-transparent border border-transparent focus:border-[#c9a45c] outline-none text-gray-900 rounded p-0.5 text-xs placeholder-gray-500";
   const commonTextareaStyles = `${commonInputStyles} resize-none overflow-hidden break-words`;
   const selectStyles = "w-full bg-transparent border border-transparent focus:border-[#c9a45c] outline-none text-gray-900 rounded p-0.5 text-xs appearance-none";
-  const labelStyles = "text-xs font-semibold text-gray-700 mb-0.5 whitespace-nowrap";
+  const labelStyles = "text-xs font-semibold text-black dark:text-slate-900 mb-0.5 whitespace-nowrap";
 
   return (
-    <div className={`relative p-2 rounded-lg shadow-sm transition-all duration-300 ${getRecordBackgroundStyle()}`}>
+    <div className={`relative p-2 rounded-2xl transition-all duration-300 ${getRecordBackgroundStyle()}`}>
       {/* Vista Desktop */}
       <div className="hidden md:grid grid-cols-[auto_auto_auto_auto_auto_auto_auto_auto_auto_auto] gap-2 items-start">
         {/* Columna 1: Nombre */}
@@ -373,13 +374,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             <Icon icon="mdi:account-outline" className="mr-1 w-3 h-3" />
             Nombre
           </p>
-          <textarea
-            ref={el => { textareaRefs.current['nombre'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} min-w-[120px] w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Nombre..."
           />
         </div>
@@ -400,13 +401,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         {/* Columna 3: Detalle */}
         <div className="min-w-0 relative z-20">
           <p className={labelStyles}>Detalle</p>
-          <textarea
-            ref={el => { textareaRefs.current['detalle'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} min-w-[150px] w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Detalle..."
           />
         </div>
@@ -418,7 +419,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             name="tipo" 
             value={localItem.tipo} 
             onChange={handleInputChange} 
-            className={`${selectStyles} min-w-[100px]`}
+            className={`${selectStyles} min-w-[100px] text-orange-600 font-bold` }
           >
             {TIPO_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
@@ -456,13 +457,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             <Icon icon="mdi:account-tie" className="mr-1 w-3 h-3" />
             Oficial Ingreso
           </p>
-          <textarea
-            ref={el => { textareaRefs.current['oficialIngreso'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} min-w-[120px] w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Oficial..."
           />
         </div>
@@ -483,13 +484,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         {/* Columna 9: Oficial Salida */}
         <div className="min-w-0">
           <p className={`${labelStyles}`}>Oficial Salida</p>
-          <textarea
-            ref={el => { textareaRefs.current['oficialSalida'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} min-w-[120px] w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Oficial..."
           />
         </div>
@@ -515,13 +516,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             <Icon icon="mdi:account-outline" className="mr-1 w-3 h-3" />
             Nombre
           </p>
-          <textarea
-            ref={el => { textareaRefs.current['nombre'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Nombre..."
           />
         </div>
@@ -540,13 +541,13 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         {/* Fila 2: Detalle (span completo) */}
         <div className="col-span-2 relative z-20">
           <p className={labelStyles}>Detalle</p>
-          <textarea
-            ref={el => { textareaRefs.current['detalle'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Detalle..."
           />
         </div>
@@ -605,25 +606,25 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             <Icon icon="mdi:account-tie" className="mr-1 w-3 h-3" />
             Oficial Ingreso
           </p>
-          <textarea
-            ref={el => { textareaRefs.current['oficialIngreso'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Oficial..."
           />
         </div>
         <div className="col-span-1">
           <p className={`${labelStyles}`}>Oficial Salida</p>
-          <textarea
-            ref={el => { textareaRefs.current['oficialSalida'] = el; }}
+          <TextareaAutosize
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}
             className={`${commonTextareaStyles} w-full`}
-            rows={1}
+            minRows={1}
             placeholder="Oficial..."
           />
         </div>

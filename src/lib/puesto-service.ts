@@ -114,6 +114,26 @@ export class PuestoService {
     }
   }
 
+  // Buscar registros por rango de fechas
+  static async getRecordsByDateRange(fechaDesde: string, fechaHasta: string): Promise<PuestoDataItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .gte('Fecha', fechaDesde)
+        .lte('Fecha', fechaHasta)
+        .order('Fecha', { ascending: true });
+      if (error) {
+        console.error('Error al buscar por rango de fechas:', error);
+        throw new Error(`Error al buscar registros: ${error.message}`);
+      }
+      return data ? data.map(mapFromDatabase) : [];
+    } catch (error) {
+      console.error('Error en getRecordsByDateRange:', error);
+      throw error;
+    }
+  }
+
   // Buscar registros por fecha
   static async getRecordsByDate(fecha: string): Promise<PuestoDataItem[]> {
     try {

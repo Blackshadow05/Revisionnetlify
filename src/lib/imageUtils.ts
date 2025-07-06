@@ -229,6 +229,12 @@ export const compressImageAdvanced = async (
         // 🎨 Configurar contexto para máxima calidad
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
+        
+        // ✨ NUEVO: Rellenar el fondo de blanco para manejar PNGs con transparencia
+        // Esto asegura una conversión consistente a formatos como WebP o JPEG.
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         // 🔄 Algoritmo iterativo de compresión

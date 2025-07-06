@@ -35,6 +35,7 @@ export default function GestionUsuarios() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
+  const [isHighlighting, setIsHighlighting] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -147,11 +148,14 @@ export default function GestionUsuarios() {
   const handleEdit = (usuario: Usuario) => {
     setNuevoUsuario({
       Usuario: usuario.Usuario,
-      password_hash: usuario.password_hash,
+      password_hash: '', // Campo vacío al editar
       Rol: usuario.Rol
     });
     setIsEditing(true);
     setEditingId(usuario.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsHighlighting(true);
+    setTimeout(() => setIsHighlighting(false), 2000);
   };
 
   const handleDelete = (usuario: Usuario) => {
@@ -200,7 +204,7 @@ export default function GestionUsuarios() {
     <main className="min-h-screen bg-slate-900 py-8">
       {/* Modal de confirmación de eliminación */}
       {showDeleteModal && usuarioToDelete && (
-                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
           <div className="bg-[#1e2538] rounded-lg p-6 max-w-md w-full mx-4">
             <div className="text-center mb-6">
               <svg className="mx-auto h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -234,79 +238,63 @@ export default function GestionUsuarios() {
       )}
 
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-[#1e2538] rounded-lg shadow-xl p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
+        <div className={`bg-[#1e2538] rounded-lg shadow-xl p-6 border-2 ${isHighlighting ? 'border-[#c9a45c]' : 'border-transparent'} transition-colors duration-1000`}>
+          <div className="flex items-center mb-4">
             <button
+              type="button"
               onClick={() => router.back()}
-              className="px-4 py-2.5 text-[#1a1f35] bg-gradient-to-br from-[#c9a45c] via-[#d4b06c] to-[#f0c987] rounded-xl hover:from-[#d4b06c] hover:via-[#e0bc7c] hover:to-[#f7d498] transform hover:scale-[1.02] transition-all duration-200 shadow-[0_8px_16px_rgb(0_0_0/0.2)] hover:shadow-[0_12px_24px_rgb(0_0_0/0.3)] relative overflow-hidden border-2 border-white/40 hover:border-white/60 font-medium flex items-center justify-center gap-2"
+              className="text-sm text-white bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-xl hover:from-gray-700 hover:via-gray-800 hover:to-gray-900 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl relative overflow-hidden border border-gray-600/40 hover:border-gray-500/60 font-medium flex items-center justify-center gap-2"
+              style={{ padding: '10px 18px' }}
             >
-              {/* Efecto de brillo continuo */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0cb35]/80 to-transparent animate-[slide_2s_ease-in-out_infinite] z-0"></div>
               <div className="relative z-10 flex items-center gap-2">
-                Volver
+                ← Volver
               </div>
             </button>
+            <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Usuario
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={nuevoUsuario.Usuario}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Usuario: e.target.value })}
-                  className="w-full px-4 py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Contraseña
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={nuevoUsuario.password_hash}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password_hash: e.target.value })}
-                  className="w-full px-4 py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Rol
-                </label>
-                <select
-                  required
-                  value={nuevoUsuario.Rol}
-                  onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Rol: e.target.value })}
-                  className="w-full px-4 py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]"
-                >
-                  <option value="">Seleccionar rol</option>
-                  <option value="SuperAdmin">SuperAdmin</option>
-                  <option value="admin">admin</option>
-                  <option value="user">user</option>
-                </select>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 mb-6">
+            <div className="col-span-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Usuario</label>
+              <input
+                type="text"
+                required
+                value={nuevoUsuario.Usuario}
+                onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Usuario: e.target.value })}
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
+              />
             </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded">
-                {error}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
+            <div className="col-span-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Contraseña</label>
+              <input
+                type="password"
+                value={nuevoUsuario.password_hash}
+                onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password_hash: e.target.value })}
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
+                placeholder={isEditing ? 'Nueva contraseña (opcional)' : ''}
+                required={!isEditing}
+              />
+            </div>
+            <div className="col-span-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Rol</label>
+              <select
+                required
+                value={nuevoUsuario.Rol}
+                onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Rol: e.target.value })}
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
+              >
+                <option value="">Seleccionar rol</option>
+                <option value="SuperAdmin">SuperAdmin</option>
+                <option value="admin">admin</option>
+                <option value="user">user</option>
+              </select>
+            </div>
+            <div className="sm:col-span-3 flex flex-col sm:flex-row justify-end gap-2 mt-2">
               {isEditing && (
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-4 py-2 bg-[#3d4659] text-gray-300 rounded-lg hover:bg-[#4a5568] transition-all transform hover:scale-[1.02] shadow-[0_8px_16px_rgb(0_0_0/0.2)] hover:shadow-[0_12px_24px_rgb(0_0_0/0.3)] relative overflow-hidden border border-[#4a5568]/20 hover:border-[#4a5568]/40"
+                  className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all transform hover:scale-[1.02] shadow-[0_8px_16px_rgb(0_0_0/0.2)] hover:shadow-[0_12px_24px_rgb(0_0_0/0.3)] relative overflow-hidden border border-red-500/20 hover:border-red-400/40"
                 >
                   Cancelar
                 </button>
@@ -314,40 +302,45 @@ export default function GestionUsuarios() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-[#c9a45c] text-white rounded-lg hover:bg-[#d4b06c] transition-all transform hover:scale-[1.02] shadow-[0_8px_16px_rgb(0_0_0/0.2)] hover:shadow-[0_12px_24px_rgb(0_0_0/0.3)] relative overflow-hidden border-2 border-white/40 hover:border-white/60"
+                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all transform hover:scale-[1.02] shadow-[0_8px_16px_rgb(0_0_0/0.2)] hover:shadow-[0_12px_24px_rgb(0_0_0/0.3)] relative overflow-hidden border-2 border-white/40 hover:border-white/60"
               >
                 {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar Usuario' : 'Crear Usuario')}
               </button>
             </div>
           </form>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded mb-4">
+              {error}
+            </div>
+          )}
+          {/* Tabla solo visible en escritorio/tablet */}
+          <div className="overflow-x-auto rounded-md mt-4 hidden sm:block">
+            <table className="w-full min-w-[500px] text-sm sm:text-base">
               <thead>
                 <tr className="bg-[#2a3347]">
-                  <th className="px-4 py-2 text-left text-gray-300">Usuario</th>
-                  <th className="px-4 py-2 text-left text-gray-300">Rol</th>
-                  <th className="px-4 py-2 text-left text-gray-300">Fecha de Creación</th>
-                  <th className="px-4 py-2 text-left text-gray-300">Acciones</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Usuario</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Rol</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Fecha de Creación</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {usuarios.map((usuario) => (
                   <tr key={usuario.id} className="border-b border-[#3d4659]">
-                    <td className="px-4 py-2 text-gray-300">{usuario.Usuario}</td>
-                    <td className="px-4 py-2 text-gray-300">{usuario.Rol}</td>
-                    <td className="px-4 py-2 text-gray-300">{usuario.created_at}</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
+                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Usuario}</td>
+                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Rol}</td>
+                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.created_at}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={() => handleEdit(usuario)}
-                          className="px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all"
+                          className="w-full sm:w-auto px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all text-xs sm:text-sm md:text-base"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleDelete(usuario)}
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all"
+                          className="w-full sm:w-auto px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all text-xs sm:text-sm md:text-base"
                         >
                           Eliminar
                         </button>
@@ -358,8 +351,42 @@ export default function GestionUsuarios() {
               </tbody>
             </table>
           </div>
+
+          {/* Cards solo visibles en móvil */}
+          <div className="block sm:hidden mt-4 space-y-4">
+            {usuarios.map((usuario) => (
+              <div key={usuario.id} className="bg-[#232c41] rounded-lg shadow p-4 flex flex-col gap-2 border border-[#3d4659]">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-[#c9a45c]">Usuario:</span>
+                  <span className="text-gray-300">{usuario.Usuario}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-[#c9a45c]">Rol:</span>
+                  <span className="text-gray-300">{usuario.Rol}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-[#c9a45c]">Creado:</span>
+                  <span className="text-gray-300 text-xs">{usuario.created_at}</span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleEdit(usuario)}
+                    className="w-full px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all text-xs"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(usuario)}
+                    className="w-full px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-all text-xs"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </main>
   );
-} 
+}

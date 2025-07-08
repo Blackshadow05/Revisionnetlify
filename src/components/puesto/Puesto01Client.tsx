@@ -375,7 +375,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Nombre
           </p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['nombre'] = el; }}
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
@@ -402,7 +402,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="min-w-0 relative z-20">
           <p className={labelStyles}>Detalle</p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['detalle'] = el; }}
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
@@ -458,7 +458,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Oficial Ingreso
           </p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['oficialIngreso'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
@@ -485,7 +485,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="min-w-0">
           <p className={`${labelStyles}`}>Oficial Salida</p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['oficialSalida'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}
@@ -517,7 +517,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Nombre
           </p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['nombre'] = el; }}
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
@@ -542,7 +542,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="col-span-2 relative z-20">
           <p className={labelStyles}>Detalle</p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['detalle'] = el; }}
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
@@ -607,7 +607,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Oficial Ingreso
           </p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['oficialIngreso'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
@@ -619,7 +619,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="col-span-1">
           <p className={`${labelStyles}`}>Oficial Salida</p>
           <TextareaAutosize
-            ref={el => { textareaRefs.current['oficialSalida'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}

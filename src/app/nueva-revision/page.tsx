@@ -11,6 +11,8 @@ import { useToast } from '@/context/ToastContext';
 
 // 🚀 NUEVO: Importar función de compresión avanzada
 import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@/lib/imageUtils';
+// Importar soporte para HEIC/HEIF
+import heic2any from 'heic2any';
 
 // Importar nuevos componentes
 import FormField from '@/components/revision/FormField';
@@ -397,9 +399,18 @@ export default function NuevaRevision() {
 
   // 🚀 NUEVA: Función de manejo de archivos con compresión avanzada
   const manejarArchivoSeleccionado = async (field: EvidenceField, file: File) => {
-    if (!file.type.startsWith('image/')) {
-      showError('Por favor selecciona un archivo de imagen válido');
+    // Detectar si es HEIC/HEIF por tipo o extensión
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic');
+
+    // Si no es imagen estándar ni HEIC, es un formato no soportado.
+    if (!file.type.startsWith('image/') && !isHeic) {
+      showError('Por favor selecciona un archivo de imagen válido (JPG, PNG, HEIC, etc.)');
       return;
+    }
+
+    if (isHeic) {
+      // Puedes mostrar un estado de "Convirtiendo..." si lo deseas
+      // setIsCompressing(prev => ({ ...prev, [field]: true }));
     }
 
     console.log(`🚀 Iniciando compresión avanzada para ${field}:`, {
@@ -429,6 +440,29 @@ export default function NuevaRevision() {
     setCompressionProgress(prev => ({ ...prev, [field]: null }));
 
     try {
+      let processableFile = file;
+      // --- PASO CLAVE DE CONVERSIÓN ---
+      if (isHeic) {
+        try {
+          const conversionResult = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+            quality: 0.9,
+          });
+          const convertedBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
+          processableFile = new File([convertedBlob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+        } catch (conversionError) {
+          console.error("Error al convertir de HEIC a JPEG:", conversionError);
+          showError('No se pudo procesar la imagen HEIC. Inténtalo con otra foto.');
+          setIsCompressing(prev => ({ ...prev, [field]: false }));
+          return;
+        }
+      }
+      // --- FIN DEL PASO DE CONVERSIÓN ---
+
       // 🎯 Configuración personalizada para evidencias
       const compressionConfig = {
         targetSizeKB: 200,      // Objetivo más agresivo para evidencias
@@ -474,12 +508,12 @@ export default function NuevaRevision() {
       };
 
       // 🚀 Ejecutar compresión avanzada
-      const compressedFile = await compressImageAdvanced(file, compressionConfig, onProgress);
+      const compressedFile = await compressImageAdvanced(processableFile, compressionConfig, onProgress);
 
       console.log(`✅ Compresión completada para ${field}:`, {
-        tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,
+        tamaño_original: `${(processableFile.size / 1024).toFixed(1)}KB`,
         tamaño_comprimido: `${(compressedFile.size / 1024).toFixed(1)}KB`,
-        reducción: `${(((file.size - compressedFile.size) / file.size) * 100).toFixed(1)}%`,
+        reducción: `${(((processableFile.size - compressedFile.size) / processableFile.size) * 100).toFixed(1)}%`,
         formato: compressedFile.type
       });
 
@@ -536,6 +570,7 @@ export default function NuevaRevision() {
       setIsCompressing(prev => ({ ...prev, [field]: false }));
     }
   };
+
 
   const handleFileChange = (field: EvidenceField, file: File | null) => {
     

@@ -1,14 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// Verificar que las variables de entorno estén disponibles
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Crear cliente solo si las variables están disponibles
-const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// No uses el cliente del lado del cliente aquí.
+// Crea uno nuevo con la clave de servicio para operaciones seguras del lado del servidor.
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
 
 export async function GET(
   request: Request,
@@ -18,10 +16,6 @@ export async function GET(
 
   if (!key) {
     return NextResponse.json({ error: 'La clave (key) es requerida' }, { status: 400 });
-  }
-
-  if (!supabase) {
-    return NextResponse.json({ error: 'Configuración de Supabase no disponible' }, { status: 500 });
   }
 
   try {
@@ -61,10 +55,6 @@ export async function POST(
 
   if (value === undefined) {
     return NextResponse.json({ error: 'El valor (value) es requerido' }, { status: 400 });
-  }
-
-  if (!supabase) {
-    return NextResponse.json({ error: 'Configuración de Supabase no disponible' }, { status: 500 });
   }
 
   try {

@@ -11,8 +11,6 @@ import { useToast } from '@/context/ToastContext';
 
 // 🚀 NUEVO: Importar función de compresión avanzada
 import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@/lib/imageUtils';
-// Importar soporte para HEIC/HEIF
-import heic2any from 'heic2any';
 
 // Importar nuevos componentes
 import FormField from '@/components/revision/FormField';
@@ -282,7 +280,7 @@ export default function NuevaRevision() {
     if (!isHydrated) return; // Esperar a que se complete la hidratación
     
     // 🆕 Solo limpiar si específicamente viene del botón "Nueva Revisión" con parámetro
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const isNewFormFromButton = urlParams.get('new') === 'true';
     
     if (isNewFormFromButton) {
@@ -307,7 +305,9 @@ export default function NuevaRevision() {
       setHighlightedField('casita');
       
       // Limpiar URL para evitar que se ejecute en cada refresh
-      window.history.replaceState({}, '', window.location.pathname);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     } else {
       // 📂 En TODOS los demás casos (refresh, volver a abrir, etc.), mantener progreso
       const savedData = loadFromLocalStorage();
@@ -444,6 +444,8 @@ export default function NuevaRevision() {
       // --- PASO CLAVE DE CONVERSIÓN ---
       if (isHeic) {
         try {
+          // Importación dinámica de heic2any para evitar problemas de SSR
+          const heic2any = (await import('heic2any')).default;
           const conversionResult = await heic2any({
             blob: file,
             toType: "image/jpeg",
@@ -751,10 +753,12 @@ export default function NuevaRevision() {
       limpiarFormulario();
       
       // 📜 Scroll suave hacia arriba para comenzar nueva revisión
-      window.scrollTo({ 
-        top: 0, 
-        behavior: 'smooth' 
-      });
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ 
+          top: 0, 
+          behavior: 'smooth' 
+        });
+      }
       
       console.log('🔄 Formulario limpiado exitosamente. Listo para nueva revisión.');
 

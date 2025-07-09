@@ -375,7 +375,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Nombre
           </p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['nombre'] = el; }}
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
@@ -388,12 +388,12 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         {/* Columna 2: Casita */}
         <div className="min-w-0">
           <p className={labelStyles}>Casita</p>
-          <input 
-            type="text" 
-            name="casita" 
-            value={localItem.casita} 
-            onChange={handleInputChange} 
-            className={`${commonInputStyles} min-w-[80px] w-full`}
+          <TextareaAutosize
+            name="casita"
+            value={localItem.casita}
+            onChange={handleInputChange}
+            className={`${commonTextareaStyles} min-w-[80px] max-w-[100px]`}
+            minRows={1}
             placeholder="Casita..."
           />
         </div>
@@ -402,11 +402,11 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="min-w-0 relative z-20">
           <p className={labelStyles}>Detalle</p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['detalle'] = el; }}
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
-            className={`${commonTextareaStyles} min-w-[80px] w-full`}
+            className={`${commonTextareaStyles} min-w-[150px] w-full`}
             minRows={1}
             placeholder="Detalle..."
           />
@@ -428,12 +428,12 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         {/* Columna 5: Placa */}
         <div className="min-w-0">
           <p className={labelStyles}>Placa</p>
-          <input 
-            type="text" 
-            name="placa" 
-            value={localItem.placa} 
-            onChange={handleInputChange} 
-            className={`${commonInputStyles} min-w-[80px] w-full`}
+          <TextareaAutosize
+            name="placa"
+            value={localItem.placa}
+            onChange={handleInputChange}
+            className={`${commonTextareaStyles} min-w-[50px] max-w-[70px]`}
+            minRows={1}
             placeholder="Placa..."
           />
         </div>
@@ -446,7 +446,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             name="horaIngreso" 
             value={localItem.horaIngreso} 
             onChange={handleInputChange} 
-            className={`${commonInputStyles} min-w-[70px] w-full`}
+            className={`${commonInputStyles} min-w-[50px] max-w-[70px]`}
             placeholder="HH:MM" 
           />
         </div>
@@ -458,7 +458,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Oficial Ingreso
           </p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['oficialIngreso'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
@@ -476,7 +476,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             name="horaSalida" 
             value={localItem.horaSalida} 
             onChange={handleInputChange} 
-            className={`${commonInputStyles} min-w-[70px] w-full`}
+            className={`${commonInputStyles} min-w-[50px] max-w-[70px]`}
             placeholder="HH:MM" 
           />
         </div>
@@ -485,7 +485,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="min-w-0">
           <p className={`${labelStyles}`}>Oficial Salida</p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['oficialSalida'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}
@@ -495,16 +495,21 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
           />
         </div>
         
-        {/* Columna 10: Botón Eliminar */}
-        <div className="min-w-0 flex flex-col items-center">
-          <p className={labelStyles}>Acción</p>
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="bg-red-500 text-white hover:bg-red-600 transition-colors p-1 rounded-full"
-            title="Eliminar este registro"
-          >
-            <Icon icon="mdi:trash-can-outline" className="w-3 h-3" />
-          </button>
+        {/* Columna 10: Fecha + Acción */}
+        <div className="min-w-0 flex flex-col items-center justify-center">
+          <p className={labelStyles}>Fecha / Acción</p>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 whitespace-nowrap select-none border border-gray-300">
+              {localItem.fecha}
+            </span>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="bg-red-500 text-white hover:bg-red-600 transition-colors p-1 rounded-full"
+              title="Eliminar este registro"
+            >
+              <Icon icon="mdi:trash-can-outline" className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -517,7 +522,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Nombre
           </p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['nombre'] = el; }}
+            inputRef={el => { textareaRefs.current['nombre'] = el; }}
             name="nombre"
             value={localItem.nombre}
             onChange={handleInputChange}
@@ -542,7 +547,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="col-span-2 relative z-20">
           <p className={labelStyles}>Detalle</p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['detalle'] = el; }}
+            inputRef={el => { textareaRefs.current['detalle'] = el; }}
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
@@ -607,7 +612,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             Oficial Ingreso
           </p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['oficialIngreso'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialIngreso'] = el; }}
             name="oficialIngreso"
             value={localItem.oficialIngreso}
             onChange={handleInputChange}
@@ -619,7 +624,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
         <div className="col-span-1">
           <p className={`${labelStyles}`}>Oficial Salida</p>
           <TextareaAutosize
-            ref={(el: HTMLTextAreaElement | null) => { textareaRefs.current['oficialSalida'] = el; }}
+            inputRef={el => { textareaRefs.current['oficialSalida'] = el; }}
             name="oficialSalida"
             value={localItem.oficialSalida}
             onChange={handleInputChange}
@@ -629,8 +634,14 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
           />
         </div>
 
-        {/* Fila 6: Botón Eliminar */}
-        <div className="col-span-2 flex justify-center mt-2">
+        {/* Fila 6: Fecha y Botón Eliminar */}
+        <div className="col-span-1 flex flex-col justify-center items-center mt-2">
+          <p className={labelStyles}>Fecha</p>
+          <span className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700 whitespace-nowrap select-none border border-gray-300">
+            {localItem.fecha}
+          </span>
+        </div>
+        <div className="col-span-1 flex justify-center items-center mt-2">
           <button
             onClick={() => setShowDeleteModal(true)}
             className="bg-red-500 text-white hover:bg-red-600 transition-colors p-2 rounded-full"

@@ -114,6 +114,15 @@ const fieldLabels: Record<string, string> = {
 };
 
 export default function NuevaRevision() {
+  // Estado para logs de compresión
+  const [compressionLogs, setCompressionLogs] = useState<string[]>([]);
+  // Función para agregar un log
+  const addCompressionLog = (msg: string, data?: any) => {
+    setCompressionLogs(prev => [
+      `${new Date().toLocaleTimeString()} | ${msg}${data ? ' | ' + JSON.stringify(data) : ''}`,
+      ...prev.slice(0, 99) // Máximo 100 logs
+    ]);
+  };
   const router = useRouter();
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -280,7 +289,7 @@ export default function NuevaRevision() {
     if (!isHydrated) return; // Esperar a que se complete la hidratación
     
     // 🆕 Solo limpiar si específicamente viene del botón "Nueva Revisión" con parámetro
-    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    const urlParams = new URLSearchParams(window.location.search);
     const isNewFormFromButton = urlParams.get('new') === 'true';
     
     if (isNewFormFromButton) {
@@ -305,9 +314,7 @@ export default function NuevaRevision() {
       setHighlightedField('casita');
       
       // Limpiar URL para evitar que se ejecute en cada refresh
-      if (typeof window !== 'undefined') {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
+      window.history.replaceState({}, '', window.location.pathname);
     } else {
       // 📂 En TODOS los demás casos (refresh, volver a abrir, etc.), mantener progreso
       const savedData = loadFromLocalStorage();
@@ -399,18 +406,31 @@ export default function NuevaRevision() {
 
   // 🚀 NUEVA: Función de manejo de archivos con compresión avanzada
   const manejarArchivoSeleccionado = async (field: EvidenceField, file: File) => {
-    // Detectar si es HEIC/HEIF por tipo o extensión
-    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic');
-
-    // Si no es imagen estándar ni HEIC, es un formato no soportado.
-    if (!file.type.startsWith('image/') && !isHeic) {
-      showError('Por favor selecciona un archivo de imagen válido (JPG, PNG, HEIC, etc.)');
+    // --- INICIO LOG AVANZADO ---
+    const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a';
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
+    const logId = `${field}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+    console.log(`[LOG_COMPRESION][${logId}] UserAgent:`, userAgent);
+    addCompressionLog(`[LOG_COMPRESION][${logId}] UserAgent: ${userAgent}`);
+    console.log(`[LOG_COMPRESION][${logId}] isIOS:`, isIOS, '| isSafari:', isSafari);
+    addCompressionLog(`[LOG_COMPRESION][${logId}] isIOS: ${isIOS} | isSafari: ${isSafari}`);
+    console.log(`[LOG_COMPRESION][${logId}] Archivo recibido:`, {
+      nombre: file.name,
+      tamaño: file.size,
+      tipo: file.type,
+      lastModified: file.lastModified
+    });
+    addCompressionLog(`[LOG_COMPRESION][${logId}] Archivo recibido`, {
+      nombre: file.name,
+      tamaño: file.size,
+      tipo: file.type,
+      lastModified: file.lastModified
+    });
+    // --- FIN LOG AVANZADO ---
+    if (!file.type.startsWith('image/')) {
+      showError('Por favor selecciona un archivo de imagen válido');
       return;
-    }
-
-    if (isHeic) {
-      // Puedes mostrar un estado de "Convirtiendo..." si lo deseas
-      // setIsCompressing(prev => ({ ...prev, [field]: true }));
     }
 
     console.log(`🚀 Iniciando compresión avanzada para ${field}:`, {
@@ -440,31 +460,6 @@ export default function NuevaRevision() {
     setCompressionProgress(prev => ({ ...prev, [field]: null }));
 
     try {
-      let processableFile = file;
-      // --- PASO CLAVE DE CONVERSIÓN ---
-      if (isHeic) {
-        try {
-          // Importación dinámica de heic2any para evitar problemas de SSR
-          const heic2any = (await import('heic2any')).default;
-          const conversionResult = await heic2any({
-            blob: file,
-            toType: "image/jpeg",
-            quality: 0.9,
-          });
-          const convertedBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
-          processableFile = new File([convertedBlob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-          });
-        } catch (conversionError) {
-          console.error("Error al convertir de HEIC a JPEG:", conversionError);
-          showError('No se pudo procesar la imagen HEIC. Inténtalo con otra foto.');
-          setIsCompressing(prev => ({ ...prev, [field]: false }));
-          return;
-        }
-      }
-      // --- FIN DEL PASO DE CONVERSIÓN ---
-
       // 🎯 Configuración personalizada para evidencias
       const compressionConfig = {
         targetSizeKB: 200,      // Objetivo más agresivo para evidencias
@@ -485,14 +480,19 @@ export default function NuevaRevision() {
         resolution: string;
         status: 'compressing' | 'compressed' | 'timeout' | 'error';
       }) => {
-        console.log(`📊 Progreso ${field}:`, {
+        // --- LOG AVANZADO DE PROGRESO ---
+        const logObj = {
+          field,
           intento: `${progress.attempt}/10`,
           tamaño_actual: `${(progress.currentSize / 1024).toFixed(1)}KB`,
           objetivo: `${(progress.targetSize / 1024).toFixed(1)}KB`,
           calidad: `${Math.round(progress.quality * 100)}%`,
           resolución: progress.resolution,
           estado: progress.status
-        });
+        };
+        console.log(`[LOG_COMPRESION][${logId}] Progreso:`, logObj);
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Progreso`, logObj);
+        // --- FIN LOG AVANZADO DE PROGRESO ---
 
         setCompressionProgress(prev => ({ ...prev, [field]: progress }));
 
@@ -510,14 +510,20 @@ export default function NuevaRevision() {
       };
 
       // 🚀 Ejecutar compresión avanzada
-      const compressedFile = await compressImageAdvanced(processableFile, compressionConfig, onProgress);
+      console.log(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config:`, compressionConfig);
+      addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config`, compressionConfig);
+      const compressedFile = await compressImageAdvanced(file, compressionConfig, onProgress);
 
-      console.log(`✅ Compresión completada para ${field}:`, {
-        tamaño_original: `${(processableFile.size / 1024).toFixed(1)}KB`,
+      const logResult = {
+        tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,
         tamaño_comprimido: `${(compressedFile.size / 1024).toFixed(1)}KB`,
-        reducción: `${(((processableFile.size - compressedFile.size) / processableFile.size) * 100).toFixed(1)}%`,
-        formato: compressedFile.type
-      });
+        reducción: `${(((file.size - compressedFile.size) / file.size) * 100).toFixed(1)}%`,
+        formato: compressedFile.type,
+        type_final: compressedFile.type,
+        name_final: compressedFile.name
+      };
+      console.log(`[LOG_COMPRESION][${logId}] Compresión completada:`, logResult);
+      addCompressionLog(`[LOG_COMPRESION][${logId}] Compresión completada`, logResult);
 
       // Actualizar estados con resultado exitoso
       setCompressedFiles(prev => ({ ...prev, [field]: compressedFile }));
@@ -533,8 +539,12 @@ export default function NuevaRevision() {
       }));
 
     } catch (error: any) {
-      console.error(`❌ Error en compresión avanzada de ${field}:`, error);
-
+      console.error(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada:`, error);
+      addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada`, error?.message || error);
+      if (typeof window !== 'undefined') {
+        console.log(`[LOG_COMPRESION][${logId}] window.navigator info:`, window.navigator);
+        addCompressionLog(`[LOG_COMPRESION][${logId}] window.navigator info`, window.navigator);
+      }
       // Actualizar estado de error
       setCompressionProgress(prev => ({
         ...prev,
@@ -572,7 +582,6 @@ export default function NuevaRevision() {
       setIsCompressing(prev => ({ ...prev, [field]: false }));
     }
   };
-
 
   const handleFileChange = (field: EvidenceField, file: File | null) => {
     
@@ -753,12 +762,10 @@ export default function NuevaRevision() {
       limpiarFormulario();
       
       // 📜 Scroll suave hacia arriba para comenzar nueva revisión
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ 
-          top: 0, 
-          behavior: 'smooth' 
-        });
-      }
+      window.scrollTo({ 
+        top: 0, 
+        behavior: 'smooth' 
+      });
       
       console.log('🔄 Formulario limpiado exitosamente. Listo para nueva revisión.');
 
@@ -1225,6 +1232,31 @@ export default function NuevaRevision() {
         imageUrl={modalImg}
         onClose={closeModal}
       />
-    </main>
+    {/* Panel de logs de compresión (solo visible si hay logs) */}
+    {compressionLogs.length > 0 && (
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100vw',
+        maxHeight: '40vh',
+        overflowY: 'auto',
+        background: 'rgba(10,10,10,0.9)',
+        color: '#fff',
+        fontSize: 12,
+        zIndex: 10000,
+        borderTop: '2px solid #00e6e6',
+        padding: 8,
+      }}>
+        <div style={{fontWeight: 'bold', marginBottom: 4, color:'#00e6e6'}}>LOG DE COMPRESIÓN (Debug móvil/Safari)</div>
+        <button style={{position:'absolute',top:4,right:16,background:'#222',color:'#fff',border:'none',padding:'2px 8px',borderRadius:4,cursor:'pointer'}} onClick={()=>setCompressionLogs([])}>Limpiar</button>
+        <ul style={{listStyle:'none',padding:0,margin:0}}>
+          {compressionLogs.map((log,idx)=>(
+            <li key={idx} style={{marginBottom:2,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{log}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </main>
   );
 } 

@@ -161,16 +161,6 @@ const getCompressionConfig = (customConfig?: Partial<CompressionConfig>): Compre
   return { ...defaultConfig, ...customConfig };
 };
 
-// Helper para detectar soporte de WebP en canvas
-function canvasSupportsWebP() {
-  if (typeof document === 'undefined') return false;
-  const elem = document.createElement('canvas');
-  if (!!(elem.getContext && elem.getContext('2d'))) {
-    return elem.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-  }
-  return false;
-}
-
 // 🎯 Función principal de compresión avanzada
 export const compressImageAdvanced = async (
   file: File, 
@@ -186,13 +176,7 @@ export const compressImageAdvanced = async (
 ): Promise<File> => {
   const config = getCompressionConfig(customConfig);
   const targetSizeBytes = config.targetSizeKB * 1024;
-
-  // Detectar soporte WebP en canvas y ajustar formato si es necesario
-  let outputFormat = config.format;
-  if (outputFormat === 'webp' && !canvasSupportsWebP()) {
-    outputFormat = 'jpeg';
-  }
-
+  
   console.log('🚀 Iniciando compresión avanzada:', {
     archivo: file.name,
     tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,
@@ -245,12 +229,6 @@ export const compressImageAdvanced = async (
         // 🎨 Configurar contexto para máxima calidad
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        
-        // ✨ NUEVO: Rellenar el fondo de blanco para manejar PNGs con transparencia
-        // Esto asegura una conversión consistente a formatos como WebP o JPEG.
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         // 🔄 Algoritmo iterativo de compresión
@@ -260,29 +238,20 @@ export const compressImageAdvanced = async (
 
         const attemptCompression = async (quality: number): Promise<File> => {
           return new Promise((resolveBlob) => {
-            // Fallback automático a JPEG si WebP falla
-            function tryToBlob(format: string, cb: (blob: Blob|null) => void) {
-              canvas.toBlob((blob) => {
-                if (!blob && format === 'image/webp') {
-                  // Si WebP falla, intentar JPEG
-                  canvas.toBlob((jpegBlob) => cb(jpegBlob), 'image/jpeg', quality);
-                } else {
-                  cb(blob);
-                }
-              }, format, quality);
-            }
-            tryToBlob(`image/${outputFormat}`, (blob) => {
+            canvas.toBlob((blob) => {
               if (!blob) {
                 throw new Error('Error generando blob en la compresión');
               }
+
               const originalName = file.name.replace(/\.[^/.]+$/, '');
-              const extension = outputFormat === 'webp' ? '.webp' : '.jpg';
+              const extension = config.format === 'webp' ? '.webp' : '.jpg';
               const compressedFile = new File([blob], `${originalName}${extension}`, {
-                type: `image/${outputFormat}`,
+                type: `image/${config.format}`,
                 lastModified: Date.now()
               });
+
               resolveBlob(compressedFile);
-            });
+            }, `image/${config.format}`, quality);
           });
         };
 
@@ -414,4 +383,4 @@ export const revokeImagePreview = (url: string): void => {
   } catch (error) {
     console.warn('⚠️ Error revocando URL:', error);
   }
-};
+}; 

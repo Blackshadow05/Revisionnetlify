@@ -461,14 +461,22 @@ export default function NuevaRevision() {
 
     try {
       // 🎯 Configuración personalizada para evidencias
+      // Ajuste dinámico según navegador
+      let targetSizeKB = 200;
+      let format: 'webp' | 'jpeg' = 'webp';
+      if (isIOS || isSafari) {
+        targetSizeKB = 600;
+        format = 'jpeg';
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Safari/iOS detectado: usando JPEG y 600KB como objetivo`);
+      }
       const compressionConfig = {
-        targetSizeKB: 200,      // Objetivo más agresivo para evidencias
+        targetSizeKB,      // Objetivo según navegador
         maxResolution: 1600,    // Resolución máxima
         maxQuality: 0.85,       // Calidad máxima
         minQuality: 0.35,       // Calidad mínima
         maxAttempts: 10,        // Más intentos para mejor resultado
         timeout: 30000,         // 30 segundos timeout
-        format: 'webp' as const // Formato WebP para mejor compresión
+        format
       };
 
       // 📈 Callback de progreso para mostrar estado en tiempo real
@@ -512,6 +520,9 @@ export default function NuevaRevision() {
       // 🚀 Ejecutar compresión avanzada
       console.log(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config:`, compressionConfig);
       addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config`, compressionConfig);
+      if (isIOS || isSafari) {
+        addCompressionLog(`[LOG_COMPRESION][${logId}] ADVERTENCIA: En Safari/iOS la compresión puede no ser tan eficiente como en otros navegadores.`);
+      }
       const compressedFile = await compressImageAdvanced(file, compressionConfig, onProgress);
 
       const logResult = {

@@ -1,15 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// Configura cliente con fallback seguro
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Las variables de entorno de Supabase no están configuradas correctamente');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// No uses el cliente del lado del cliente aquí.
+// Crea uno nuevo con la clave de servicio para operaciones seguras del lado del servidor.
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
 
 export async function GET(
   request: Request,

@@ -1243,31 +1243,6 @@ export default function NuevaRevision() {
         imageUrl={modalImg}
         onClose={closeModal}
       />
-    {/* Panel de logs de compresión (solo visible si hay logs) */}
-    {compressionLogs.length > 0 && (
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        width: '100vw',
-        maxHeight: '40vh',
-        overflowY: 'auto',
-        background: 'rgba(10,10,10,0.9)',
-        color: '#fff',
-        fontSize: 12,
-        zIndex: 10000,
-        borderTop: '2px solid #00e6e6',
-        padding: 8,
-      }}>
-        <div style={{fontWeight: 'bold', marginBottom: 4, color:'#00e6e6'}}>LOG DE COMPRESIÓN (Debug móvil/Safari)</div>
-        <button style={{position:'absolute',top:4,right:16,background:'#222',color:'#fff',border:'none',padding:'2px 8px',borderRadius:4,cursor:'pointer'}} onClick={()=>setCompressionLogs([])}>Limpiar</button>
-        <ul style={{listStyle:'none',padding:0,margin:0}}>
-          {compressionLogs.map((log,idx)=>(
-            <li key={idx} style={{marginBottom:2,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{log}</li>
-          ))}
-        </ul>
-      </div>
-    )}
   </main>
   );
 } 

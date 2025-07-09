@@ -406,7 +406,7 @@ const PuestoDataCard = ({ item, onUpdate, onDelete, statusColorClass }: {
             name="detalle"
             value={localItem.detalle}
             onChange={handleInputChange}
-            className={`${commonTextareaStyles} min-w-[150px] w-full`}
+            className={`${commonTextareaStyles} min-w-[80px] w-full`}
             minRows={1}
             placeholder="Detalle..."
           />

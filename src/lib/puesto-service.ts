@@ -174,4 +174,14 @@ export class PuestoService {
       return false;
     }
   }
+
+  // Obtener última hora guardada
+  static async getUltimaHoraGuardada() {
+    const { data, error } = await supabase
+      .from('Ultimos_guardados')
+      .select('Fecha')
+      .eq('Dato_guardado', 'puesto-01')
+      .single();
+    return { data, error };
+  }
 }

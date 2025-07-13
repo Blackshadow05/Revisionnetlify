@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { upsertUltimoGuardado } from './supabase-upsert-ultimo-guardado';
 import TextareaAutosize from 'react-textarea-autosize';
 import Link from 'next/link';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -60,6 +61,9 @@ function useGlobalDebounce(delay: number = 20000) {
     
     try {
       await onSaveRef.current(currentChanges);
+
+      // Registrar la hora de guardado en Ultimos_guardados
+      await upsertUltimoGuardado();
       
       // Éxito - limpiar todo
       setPendingChanges(new Map());
@@ -972,6 +976,48 @@ export default function Puesto01Page() {
 
   const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
 
+  // Agregar consulta y visualización de última hora guardada desde Supabase
+  const [ultimaHoraGuardada, setUltimaHoraGuardada] = useState<string>('');
+
+  const cargarUltimaHora = async () => {
+    try {
+      const { data } = await PuestoService.getUltimaHoraGuardada();
+      if (data && typeof data.Fecha === "string" && data.Fecha.length > 0) {
+        setUltimaHoraGuardada(data.Fecha);
+      } else {
+        setUltimaHoraGuardada("");
+      }
+    } catch (error) {
+      console.error('Error al cargar última hora:', error);
+    }
+  };
+
+  useEffect(() => {
+    cargarUltimaHora();
+  }, []);
+
+function formateaFechaHora(fechaStr?: string) {
+  if (!fechaStr || typeof fechaStr !== "string") return "No registrada";
+  // Reemplaza T por espacio si existe
+  const normalizada = fechaStr.replace("T", " ");
+  const partes = normalizada.split(" ");
+  if (partes.length < 2) return fechaStr;
+  const [fecha, horaCompleta] = partes;
+  if (!fecha || !horaCompleta) return fechaStr;
+  const [anio, mes, dia] = fecha.split("-");
+  const [hora, min] = horaCompleta.split(":");
+  if (!anio || !mes || !dia || !hora || !min) return fechaStr;
+  // Devuelve en dos líneas
+  return (
+    <div className="text-center">
+      <span className="text-emerald-600 font-semibold">{`${dia}/${mes}/${anio}`}</span>
+      <br />
+      <span className="text-emerald-600 font-semibold">{`${hora}:${min}`}</span>
+    </div>
+  );
+}
+
+
   // Render layout base siempre, loader solo en contenido dinámico
   return (
     <div className="min-h-screen p-4 md:p-8" style={{
@@ -1118,6 +1164,9 @@ export default function Puesto01Page() {
                     {`Hora: ${lastSaveTime.toLocaleTimeString()}`}
                   </span>
                 )}
+                <div className="text-xs text-gray-500 mt-2">
+                  Último guardado en sistema (hora): {formateaFechaHora(ultimaHoraGuardada)}
+                </div>
               </div>
             </div>
           </div>
@@ -1170,6 +1219,7 @@ export default function Puesto01Page() {
           {!isLoading && paginatedRecords.map(item => {
             const hasHoraIngreso = item.horaIngreso && item.horaIngreso.trim() !== '';
             const hasHoraSalida = item.horaSalida && item.horaSalida.trim() !== '';
+
             let statusColorClass = 'bg-transparent'; // Base transparente para el efecto vidrio
             if (hasHoraIngreso && hasHoraSalida) {
               statusColorClass = 'bg-green-500/20'; // Tinte verde

@@ -76,7 +76,7 @@ export default function Home() {
   
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(40);
   
   // Función para manejar el toggle del menú
   const handleMenuToggle = () => {
@@ -108,18 +108,11 @@ export default function Home() {
   }, []);
 
   // 🚀 Efecto para detectar dispositivo y ajustar elementos por página
-  useEffect(() => {
-    const updateItemsPerPage = () => {
-      const isMobile = window.innerWidth < 768;
-      setItemsPerPage(isMobile ? 10 : 20);
-      setCurrentPage(1); // Reset página al cambiar tamaño
-    };
-
-    updateItemsPerPage();
-    window.addEventListener('resize', updateItemsPerPage);
-    
-    return () => window.removeEventListener('resize', updateItemsPerPage);
-  }, []);
+  // Paginación fija de 40 registros por página para todos los dispositivos
+useEffect(() => {
+  setItemsPerPage(40);
+  setCurrentPage(1);
+}, []);
 
   // Cerrar sidebar con tecla ESC se maneja dentro del componente Sidebar
 
@@ -134,21 +127,22 @@ export default function Home() {
         throw new Error('No se pudo conectar con la base de datos. Por favor, verifica tu conexión.');
       }
       
-      const { data: revisiones, error } = await supabase
+      const { data, error } = await supabase
         .from('revisiones_casitas')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((currentPage - 1) * 40, currentPage * 40 - 1);
 
       if (error) {
         console.error('Error fetching data:', error);
         throw new Error('Error al cargar los datos: ' + error.message);
       }
 
-      if (!revisiones) {
+      if (!data) {
         throw new Error('No se encontraron datos');
       }
 
-      setData(revisiones);
+      setData(data);
     } catch (error: any) {
       console.error('Error in fetchData:', error);
       setError(error.message || 'Error al cargar los datos');

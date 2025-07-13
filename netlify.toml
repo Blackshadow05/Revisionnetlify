@@ -1,0 +1,74 @@
+[build]
+  # 🚀 NETLIFY OPTIMIZADO: Comandos de build específicos para Next.js con API routes
+  command = "npm run build"
+  publish = ".next" # Usar '.next' para output: 'standalone'
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
+  # 🔧 Variables específicas para evitar problemas de hydratación
+  NODE_ENV = "production"
+
+# 🔄 REDIRECTS: Configuración específica para App Router
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/___netlify-handler"
+  status = 200
+
+# 🚀 REDIRECTS ADICIONALES PARA SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 📦 HEADERS OPTIMIZADOS PARA RENDIMIENTO
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# 🔧 SERVICE WORKER: Configuración específica
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# 🛡️ HEADERS DE SEGURIDAD
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# ⚡ FUNCIONES: Configuración optimizada
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@supabase/supabase-js", "@supabase/realtime-js"]
+
+# 🚫 PROCESAMIENTO: Deshabilitado para evitar conflictos
+[build.processing]
+  skip_processing = true
+
+[build.processing.css]
+  bundle = false
+  minify = false
+
+[build.processing.js]
+  bundle = false
+  minify = false
+
+[build.processing.html]
+  pretty_urls = false
+
+[build.processing.images]
+  compress = false 

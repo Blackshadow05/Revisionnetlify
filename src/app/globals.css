@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Importar estilos de animaciones para tarjetas */
+@import '../styles/card-animations.css';
+
 /* 🚀 OPTIMIZACIÓN DE FUENTES: Font-display swap para evitar FOIT */
 @layer base {
   @font-face {

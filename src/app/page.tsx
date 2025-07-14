@@ -13,6 +13,8 @@ import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
 import ImageModal from '@/components/revision/ImageModal';
 import PageTitle from '@/components/ui/PageTitle';
+import ViewToggle from '@/components/ui/ViewToggle';
+import CardView from '@/components/revision/CardView';
 import { PuestoService } from '@/lib/puesto-service';
 
 interface RevisionData {
@@ -78,6 +80,16 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(40);
   
+  // 🎯 Estado para modo de vista (tabla/tarjeta) - Card por defecto en móvil
+  const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+    // Detectar si es móvil para establecer vista por defecto
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768; // md breakpoint
+      return isMobile ? 'card' : 'table';
+    }
+    return 'table';
+  });
+  
   // Función para manejar el toggle del menú
   const handleMenuToggle = () => {
     setShowSidebar(prev => !prev);
@@ -95,6 +107,28 @@ export default function Home() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   
 
+
+  // 🎯 Efecto para cargar preferencia de vista desde sessionStorage
+  useEffect(() => {
+    try {
+      const savedViewMode = sessionStorage.getItem('revisionViewMode');
+      if (savedViewMode === 'card' || savedViewMode === 'table') {
+        setViewMode(savedViewMode);
+      }
+    } catch (error) {
+      console.log('Error al cargar preferencia de vista:', error);
+    }
+  }, []);
+
+  // 🎯 Función para cambiar modo de vista
+  const handleViewModeChange = (newMode: 'table' | 'card') => {
+    setViewMode(newMode);
+    try {
+      sessionStorage.setItem('revisionViewMode', newMode);
+    } catch (error) {
+      console.log('Error al guardar preferencia de vista:', error);
+    }
+  };
 
   useEffect(() => {
     fetchRevisiones();
@@ -472,29 +506,8 @@ const handleExportPuesto01 = async () => {
 
             {/* Botones de Acción */}
             <div className="flex flex-wrap gap-3">
-              {userRole === 'SuperAdmin' && (
-                <button
-                  onClick={() => router.push('/gestion-usuarios')}
-                  className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-purple-500/25 flex items-center gap-2 font-medium"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                  </svg>
-                  Gestión Usuarios
-                </button>
-              )}
-
-              {isLoggedIn ? (
-                <button
-                  onClick={logout}
-                  className="metallic-button metallic-button-red px-4 py-2.5 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-[1.02] flex items-center gap-2 font-medium"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                  </svg>
-                  Cerrar Sesión
-                </button>
-              ) : (
+              {/* Solo mostrar botón de login si no está logueado */}
+              {!isLoggedIn && (
                 <button
                   onClick={() => setShowLoginModal(true)}
                   className="metallic-button metallic-button-gold px-4 py-2.5 text-white rounded-xl hover:shadow-lg hover:shadow-[#c9a45c]/40 transition-all duration-300 transform hover:scale-[1.02] flex items-center gap-2 font-medium"
@@ -515,8 +528,6 @@ const handleExportPuesto01 = async () => {
                 </svg>
                 Nueva Revisión
               </button>
-
-
             </div>
           </div>
         </div>
@@ -585,14 +596,33 @@ const handleExportPuesto01 = async () => {
           )}
         </div>
 
-        {/* Tabla con diseño moderno - Solo visible si el usuario está logueado */}
+        {/* Toggle de Vista - Solo visible si el usuario está logueado */}
+        {isLoggedIn && (
+          <div className="flex justify-center mb-6">
+            <ViewToggle 
+              currentView={viewMode} 
+              onViewChange={handleViewModeChange} 
+            />
+          </div>
+        )}
+
+        {/* Vista de datos - Solo visible si el usuario está logueado */}
         {isLoggedIn ? (
           <>
             {loading && !error ? (
               <div className="p-8 text-center text-gray-400 animate-pulse">
                 <p>Cargando datos...</p>
               </div>
+            ) : viewMode === 'card' ? (
+              /* Vista de Tarjetas */
+              <CardView 
+                data={paginatedData}
+                onCardClick={(id) => router.push(`/detalles/${id}`)}
+                onImageClick={openModal}
+                loading={loading}
+              />
             ) : (
+              /* Vista de Tabla */
               <div className="relative">
                 <div className="overflow-hidden rounded-xl shadow-[0_8px_32px_rgb(0_0_0/0.2)] backdrop-blur-md bg-[#1e2538]/80 border border-[#3d4659]/50">
                   <div 

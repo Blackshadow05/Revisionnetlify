@@ -32,6 +32,7 @@ import type {
 } from '@/types/revision';
 
 import PageTitle from '@/components/ui/PageTitle';
+import AudioRecorderModal from '@/components/revision/AudioRecorderModal';
 
 // 🚀 Función debounce custom ligera (siguiendo principio de JavaScript mínimo)
 function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
@@ -183,7 +184,9 @@ export default function NuevaRevision() {
   // Estados para modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
-  
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
+  const [audioFile, setAudioFile] = useState<Blob | null>(null);
+
   // Refs para scroll automático
   const fieldRefs = useRef<{ [key: string]: React.RefObject<any> }>({});
 
@@ -663,7 +666,16 @@ export default function NuevaRevision() {
 
   const closeModal = () => {
     setModalOpen(false);
-    setModalImg(null);
+  };
+
+  const handleSaveAudio = (audioBlob: Blob) => {
+    console.log('Audio guardado:', audioBlob);
+    setAudioFile(audioBlob);
+    // Aquí puedes manejar el blob, por ejemplo, prepararlo para subirlo
+  };
+
+  const handleAudioModalClose = () => {
+    setIsAudioModalOpen(false);
   };
 
   // Función auxiliar para el envío online tradicional
@@ -842,10 +854,21 @@ export default function NuevaRevision() {
       backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
     }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <form onSubmit={handleSubmit} className="rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]" style={{
-          background: '#334d50',
-          backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-        }}>
+        <div className="flex justify-between items-center mb-6">
+          <PageTitle>Nueva Revisión</PageTitle>
+          {user === 'Esteban B' && (
+            <button 
+              type="button" 
+              onClick={() => setIsAudioModalOpen(true)} 
+              className="btn-secondary p-2.5"
+              aria-label="Grabar nota de voz"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+            </button>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate>
           {/* Header */}
           <header className="flex justify-between items-center mb-6 md:mb-8">
             <div className="relative">
@@ -1263,6 +1286,12 @@ export default function NuevaRevision() {
         isOpen={modalOpen}
         imageUrl={modalImg}
         onClose={closeModal}
+      />
+
+      <AudioRecorderModal
+        isOpen={isAudioModalOpen}
+        onClose={() => setIsAudioModalOpen(false)}
+        onSave={handleSaveAudio}
       />
   </main>
   );

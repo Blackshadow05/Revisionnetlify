@@ -75,12 +75,6 @@ const initialFileData: FileData = {
   evidencia_03: null,
 };
 
-const nombresRevisores = [
-  'Ricardo B', 'Michael J', 'Ramiro Q', 'Adrian S', 'Esteban B',
-  'Willy G', 'Juan M', 'Olman Z', 'Daniel V', 'Jefferson V',
-  'Cristopher G', 'Emerson S', 'Joseph R'
-];
-
 const requiredFields: (keyof RevisionData)[] = [
   'casita', 'quien_revisa', 'caja_fuerte', 'puertas_ventanas',
   'chromecast', 'binoculares', 'trapo_binoculares', 'speaker',
@@ -136,6 +130,7 @@ export default function NuevaRevision() {
   
   // Estados principales
   const [loading, setLoading] = useState(false);
+  const [usuarios, setUsuarios] = useState<string[]>([]);
 
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
   const [isHydrated, setIsHydrated] = useState(false);
@@ -267,6 +262,32 @@ export default function NuevaRevision() {
       localStorage.removeItem('revision-highlighted-field');
     }
   };
+
+  // Efecto para cargar usuarios desde Supabase
+  useEffect(() => {
+    const cargarUsuarios = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Usuarios')
+          .select('Usuario')
+          .order('Usuario', { ascending: true });
+        
+        if (error) {
+          console.error('Error al cargar usuarios:', error);
+          // Si hay error, usar lista por defecto
+          setUsuarios(['Ricardo B', 'Michael J', 'Ramiro Q', 'Adrian S', 'Esteban B']);
+        } else if (data) {
+          const nombresUsuarios = data.map(u => u.Usuario).filter(Boolean);
+          setUsuarios(nombresUsuarios);
+        }
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        setUsuarios(['Ricardo B', 'Michael J', 'Ramiro Q', 'Adrian S', 'Esteban B']);
+      }
+    };
+
+    cargarUsuarios();
+  }, []);
 
   // Efecto para actualizar quien_revisa cuando cambie el usuario
   useEffect(() => {
@@ -486,7 +507,7 @@ export default function NuevaRevision() {
         targetSize: number;
         quality: number;
         resolution: string;
-        status: 'compressing' | 'compressed' | 'timeout' | 'error';
+        status: 'compressing' | 'compressed' | 'timeout' | 'error' | 'pre-processing';
       }) => {
         // --- LOG AVANZADO DE PROGRESO ---
         const logObj = {
@@ -928,7 +949,7 @@ export default function NuevaRevision() {
                         onChange={(e) => handleInputChange('quien_revisa', e.target.value)}
                       >
                         <option value="" className="bg-[#1e2538] text-gray-400">Seleccionar persona</option>
-                        {nombresRevisores.map(nombre => (
+                        {usuarios.map((nombre: string) => (
                           <option key={nombre} value={nombre} className="bg-[#1e2538] text-white">{nombre}</option>
                         ))}
                       </select>

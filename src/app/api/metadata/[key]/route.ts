@@ -13,9 +13,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(
   request: Request,
-  { params }: { params: { key: string } }
+  context: { params: { key: string } }
 ) {
-  const { key } = params;
+  const { key } = context.params;
 
   if (!key) {
     return NextResponse.json({ error: 'La clave (key) es requerida' }, { status: 400 });
@@ -47,9 +47,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { key: string } }
+  context: { params: { key: string } }
 ) {
-  const { key } = params;
+  const { key } = context.params;
   const { value } = await request.json();
 
   if (!key) {

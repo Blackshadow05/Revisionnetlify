@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase, checkSupabaseConnection } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -1056,6 +1056,14 @@ const handleExportPuesto01 = async () => {
 
 
       </div>
+      {/* Botón Flotante para Nueva Revisión (Solo en Móvil) */}
+      <Link
+        href="/nueva-revision"
+        className="md:hidden fixed bottom-6 right-6 bg-gradient-to-r from-green-500 to-teal-500 text-white p-4 rounded-full shadow-2xl hover:from-green-600 hover:to-teal-600 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all duration-300 ease-in-out transform hover:scale-110 z-50"
+        aria-label="Crear Nueva Revisión"
+      >
+        <PlusIcon className="h-8 w-8" />
+      </Link>
     </main>
   );
 }

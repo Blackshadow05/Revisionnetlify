@@ -9,7 +9,6 @@
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   # 🔧 Variables específicas para evitar problemas de hydratación
-  NODE_ENV = "production"
   NODE_VERSION = "18.18.0"
 
 # 🔄 REDIRECTS: Configuración específica para App Router

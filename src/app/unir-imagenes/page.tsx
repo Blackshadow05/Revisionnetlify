@@ -74,6 +74,11 @@ export default function UnirImagenes() {
     };
   }, []);
 
+  // 🧹 LIMPIEZA COMPLETA: Limpiar todos los campos al montar el componente
+  useEffect(() => {
+    limpiarCampos();
+  }, []);
+
 
   
   const fileInputRef1 = useRef<HTMLInputElement>(null);

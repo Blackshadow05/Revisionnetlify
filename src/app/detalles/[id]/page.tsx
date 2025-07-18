@@ -529,15 +529,9 @@ export default function DetalleRevision() {
   }, []);
 
   const renderField = (key: keyof Revision, value: any) => {
-    // Ocultar campos vacíos (excepto los que ya tienen lógica especial)
-    if (
-      key !== 'casita' &&
-      key !== 'created_at' &&
-      key !== 'quien_revisa' &&
-      key !== 'caja_fuerte' &&
-      key !== 'notas' &&
-      (!value || value === '' || value === '0')
-    ) {
+    // Mostrar TODOS los campos siempre, sin ocultar ninguno
+    // Solo excluir el campo 'id' que no es relevante para mostrar
+    if (key === 'id') {
       return null;
     }
     
@@ -561,7 +555,7 @@ export default function DetalleRevision() {
               <h3 className="text-lg font-bold bg-gradient-to-r from-[#c9a45c] to-[#f0c987] bg-clip-text text-transparent">{label}</h3>
             </div>
             <p className="text-2xl font-black text-white drop-shadow-lg">
-              {value && value !== '' && value !== '0' ? (value as string) : (
+              {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
                 <span className="text-gray-400 italic text-lg">Sin información</span>
               )}
             </p>
@@ -607,7 +601,7 @@ export default function DetalleRevision() {
               <h3 className="text-lg font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">Revisado por</h3>
             </div>
             <p className="text-xl font-bold text-white drop-shadow-lg">
-              {value && value !== '' && value !== '0' ? (value as string) : (
+              {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
                 <span className="text-gray-400 italic text-base">Sin información</span>
               )}
             </p>
@@ -639,7 +633,7 @@ export default function DetalleRevision() {
               />
             ) : (
               <p className="text-xl font-bold text-white drop-shadow-lg">
-                {value && value !== '' && value !== '0' ? (value as string) : (
+                {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
                   <span className="text-gray-400 italic text-base">Sin información</span>
                 )}
               </p>
@@ -688,7 +682,7 @@ export default function DetalleRevision() {
             />
           ) : (
             <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
-              {value && value !== '' && value !== '0' ? (value as string) : (
+              {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
                 <span className="text-gray-500 italic">Sin notas registradas</span>
               )}
             </p>
@@ -699,7 +693,19 @@ export default function DetalleRevision() {
 
     // Campos regulares: usar InfoCard para un estilo coherente
     const editable = isEditing && !!editedData && !nonEditableFields.includes(key);
-    const displayValue = value && value !== '' && value !== '0' ? (value as string) : undefined;
+    
+    // En modo edición, mostrar TODOS los valores (incluyendo '0', null, '')
+    // En modo normal, solo mostrar valores que no sean vacíos o '0'
+    let displayValue: string | undefined;
+    if (isEditing) {
+      // En modo edición, mostrar el valor tal como está (incluso si es '0', null, '')
+      // Convertir null/undefined a cadena vacía para que el campo sea editable
+      displayValue = value !== null && value !== undefined ? String(value) : '';
+    } else {
+      // En modo normal, solo mostrar valores que no sean vacíos, null o '0'
+      const isEmptyValue = value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
+      displayValue = isEmptyValue ? undefined : String(value);
+    }
 
     // Determinar acento según valor (simple ejemplo)
     let accent: 'default' | 'success' | 'error' = 'default';
@@ -1024,7 +1030,7 @@ export default function DetalleRevision() {
                     'notas'
                   ].includes(key)) return true;
                   const val = revision?.[key as keyof Revision];
-                  return val && val !== '' && val !== '0';
+                  return val !== null && val !== undefined && !(typeof val === 'string' && val.trim() === '');
                 }).map((key) => renderField(key as keyof Revision, revision?.[key as keyof Revision]))}
               </div>
             </div>

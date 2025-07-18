@@ -75,6 +75,8 @@ export default function Home() {
   const [reportDateFrom, setReportDateFrom] = useState('');
   const [reportDateTo, setReportDateTo] = useState('');
   const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto'>('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +152,24 @@ export default function Home() {
 
   // Cerrar sidebar con tecla ESC se maneja dentro del componente Sidebar
 
+  // Cerrar dropdown de filtros al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.filter-dropdown-container')) {
+        setShowFilterDropdown(false);
+      }
+    };
+
+    if (showFilterDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilterDropdown]);
+
   const fetchRevisiones = async () => {
     try {
       setLoading(true);
@@ -202,12 +222,74 @@ export default function Home() {
     return cajaFuerteMatch && searchMatch;
   });
 
+  const applyAdvancedFilters = (data: RevisionData[]) => {
+    if (activeFilter === 'all') {
+      return data;
+    }
+
+    // Helper function to get latest revision per casita
+    const getLatestByCasita = () => {
+      const latestByCasita = new Map<string, RevisionData>();
+      
+      data.forEach(row => {
+        const existing = latestByCasita.get(row.casita);
+        if (!existing || new Date(row.created_at) > new Date(existing.created_at)) {
+          latestByCasita.set(row.casita, row);
+        }
+      });
+      
+      return Array.from(latestByCasita.values()).sort((a, b) => {
+        const numA = parseInt(a.casita, 10);
+        const numB = parseInt(b.casita, 10);
+        return numA - numB;
+      });
+    };
+
+    if (activeFilter === 'latest') {
+      return getLatestByCasita();
+    }
+
+    if (activeFilter === 'no-yute') {
+      return getLatestByCasita()
+        .filter(row => row.bolso_yute === '0');
+    }
+
+    if (activeFilter === 'has-yute-1') {
+      return getLatestByCasita()
+        .filter(row => row.bolso_yute === '01');
+    }
+
+    if (activeFilter === 'has-yute-2') {
+      return getLatestByCasita()
+        .filter(row => row.bolso_yute === '02');
+    }
+
+    if (activeFilter === 'no-trapo-binocular') {
+      return getLatestByCasita()
+        .filter(row => row.trapo_binoculares === 'No');
+    }
+
+    if (activeFilter === 'no-sombrero') {
+      return getLatestByCasita()
+        .filter(row => row.sombrero === 'No');
+    }
+
+    if (activeFilter === 'no-bulto') {
+      return getLatestByCasita()
+        .filter(row => row.bulto === 'No');
+    }
+
+    return data;
+  };
+
+  const finalFilteredData = applyAdvancedFilters(filteredData);
+
   // 🚀 Cálculos de paginado
-  const totalItems = filteredData.length;
+  const totalItems = finalFilteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
+  const paginatedData = finalFilteredData.slice(startIndex, endIndex);
 
 
 
@@ -587,25 +669,173 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Resultados de búsqueda */}
-          {(searchTerm || cajaFuerteFilter) && (
+          {/* Resultados de búsqueda y filtros */}
+          {(searchTerm || cajaFuerteFilter || activeFilter !== 'all') && (
             <div className="mt-4 pt-4 border-t border-[#3d4659]/50">
               <p className="text-gray-400 text-sm">
-                Mostrando {filteredData.length} de {data.length} revisiones
+                Mostrando {finalFilteredData.length} de {data.length} revisiones
                 {searchTerm && <span> para "{searchTerm}"</span>}
                 {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
+                {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
+                {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
               </p>
             </div>
           )}
         </div>
 
-        {/* Toggle de Vista - Solo visible si el usuario está logueado */}
+        {/* Toggle de Vista y Filtros - Solo visible si el usuario está logueado */}
         {isLoggedIn && (
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center items-center gap-4 mb-6">
             <ViewToggle
               currentView={viewMode}
               onViewChange={handleViewModeChange}
             />
+            <div className="relative filter-dropdown-container">
+              <button
+                type="button"
+                className={`p-2 bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                  activeFilter !== 'all'
+                    ? 'border-[#c9a45c]/80 text-[#c9a45c]'
+                    : 'border-[#3d4659]/50 text-[#c9a45c] hover:text-[#f0c987] hover:border-[#c9a45c]/50'
+                }`}
+                title="Filtros"
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                </svg>
+                {activeFilter !== 'all' && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#c9a45c] rounded-full"></span>
+                )}
+              </button>
+              
+              {showFilterDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-[#1e2538] border border-[#3d4659] rounded-xl shadow-xl z-50">
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'all'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('all');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Todas las revisiones
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'latest'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('latest');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Última Revisión
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'no-yute'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('no-yute');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      No hay yute
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'has-yute-1'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('has-yute-1');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Hay un yute
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'has-yute-2'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('has-yute-2');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Hay 2 Yutes
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'no-trapo-binocular'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('no-trapo-binocular');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      No hay trapo binocular
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'no-sombrero'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('no-sombrero');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      No hay sombrero
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'no-bulto'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => {
+                        setActiveFilter('no-bulto');
+                        setShowFilterDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      No hay Bulto
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -676,21 +906,22 @@ export default function Home() {
                                 </div>
                                 <div className="text-center">
                                   <h3 className="text-lg font-semibold text-gray-400 mb-2">
-                                    {filteredData.length === 0 ? 'No se encontraron revisiones' : 'No hay datos en esta página'}
+                                    {finalFilteredData.length === 0 ? 'No se encontraron revisiones' : 'No hay datos en esta página'}
                                   </h3>
                                   <p className="text-gray-500 text-sm max-w-md mx-auto">
-                                    {filteredData.length === 0
-                                      ? (searchTerm || cajaFuerteFilter)
+                                    {finalFilteredData.length === 0
+                                      ? (searchTerm || cajaFuerteFilter || activeFilter !== 'all')
                                         ? 'Intenta ajustar los filtros de búsqueda para encontrar revisiones.'
                                         : 'Aún no se han registrado revisiones en el sistema.'
                                       : `Página ${currentPage} está vacía. Navega a una página anterior.`
                                     }
                                   </p>
-                                  {filteredData.length === 0 && (searchTerm || cajaFuerteFilter) && (
+                                  {finalFilteredData.length === 0 && (searchTerm || cajaFuerteFilter || activeFilter !== 'all') && (
                                     <button
                                       onClick={() => {
                                         setSearchTerm('');
                                         setCajaFuerteFilter('');
+                                        setActiveFilter('all');
                                       }}
                                       className="mt-4 px-4 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-xl transition-all duration-200 text-sm"
                                     >

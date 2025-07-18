@@ -1,6 +1,6 @@
 [build]
   # 🚀 NETLIFY OPTIMIZADO: Comandos de build específicos para Next.js con API routes
-  command = "npm install --save-dev @types/react && npm run build"
+  command = "npm run build"
   publish = ".next" # Usar '.next' para output: 'standalone'
 
 [[plugins]]

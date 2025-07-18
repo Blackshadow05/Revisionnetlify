@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Configura cliente con fallback seguro
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,7 +12,10 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Tipado específico para Next.js 15.4.1
-export async function GET(req: NextRequest, { params }: { params: { key: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { key: string } }
+) {
   const { key } = params;
 
   if (!key) {
@@ -45,10 +48,10 @@ export async function GET(req: NextRequest, { params }: { params: { key: string 
 
 // Tipado específico para Next.js 15.4.1
 export async function POST(
-  request: Request,
-  context: { params: { key: string } }
+  request: NextRequest,
+  { params }: { params: { key: string } }
 ) {
-  const { key } = context.params;
+  const { key } = params;
   const { value } = await request.json();
 
   if (!key) {

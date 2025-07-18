@@ -14,9 +14,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Tipado específico para Next.js 15.4.1
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ key: string }> }
+  context: { params: { key: string } }
 ) {
-  const { key } = await params;
+  const { key } = context.params;
 
   if (!key) {
     return NextResponse.json({ error: 'La clave (key) es requerida' }, { status: 400 });
@@ -49,9 +49,9 @@ export async function GET(
 // Tipado específico para Next.js 15.4.1
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ key: string }> }
+  context: { params: { key: string } }
 ) {
-  const { key } = await params;
+  const { key } = context.params;
   const { value } = await request.json();
 
   if (!key) {

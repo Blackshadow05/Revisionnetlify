@@ -11,18 +11,7 @@
   # 🔧 Variables específicas para evitar problemas de hydratación
   NODE_VERSION = "18.18.0"
 
-# 🔄 REDIRECTS: Configuración específica para App Router
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
 
-# 🚀 REDIRECTS PARA NEXT.JS APP ROUTER
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
-  force = true
 
 # 📦 HEADERS OPTIMIZADOS PARA RENDIMIENTO
 [[headers]]

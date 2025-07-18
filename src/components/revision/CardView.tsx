@@ -143,16 +143,13 @@ export default function CardView({ data, onCardClick, onImageClick, loading = fa
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
               <span className="text-orange-400 text-xs font-medium">
-                {revision.notas_count}
+                Hay una nota
               </span>
             </div>
           )}
 
-          {/* Footer con Evidencias - Más compacto */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#3d4659]/50">
-            <span className="text-xs text-gray-500">
-              Detalles
-            </span>
+          {/* Footer con Evidencias - Solo botones */}
+          <div className="flex items-center justify-end pt-2 border-t border-[#3d4659]/50">
             <div className="flex items-center gap-1">
               {revision.evidencia_01 && (
                 <button
@@ -160,7 +157,7 @@ export default function CardView({ data, onCardClick, onImageClick, loading = fa
                     e.stopPropagation();
                     onImageClick(revision.evidencia_01);
                   }}
-                  className="w-5 h-5 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-xs transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 1"
                 >
                   1
@@ -172,7 +169,7 @@ export default function CardView({ data, onCardClick, onImageClick, loading = fa
                     e.stopPropagation();
                     onImageClick(revision.evidencia_02);
                   }}
-                  className="w-5 h-5 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-xs transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 2"
                 >
                   2
@@ -184,7 +181,7 @@ export default function CardView({ data, onCardClick, onImageClick, loading = fa
                     e.stopPropagation();
                     onImageClick(revision.evidencia_03);
                   }}
-                  className="w-5 h-5 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-xs transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 3"
                 >
                   3

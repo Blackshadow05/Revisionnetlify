@@ -129,10 +129,10 @@ export default function ButtonGroup({
             type="button"
             onClick={() => onSelect(option)}
             className={`
-              px-5 py-3 rounded-xl text-sm font-semibold border-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[72px]
+              px-5 py-3 rounded-xl text-sm font-bold border-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[72px]
               ${selectedValue === option
                 ? 'bg-gradient-to-br from-[#c9a45c] to-[#f0c987] text-[#1a1f35] border-[#c9a45c]/60 shadow-lg'
-                : 'bg-[#1e2538]/70 text-gray-300 border-[#3d4659]/40 hover:bg-[#2a3347]/80 hover:border-[#3d4659]/60'
+                : 'bg-[#1e2538]/70 text-white border-[#3d4659]/40 hover:bg-[#2a3347]/80 hover:border-[#3d4659]/60 hover:text-gray-100'
               }
             `}
             aria-pressed={selectedValue === option}

@@ -830,7 +830,7 @@ export default function Puesto01Page() {
           nombre: '',
           casita: '',
           detalle: '',
-          tipo: 'Check in',
+          tipo: 'Check in' as TipoOption,
           placa: '',
           horaIngreso: '',
           oficialIngreso: '',
@@ -867,15 +867,17 @@ export default function Puesto01Page() {
 
   // Handler para actualizaciones con debounce global
   const handleUpdateRecord = useCallback((id: number, field: string, value: string) => {
+    // Si el campo es 'tipo', forzar el tipo correcto
+    const safeValue = field === 'tipo' ? (value as TipoOption) : value;
     // Actualizar inmediatamente en la UI (optimistic update)
     setRecords(prevRecords => 
       prevRecords.map(rec => 
-        rec.id === id ? { ...rec, [field]: value } : rec
+        rec.id === id ? { ...rec, [field]: safeValue } : rec
       )
     );
 
     // Programar guardado con debounce de 25 segundos
-    scheduleUpdate(id, field, value);
+    scheduleUpdate(id, field, safeValue);
     startCountdown();
   }, [scheduleUpdate]);
 
@@ -886,7 +888,7 @@ export default function Puesto01Page() {
         nombre: '',
         casita: '',
         detalle: '',
-        tipo: 'Check in',
+        tipo: 'Check in' as TipoOption,
         placa: '',
         horaIngreso: '',
         oficialIngreso: '',

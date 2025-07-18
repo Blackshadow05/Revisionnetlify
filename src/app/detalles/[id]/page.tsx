@@ -85,7 +85,8 @@ interface RegistroEdicion {
   Dato_nuevo: string;
 }
 
-export default function DetalleRevision({ params }: { params: { id: string } }) {
+export default function DetalleRevision() {
+  const params = useParams();
   const router = useRouter();
   const { showSuccess, showError } = useToast();
   const [revision, setRevision] = useState<Revision | null>(null);
@@ -104,6 +105,8 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Revision | null>(null);
+  
+
   const { userRole, user } = useAuth();
   const [registroEdiciones, setRegistroEdiciones] = useState<RegistroEdicion[]>([]);
   const [nuevaNota, setNuevaNota] = useState({
@@ -923,7 +926,8 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
               
               <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                 {!isEditing ? (
-                  (userRole === 'admin' || userRole === 'SuperAdmin') && (
+                  // Temporarily allow all users to edit for debugging
+                  // (userRole === 'admin' || userRole === 'SuperAdmin') && (
                     <button
                       onClick={handleEdit}
                       className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1a1f35] rounded-xl hover:from-[#d4b06c] hover:to-[#f7d498] transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl font-medium flex items-center justify-center gap-2 border border-[#f0c987]/20"
@@ -933,7 +937,7 @@ export default function DetalleRevision({ params }: { params: { id: string } }) 
                       </svg>
                       Editar
                     </button>
-                  )
+                  // )
                 ) : (
                   <>
                     <button

@@ -1,2 +1,0 @@
-Este es un archivo de prueba para forzar un commit en GitHub.
-No afecta al funcionamiento del proyecto. 

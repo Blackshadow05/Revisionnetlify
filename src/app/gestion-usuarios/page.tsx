@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { ResetTokenService } from '@/lib/reset-token-service';
 
 
 interface Usuario {
@@ -16,6 +17,7 @@ interface Usuario {
   password_hash: string;
   Rol: string;
   created_at: string;
+  permanent_reset_token: string | null;
 }
 
 export default function GestionUsuarios() {
@@ -28,7 +30,8 @@ export default function GestionUsuarios() {
   const [nuevoUsuario, setNuevoUsuario] = useState<Omit<Usuario, 'id' | 'created_at'>>({
     Usuario: '',
     password_hash: '',
-    Rol: ''
+    Rol: '',
+    permanent_reset_token: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,6 +40,10 @@ export default function GestionUsuarios() {
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
   const [isHighlighting, setIsHighlighting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -132,7 +139,8 @@ export default function GestionUsuarios() {
       setNuevoUsuario({
         Usuario: '',
         password_hash: '',
-        Rol: ''
+        Rol: '',
+        permanent_reset_token: null
       });
       setIsEditing(false);
       setEditingId(null);
@@ -150,7 +158,8 @@ export default function GestionUsuarios() {
     setNuevoUsuario({
       Usuario: usuario.Usuario,
       password_hash: '', // Campo vacío al editar
-      Rol: usuario.Rol
+      Rol: usuario.Rol,
+      permanent_reset_token: usuario.permanent_reset_token
     });
     setIsEditing(true);
     setEditingId(usuario.id);
@@ -192,10 +201,128 @@ export default function GestionUsuarios() {
     setNuevoUsuario({
       Usuario: '',
       password_hash: '',
-      Rol: ''
+      Rol: '',
+      permanent_reset_token: null
     });
     setIsEditing(false);
     setEditingId(null);
+  };
+
+  // Funciones para gestionar tokens permanentes
+  const handleGenerateToken = async (usuario: Usuario) => {
+    if (!usuario.id) return;
+    
+    setSelectedUser(usuario);
+    setTokenLoading(true);
+    setShowTokenModal(true);
+    
+    try {
+      const token = await ResetTokenService.generatePermanentToken(usuario.id);
+      if (token) {
+        setGeneratedToken(token);
+        await fetchUsuarios(); // Refrescar la lista
+      } else {
+        setError('Error al generar el token');
+      }
+    } catch (error) {
+      console.error('Error generating token:', error);
+      setError('Error al generar el token');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const handleRegenerateToken = async (usuario: Usuario) => {
+    if (!usuario.id) return;
+    
+    setSelectedUser(usuario);
+    setTokenLoading(true);
+    setShowTokenModal(true);
+    
+    try {
+      const token = await ResetTokenService.regeneratePermanentToken(usuario.id);
+      if (token) {
+        setGeneratedToken(token);
+        await fetchUsuarios(); // Refrescar la lista
+      } else {
+        setError('Error al regenerar el token');
+      }
+    } catch (error) {
+      console.error('Error regenerating token:', error);
+      setError('Error al regenerar el token');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const handleRevokeToken = async (usuario: Usuario) => {
+    if (!usuario.id) return;
+    
+    if (!confirm(`¿Estás seguro de que deseas revocar el enlace de reseteo para ${usuario.Usuario}?`)) {
+      return;
+    }
+    
+    try {
+      const success = await ResetTokenService.revokePermanentToken(usuario.id);
+      if (success) {
+        await fetchUsuarios(); // Refrescar la lista
+      } else {
+        setError('Error al revocar el token');
+      }
+    } catch (error) {
+      console.error('Error revoking token:', error);
+      setError('Error al revocar el token');
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      // Intentar usar la API moderna de clipboard primero
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        showCopyFeedback();
+        return;
+      }
+      
+      // Fallback para móviles y contextos no seguros
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        showCopyFeedback();
+      } catch (err) {
+        console.error('Error copying text: ', err);
+        // Mostrar el texto en un alert como último recurso
+        alert(`Copia este enlace manualmente:\n\n${text}`);
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Error copying to clipboard: ', err);
+      // Mostrar el texto en un alert como último recurso
+      alert(`Copia este enlace manualmente:\n\n${text}`);
+    }
+  };
+
+  const showCopyFeedback = () => {
+    // Mostrar feedback visual
+    const button = document.activeElement as HTMLButtonElement;
+    if (button) {
+      const originalText = button.textContent;
+      button.textContent = '¡Copiado!';
+      button.style.backgroundColor = '#10b981'; // Verde
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.backgroundColor = ''; // Restaurar color original
+      }, 2000);
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Cargando...</div>;
@@ -203,6 +330,92 @@ export default function GestionUsuarios() {
 
   return (
     <main className="min-h-screen bg-slate-900 py-8">
+      {/* Modal para mostrar token generado */}
+      {showTokenModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#1e2538] rounded-lg p-6 max-w-lg w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#c9a45c]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Enlace de Reseteo Generado
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Para: <span className="font-semibold text-[#c9a45c]">{selectedUser.Usuario}</span>
+              </p>
+            </div>
+
+            {tokenLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a45c] mx-auto mb-4"></div>
+                <p className="text-gray-300">Generando enlace...</p>
+              </div>
+            ) : generatedToken ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Enlace Permanente:
+                  </label>
+                  <div className="bg-[#2a3347] border border-[#3d4659] rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={ResetTokenService.generateResetUrl(generatedToken)}
+                        readOnly
+                        className="flex-1 bg-transparent text-gray-300 text-sm focus:outline-none"
+                      />
+                      <button
+                        onClick={() => copyToClipboard(ResetTokenService.generateResetUrl(generatedToken))}
+                        className="px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all text-sm"
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-sm text-blue-300">
+                      <p className="font-medium mb-1">Información importante:</p>
+                      <ul className="space-y-1 text-xs">
+                        <li>• Este enlace es permanente hasta que lo revoques</li>
+                        <li>• Solo permite cambiar la contraseña, no el usuario</li>
+                        <li>• Comparte este enlace de forma segura</li>
+                        <li>• Puedes regenerar o revocar este enlace en cualquier momento</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-red-400">Error al generar el enlace</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowTokenModal(false);
+                  setSelectedUser(null);
+                  setGeneratedToken(null);
+                }}
+                className="px-4 py-2 bg-[#3d4659] text-gray-300 rounded-lg hover:bg-[#4a5568] transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de confirmación de eliminación */}
       {showDeleteModal && usuarioToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
@@ -345,6 +558,7 @@ export default function GestionUsuarios() {
                 <tr className="bg-[#2a3347]">
                   <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Usuario</th>
                   <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Rol</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Enlace Reset</th>
                   <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Fecha de Creación</th>
                   <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Acciones</th>
                 </tr>
@@ -354,7 +568,48 @@ export default function GestionUsuarios() {
                   <tr key={usuario.id} className="border-b border-[#3d4659]">
                     <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Usuario}</td>
                     <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Rol}</td>
-                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.created_at}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <div className="flex flex-col gap-1">
+                        {usuario.permanent_reset_token ? (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setSelectedUser(usuario);
+                                setGeneratedToken(usuario.permanent_reset_token);
+                                setShowTokenModal(true);
+                              }}
+                              className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-all"
+                              title="Ver enlace existente"
+                            >
+                              Ver
+                            </button>
+                            <button
+                              onClick={() => handleRegenerateToken(usuario)}
+                              className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-all"
+                              title="Regenerar enlace"
+                            >
+                              Regenerar
+                            </button>
+                            <button
+                              onClick={() => handleRevokeToken(usuario)}
+                              className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-all"
+                              title="Revocar enlace"
+                            >
+                              Revocar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateToken(usuario)}
+                            className="px-2 py-1 bg-[#c9a45c] text-white rounded text-xs hover:bg-[#d4b06c] transition-all"
+                            title="Generar enlace de reseteo"
+                          >
+                            Generar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap text-xs">{new Date(usuario.created_at).toLocaleDateString()}</td>
                     <td className="px-2 sm:px-4 py-2">
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
@@ -380,7 +635,7 @@ export default function GestionUsuarios() {
           {/* Cards solo visibles en móvil */}
           <div className="block sm:hidden mt-4 space-y-4">
             {usuarios.map((usuario) => (
-              <div key={usuario.id} className="bg-[#232c41] rounded-lg shadow p-4 flex flex-col gap-2 border border-[#3d4659]">
+              <div key={usuario.id} className="bg-[#232c41] rounded-lg shadow p-4 flex flex-col gap-3 border border-[#3d4659]">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-[#c9a45c]">Usuario:</span>
                   <span className="text-gray-300">{usuario.Usuario}</span>
@@ -391,9 +646,56 @@ export default function GestionUsuarios() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-[#c9a45c]">Creado:</span>
-                  <span className="text-gray-300 text-xs">{usuario.created_at}</span>
+                  <span className="text-gray-300 text-xs">{new Date(usuario.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex gap-2 mt-2">
+                
+                {/* Sección de Enlace Reset */}
+                <div className="border-t border-[#3d4659] pt-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold text-[#c9a45c]">Enlace Reset:</span>
+                    <span className="text-gray-300 text-xs">
+                      {usuario.permanent_reset_token ? 'Activo' : 'No generado'}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    {usuario.permanent_reset_token ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setSelectedUser(usuario);
+                            setGeneratedToken(usuario.permanent_reset_token);
+                            setShowTokenModal(true);
+                          }}
+                          className="flex-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-all"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => handleRegenerateToken(usuario)}
+                          className="flex-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-all"
+                        >
+                          Regenerar
+                        </button>
+                        <button
+                          onClick={() => handleRevokeToken(usuario)}
+                          className="flex-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-all"
+                        >
+                          Revocar
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleGenerateToken(usuario)}
+                        className="w-full px-2 py-1 bg-[#c9a45c] text-white rounded text-xs hover:bg-[#d4b06c] transition-all"
+                      >
+                        Generar Enlace
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Acciones principales */}
+                <div className="flex gap-2 mt-2 border-t border-[#3d4659] pt-3">
                   <button
                     onClick={() => handleEdit(usuario)}
                     className="w-full px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all text-xs"

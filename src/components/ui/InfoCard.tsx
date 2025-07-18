@@ -27,6 +27,19 @@ export default function InfoCard({
   onChange,
   placeholder = 'Sin información',
 }: InfoCardProps) {
+  // Local state for input to handle controlled component properly
+  const [localValue, setLocalValue] = React.useState(value ?? '');
+  
+  // Update local value when prop value changes
+  React.useEffect(() => {
+    setLocalValue(value ?? '');
+  }, [value]);
+  
+  const handleChange = (newValue: string) => {
+    setLocalValue(newValue);
+    onChange?.(newValue);
+  };
+  
   return (
     <div className="bg-gradient-to-br from-[#1e2538]/70 to-[#2a3347]/70 p-4 rounded-xl border border-[#3d4659]/40 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 motion-safe:transition-transform">
       <div className="flex items-center gap-2 mb-2">
@@ -44,8 +57,8 @@ export default function InfoCard({
       {editable ? (
         <input
           type="text"
-          value={value ?? ''}
-          onChange={(e) => onChange?.(e.target.value)}
+          value={localValue}
+          onChange={(e) => handleChange(e.target.value)}
           className="w-full px-3 py-2 bg-[#1e2538]/80 border border-[#3d4659]/60 rounded-lg text-gray-100 font-medium focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/40 focus:border-[#c9a45c]/40 transition-all"
           placeholder={placeholder}
         />

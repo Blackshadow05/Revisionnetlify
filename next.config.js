@@ -9,10 +9,15 @@ const nextConfig = {
   
   // 🖼️ IMÁGENES: Optimización para Netlify
   images: {
-    unoptimized: true, // Requerido para Netlify
-    domains: [
-      'dhd61lan4.cloudinary.net', // Mantener para imágenes existentes
-      'ik.imagekit.io' // Nuevo dominio para ImageKit.io
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'dhd61lan4.cloudinary.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ik.imagekit.io',
+      },
     ],
   },
   
@@ -72,26 +77,17 @@ const nextConfig = {
       };
     }
     
-    // Optimización específica para Netlify
-    config.optimization = {
-      ...config.optimization,
-      sideEffects: false,
-    };
-    
     return config;
   },
   
   // ⚡ CONFIGURACIÓN DE RENDIMIENTO
-  swcMinify: true,
   poweredByHeader: false,
-  generateEtags: false, // Deshabilitado para Netlify
-  compress: false, // Netlify maneja la compresión
   
   // 🚫 DESHABILITAR CARACTERÍSTICAS PROBLEMÁTICAS EN NETLIFY
   experimental: {
-    optimizeCss: false, // Puede causar problemas de hydratación
     scrollRestoration: true,
   },
+  // Asegurarse de que no haya configuraciones obsoletas
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

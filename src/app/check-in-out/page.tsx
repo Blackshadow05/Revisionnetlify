@@ -555,14 +555,14 @@ export default function CheckInOutPage() {
     title: string,
     data: RevisionItem[],
     color: { bg: string; text: string; border: string },
-    icon: React.ReactElement,
+    icon: React.ReactElement<{ className?: string }>,
     timeRange?: string
   ) => (
     <section className="mb-8">
       <div className="bg-[#2a3347]/95 rounded-2xl border border-[#c9a45c]/20 p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-6">
           <div className={`w-10 h-10 ${color.bg} rounded-xl flex items-center justify-center`}>
-            {React.cloneElement(icon, { className: `w-6 h-6 ${color.text}` })}
+            {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: `w-6 h-6 ${color.text}` })}
           </div>
           <div>
             <h3 className={`text-xl font-bold ${color.text}`}>{title}</h3>

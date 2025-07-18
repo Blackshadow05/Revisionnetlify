@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     if (!supabase) {
@@ -25,7 +25,9 @@ export async function GET(
       );
     }
     
-    if (!context.params.id) {
+    const { id } = await params;
+    
+    if (!id) {
       return NextResponse.json(
         { error: 'ID no proporcionado' },
         { status: 400 }
@@ -35,7 +37,7 @@ export async function GET(
     const { data, error } = await supabase
       .from('revisiones_casitas')
       .select('*')
-      .eq('id', context.params.id)
+      .eq('id', id)
       .single();
 
     if (error) {

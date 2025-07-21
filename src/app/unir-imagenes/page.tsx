@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@/lib/imageUtils';
 import CompressionIndicator from '@/components/revision/CompressionIndicator';
 import ImageModal from '@/components/revision/ImageModal';
@@ -24,6 +26,20 @@ interface CompressionProgress {
 }
 
 export default function UnirImagenes() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  // 🔒 PROTECCIÓN DE ACCESO: Solo Esteban B puede acceder
+  useEffect(() => {
+    if (!isLoading) {
+      if (user !== 'Esteban B') {
+        console.warn('⚠️ Acceso denegado: Solo Esteban B puede usar esta función');
+        router.push('/'); // Redirigir a la página principal
+        return;
+      }
+      console.log('✅ Acceso autorizado para:', user);
+    }
+  }, [user, isLoading, router]);
 
   // 📱 DETECCIÓN DE DISPOSITIVO MÓVIL (al inicio para evitar hoisting issues)
   const isMobile = typeof window !== 'undefined' && (
@@ -737,6 +753,45 @@ export default function UnirImagenes() {
       console.error('❌ Error durante la limpieza de campos:', error);
     }
   };
+
+  // 🔒 VERIFICACIÓN DE ACCESO: Mostrar loading o denegar acceso
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1e2538] to-[#2a3347]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#c9a45c]/30 border-t-[#c9a45c] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-lg font-medium">Verificando acceso...</p>
+          <p className="text-gray-400 text-sm mt-2">Comprobando permisos de usuario</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (user !== 'Esteban B') {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1e2538] to-[#2a3347]">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10 text-red-400">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-4">🔒 Acceso Restringido</h1>
+          <p className="text-gray-300 mb-6">Esta función está disponible únicamente para <span className="text-[#c9a45c] font-semibold">Esteban B</span>.</p>
+          <p className="text-gray-400 text-sm mb-8">Si necesitas acceso, contacta al administrador del sistema.</p>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1a1f35] rounded-xl hover:from-[#f0c987] hover:to-[#c9a45c] transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            Volver al Inicio
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main

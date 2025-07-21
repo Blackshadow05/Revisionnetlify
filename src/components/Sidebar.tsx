@@ -93,7 +93,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
             </svg>
           ),
           color: 'text-blue-400',
-          show: true
+          show: user === 'Esteban B' // 🔒 Solo visible para Esteban B
         },
         {
           name: 'Gestión Usuarios',

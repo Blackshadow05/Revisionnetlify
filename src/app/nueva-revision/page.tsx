@@ -616,20 +616,48 @@ export default function NuevaRevision() {
   };
 
   const handleFileChange = (field: EvidenceField, file: File | null) => {
+    // 🔍 LOG: Registrar cambio de archivo
+    const logId = `handleFileChange-${field}-${Date.now()}`;
+    addCompressionLog(`[${logId}] Cambio de archivo en ${field}`, {
+      tieneArchivo: !!file,
+      nombreArchivo: file?.name || 'null',
+      tamañoArchivo: file?.size || 0,
+      tipoArchivo: file?.type || 'null',
+      cajaFuerte: formData.caja_fuerte,
+      timestamp: new Date().toISOString()
+    });
     
     if (file) {
+      // 🔍 LOG: Información detallada del archivo seleccionado
+      addCompressionLog(`[${logId}] Iniciando procesamiento de archivo`, {
+        campo: field,
+        archivo: {
+          nombre: file.name,
+          tamaño: `${(file.size / 1024).toFixed(1)}KB`,
+          tipo: file.type,
+          lastModified: new Date(file.lastModified).toISOString()
+        },
+        dispositivo: {
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a',
+          plataforma: typeof navigator !== 'undefined' ? navigator.platform : 'n/a',
+          idioma: typeof navigator !== 'undefined' ? navigator.language : 'n/a'
+        }
+      });
+      
       manejarArchivoSeleccionado(field, file);
     } else {
       // 🧹 LIMPIEZA COMPLETA: Limpiar archivo y todos los estados relacionados
       console.log(`🧹 Limpiando completamente campo ${field}`);
+      addCompressionLog(`[${logId}] Limpiando campo ${field}`);
       
       // Revocar URL si existe
       if (compressedFiles[field]) {
         try {
           const url = URL.createObjectURL(compressedFiles[field]!);
           revokeImagePreview(url);
+          addCompressionLog(`[${logId}] URL de imagen revocada correctamente`);
         } catch (error) {
-          // Silenciar error si no se puede revocar
+          addCompressionLog(`[${logId}] Error al revocar URL de imagen`, error);
         }
       }
       
@@ -647,6 +675,8 @@ export default function NuevaRevision() {
       // 🚀 NUEVO: Limpiar estados avanzados
       setCompressionProgress(prev => ({ ...prev, [field]: null }));
       setIsCompressing(prev => ({ ...prev, [field]: false }));
+      
+      addCompressionLog(`[${logId}] Campo ${field} limpiado completamente`);
     }
   };
 
@@ -1170,6 +1200,39 @@ export default function NuevaRevision() {
                       />
                     ))}
                   </div>
+
+                  {/* 🔍 Panel de Logs de Compresión - Solo visible en Check in */}
+                  {formData.caja_fuerte === 'Check in' && compressionLogs.length > 0 && (
+                    <div className="mt-6 bg-gray-900/50 border border-gray-700 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-medium text-yellow-400 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Logs de Compresión de Imágenes
+                        </h4>
+                        <button
+                          onClick={() => setCompressionLogs([])}
+                          className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-500 transition-colors"
+                        >
+                          Limpiar Logs
+                        </button>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto space-y-1 text-sm font-mono">
+                        {compressionLogs.map((log, index) => (
+                          <div 
+                            key={index} 
+                            className="text-gray-300 bg-gray-800/50 p-2 rounded border-l-2 border-blue-500/50"
+                          >
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 text-xs text-gray-500">
+                        💡 Estos logs ayudan a diagnosticar problemas de compresión de imágenes en diferentes dispositivos.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </fieldset>
             )}

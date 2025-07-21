@@ -25,6 +25,12 @@ interface CompressionProgress {
 
 export default function UnirImagenes() {
 
+  // 📱 DETECCIÓN DE DISPOSITIVO MÓVIL (al inicio para evitar hoisting issues)
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
+  );
+
   const [imagen1, setImagen1] = useState<ImageData>({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
   const [imagen2, setImagen2] = useState<ImageData>({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
   const [imagenUnida, setImagenUnida] = useState<string | null>(null);
@@ -61,6 +67,55 @@ export default function UnirImagenes() {
       document.body.style.overflow = 'unset';
     };
   }, [modalVisible]);
+
+  // 📱 MONITOR DE MEMORIA PARA MÓVILES
+  const checkMemoryUsage = useCallback(() => {
+    if (!isMobile || typeof window === 'undefined') return;
+    
+    try {
+      const memory = (performance as any).memory;
+      if (memory) {
+        const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+        const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+        const percentUsed = (usedMB / limitMB) * 100;
+        
+        console.log(`📈 Memoria: ${usedMB}MB / ${limitMB}MB (${Math.round(percentUsed)}%)`);
+        
+        // Si se usa más del 80% de memoria, limpiar automáticamente
+        if (percentUsed > 80) {
+          console.warn('⚠️ MEMORIA CRÍTICA - Limpiando automáticamente...');
+          
+          // Limpiar imagen unida si existe
+          if (imagenUnida) {
+            if (imagenUnida.startsWith('blob:')) {
+              URL.revokeObjectURL(imagenUnida);
+            }
+            setImagenUnida(null);
+          }
+          
+          // Forzar garbage collection
+          if ('gc' in window) {
+            try {
+              (window as any).gc();
+              console.log('🗑️ Garbage collection de emergencia ejecutado');
+            } catch (e) {
+              // Silencioso
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Silencioso - no todos los navegadores soportan performance.memory
+    }
+  }, [isMobile, imagenUnida]);
+
+  // 📱 EJECUTAR MONITOR DE MEMORIA CADA 5 SEGUNDOS EN MÓVILES
+  useEffect(() => {
+    if (!isMobile) return;
+    
+    const interval = setInterval(checkMemoryUsage, 5000);
+    return () => clearInterval(interval);
+  }, [checkMemoryUsage, isMobile]);
 
   // 🧹 LIMPIEZA: Liberar URLs de objeto cuando cambien las imágenes
   useEffect(() => {
@@ -155,13 +210,18 @@ export default function UnirImagenes() {
       // 🚀 PASO 2: Comprimir con sistema reutilizable avanzado
       console.log(`📱 COMPRESIÓN AVANZADA - Iniciando para ${tipo}...`);
       
+      // 📱 CONFIGURACIÓN ADAPTATIVA PARA MÓVILES
+      const mobileConfig = {
+        targetSizeKB: isMobile ? 150 : 200,  // Más agresivo en móviles
+        maxResolution: isMobile ? 1200 : 1600, // Menor resolución en móviles
+        timeout: isMobile ? 20000 : 25000 // Menos tiempo en móviles
+      };
+      
+      console.log(`📱 Configuración para ${tipo}:`, mobileConfig);
+      
       const comprimida = await compressImageAdvanced(
         file, 
-        {
-          targetSizeKB: 200,
-          maxResolution: 1600,
-          timeout: 25000
-        },
+        mobileConfig,
         (progress: any) => {
           console.log(`📊 Progreso ${tipo}:`, progress);
           setCompressionProgress({
@@ -228,76 +288,196 @@ export default function UnirImagenes() {
   const unirImagenes = useCallback(async () => {
     if (!imagen1.compressed || !imagen2.compressed) return;
 
-    // 🧹 LIMPIEZA PREVIA: Liberar imagen unida anterior si existe
-    if (imagenUnida && imagenUnida.startsWith('blob:')) {
-      console.log('🧹 Liberando imagen unida anterior');
-      URL.revokeObjectURL(imagenUnida);
+    console.log('📱 Dispositivo móvil detectado:', isMobile);
+    console.log('📈 Memoria antes de unir:', (performance as any).memory ? `${Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)}MB` : 'No disponible');
+
+    // 🧹 LIMPIEZA PREVIA AGRESIVA: Liberar imagen unida anterior
+    if (imagenUnida) {
+      if (imagenUnida.startsWith('blob:')) {
+        console.log('🧹 Liberando blob URL anterior');
+        URL.revokeObjectURL(imagenUnida);
+      }
+      // Limpiar referencia inmediatamente
+      setImagenUnida(null);
+      
+      // 📱 PAUSA PARA MÓVILES: Dar tiempo al GC
+      if (isMobile) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) return;
-
-    const img1 = new Image();
-    const img2 = new Image();
+    let canvas: HTMLCanvasElement | null = null;
+    let ctx: CanvasRenderingContext2D | null = null;
+    let img1: HTMLImageElement | null = null;
+    let img2: HTMLImageElement | null = null;
 
     try {
+      canvas = document.createElement('canvas');
+      ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        console.error('❌ No se pudo crear contexto de canvas');
+        return;
+      }
+
+      img1 = new Image();
+      img2 = new Image();
+
+      // 📱 CONFIGURACIÓN PARA MÓVILES
+      if (isMobile) {
+        img1.crossOrigin = 'anonymous';
+        img2.crossOrigin = 'anonymous';
+      }
+
       await Promise.all([
         new Promise((resolve, reject) => {
-          img1.onload = resolve;
-          img1.onerror = reject;
-          img1.src = imagen1.compressed!;
+          const timeout = setTimeout(() => reject(new Error('Timeout cargando imagen 1')), 10000);
+          img1!.onload = () => { clearTimeout(timeout); resolve(null); };
+          img1!.onerror = () => { clearTimeout(timeout); reject(new Error('Error cargando imagen 1')); };
+          img1!.src = imagen1.compressed!;
         }),
         new Promise((resolve, reject) => {
-          img2.onload = resolve;
-          img2.onerror = reject;
-          img2.src = imagen2.compressed!;
+          const timeout = setTimeout(() => reject(new Error('Timeout cargando imagen 2')), 10000);
+          img2!.onload = () => { clearTimeout(timeout); resolve(null); };
+          img2!.onerror = () => { clearTimeout(timeout); reject(new Error('Error cargando imagen 2')); };
+          img2!.src = imagen2.compressed!;
         })
       ]);
 
+      console.log(`🖼️ Imagen 1: ${img1.width}x${img1.height}`);
+      console.log(`🖼️ Imagen 2: ${img2.width}x${img2.height}`);
+
+      // 📱 LIMITACIÓN DE TAMAÑO PARA MÓVILES
+      const maxCanvasSize = isMobile ? 2048 : 4096;
+      let finalWidth: number, finalHeight: number;
+
       // Calcular dimensiones del canvas final segun orientacion
       if (orientacion === 'vertical') {
-        // Usar el ancho maximo de ambas imagenes
         const maxWidth = Math.max(img1.width, img2.width);
-        canvas.width = maxWidth;
-        canvas.height = img1.height + img2.height;
-        
-        // Centrar las imagenes horizontalmente
-        const x1 = (maxWidth - img1.width) / 2;
-        const x2 = (maxWidth - img2.width) / 2;
-        
-        ctx.drawImage(img1, x1, 0, img1.width, img1.height);
-        ctx.drawImage(img2, x2, img1.height, img2.width, img2.height);
+        finalWidth = Math.min(maxWidth, maxCanvasSize);
+        finalHeight = Math.min(img1.height + img2.height, maxCanvasSize);
       } else {
-        // Usar la altura maxima de ambas imagenes
         const maxHeight = Math.max(img1.height, img2.height);
-        canvas.width = img1.width + img2.width;
-        canvas.height = maxHeight;
-        
-        // Centrar las imagenes verticalmente
-        const y1 = (maxHeight - img1.height) / 2;
-        const y2 = (maxHeight - img2.height) / 2;
-        
-        ctx.drawImage(img1, 0, y1, img1.width, img1.height);
-        ctx.drawImage(img2, img1.width, y2, img2.width, img2.height);
+        finalWidth = Math.min(img1.width + img2.width, maxCanvasSize);
+        finalHeight = Math.min(maxHeight, maxCanvasSize);
       }
 
-      // Comprimir resultado final con calidad 70%
-      const imagenUnidaData = canvas.toDataURL('image/webp', 0.70);
-      setImagenUnida(imagenUnidaData);
+      // 📱 VERIFICAR TAMAÑO FINAL
+      const totalPixels = finalWidth * finalHeight;
+      if (isMobile && totalPixels > 4194304) { // 2048x2048
+        console.warn('⚠️ Imagen muy grande para móvil, reduciendo...');
+        const scale = Math.sqrt(4194304 / totalPixels);
+        finalWidth = Math.floor(finalWidth * scale);
+        finalHeight = Math.floor(finalHeight * scale);
+      }
+
+      canvas.width = finalWidth;
+      canvas.height = finalHeight;
+      
+      console.log(`🎨 Canvas final: ${finalWidth}x${finalHeight}`);
+
+      // Limpiar canvas
+      ctx.clearRect(0, 0, finalWidth, finalHeight);
+      
+      // Calcular escalas si es necesario
+      const scaleX = finalWidth / (orientacion === 'vertical' ? Math.max(img1.width, img2.width) : (img1.width + img2.width));
+      const scaleY = finalHeight / (orientacion === 'vertical' ? (img1.height + img2.height) : Math.max(img1.height, img2.height));
+      const scale = Math.min(scaleX, scaleY, 1); // No agrandar
+
+      if (orientacion === 'vertical') {
+        const scaledImg1Width = img1.width * scale;
+        const scaledImg1Height = img1.height * scale;
+        const scaledImg2Width = img2.width * scale;
+        const scaledImg2Height = img2.height * scale;
+        
+        const x1 = (finalWidth - scaledImg1Width) / 2;
+        const x2 = (finalWidth - scaledImg2Width) / 2;
+        
+        ctx.drawImage(img1, x1, 0, scaledImg1Width, scaledImg1Height);
+        ctx.drawImage(img2, x2, scaledImg1Height, scaledImg2Width, scaledImg2Height);
+      } else {
+        const scaledImg1Width = img1.width * scale;
+        const scaledImg1Height = img1.height * scale;
+        const scaledImg2Width = img2.width * scale;
+        const scaledImg2Height = img2.height * scale;
+        
+        const y1 = (finalHeight - scaledImg1Height) / 2;
+        const y2 = (finalHeight - scaledImg2Height) / 2;
+        
+        ctx.drawImage(img1, 0, y1, scaledImg1Width, scaledImg1Height);
+        ctx.drawImage(img2, scaledImg1Width, y2, scaledImg2Width, scaledImg2Height);
+      }
+
+      // 📱 COMPRESIÓN ADAPTATIVA
+      const quality = isMobile ? 0.6 : 0.7; // Menor calidad en móviles
+      const format = 'image/webp';
+      
+      console.log(`🗜️ Comprimiendo con calidad ${quality}`);
+      
+      const imagenUnidaData = canvas.toDataURL(format, quality);
+      
+      // 📱 VERIFICAR TAMAÑO DEL RESULTADO
+      const resultSizeKB = Math.round((imagenUnidaData.length * 3) / 4 / 1024);
+      console.log(`📄 Tamaño resultado: ${resultSizeKB}KB`);
+      
+      if (isMobile && resultSizeKB > 2048) { // Más de 2MB en móvil
+        console.warn('⚠️ Resultado muy grande, recomprimiendo...');
+        const newQuality = Math.max(0.3, quality * 0.7);
+        const recompressed = canvas.toDataURL(format, newQuality);
+        setImagenUnida(recompressed);
+        console.log(`🔄 Recomprimido con calidad ${newQuality}`);
+      } else {
+        setImagenUnida(imagenUnidaData);
+      }
       
       console.log('✅ Imágenes unidas exitosamente');
+      
     } catch (error) {
       console.error('❌ Error al unir imágenes:', error);
+      // En caso de error, limpiar todo
+      setImagenUnida(null);
     } finally {
-      // 🧹 LIMPIEZA: Limpiar referencias de imágenes y canvas
-      img1.src = '';
-      img2.src = '';
-      canvas.width = 0;
-      canvas.height = 0;
+      // 🧹 LIMPIEZA AGRESIVA INMEDIATA
+      if (img1) {
+        img1.onload = null;
+        img1.onerror = null;
+        img1.src = '';
+        img1 = null;
+      }
+      if (img2) {
+        img2.onload = null;
+        img2.onerror = null;
+        img2.src = '';
+        img2 = null;
+      }
+      if (canvas) {
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        canvas.width = 0;
+        canvas.height = 0;
+        canvas = null;
+        ctx = null;
+      }
+      
+      // 📱 FORZAR LIMPIEZA EN MÓVILES
+      if (isMobile) {
+        // Pausa para permitir que el navegador libere memoria
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && 'gc' in window) {
+            try {
+              (window as any).gc();
+              console.log('🗑️ Garbage collection forzado');
+            } catch (e) {
+              // Silencioso
+            }
+          }
+        }, 100);
+      }
+      
+      console.log('📈 Memoria después de unir:', (performance as any).memory ? `${Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)}MB` : 'No disponible');
     }
-  }, [imagen1.compressed, imagen2.compressed, orientacion, imagenUnida]);
+  }, [imagen1.compressed, imagen2.compressed, orientacion, imagenUnida, isMobile]);
 
   // Efecto para unir imagenes automaticamente
   useEffect(() => {

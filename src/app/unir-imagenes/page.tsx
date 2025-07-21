@@ -62,21 +62,45 @@ export default function UnirImagenes() {
     };
   }, [modalVisible]);
 
-  // 🧹 LIMPIEZA: Liberar URLs de objeto al desmontar el componente
+  // 🧹 LIMPIEZA: Liberar URLs de objeto cuando cambien las imágenes
   useEffect(() => {
     return () => {
       if (imagen1.compressed) {
         revokeImagePreview(imagen1.compressed);
       }
+    };
+  }, [imagen1.compressed]);
+
+  useEffect(() => {
+    return () => {
       if (imagen2.compressed) {
         revokeImagePreview(imagen2.compressed);
       }
     };
-  }, []);
+  }, [imagen2.compressed]);
+
+  // 🧹 LIMPIEZA: Liberar imagen unida cuando cambie
+  useEffect(() => {
+    return () => {
+      if (imagenUnida && imagenUnida.startsWith('blob:')) {
+        URL.revokeObjectURL(imagenUnida);
+      }
+    };
+  }, [imagenUnida]);
 
   // 🧹 LIMPIEZA COMPLETA: Limpiar todos los campos al montar el componente
   useEffect(() => {
     limpiarCampos();
+    
+    // Cleanup al desmontar el componente
+    return () => {
+      console.log('🧹 Desmontando componente - Limpieza final');
+      if (imagen1.compressed) revokeImagePreview(imagen1.compressed);
+      if (imagen2.compressed) revokeImagePreview(imagen2.compressed);
+      if (imagenUnida && imagenUnida.startsWith('blob:')) {
+        URL.revokeObjectURL(imagenUnida);
+      }
+    };
   }, []);
 
 
@@ -94,7 +118,14 @@ export default function UnirImagenes() {
       alert('Por favor selecciona un archivo de imagen válido');
       return;
     }
-  
+
+    // 🧹 LIMPIEZA PREVIA: Liberar URL anterior antes de crear nueva
+    const imagenActual = tipo === 'img1' ? imagen1 : imagen2;
+    if (imagenActual.compressed) {
+      console.log(`🧹 Liberando URL anterior para ${tipo}:`, imagenActual.compressed);
+      revokeImagePreview(imagenActual.compressed);
+    }
+
     // Determinar estados según el tipo
     const setIsCompressing = tipo === 'img1' ? setIsCompressing1 : setIsCompressing2;
     const setCompressionProgress = tipo === 'img1' ? setCompressionProgress1 : setCompressionProgress2;
@@ -197,6 +228,12 @@ export default function UnirImagenes() {
   const unirImagenes = useCallback(async () => {
     if (!imagen1.compressed || !imagen2.compressed) return;
 
+    // 🧹 LIMPIEZA PREVIA: Liberar imagen unida anterior si existe
+    if (imagenUnida && imagenUnida.startsWith('blob:')) {
+      console.log('🧹 Liberando imagen unida anterior');
+      URL.revokeObjectURL(imagenUnida);
+    }
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
@@ -205,48 +242,62 @@ export default function UnirImagenes() {
     const img1 = new Image();
     const img2 = new Image();
 
-    await Promise.all([
-      new Promise((resolve) => {
-        img1.onload = resolve;
-        img1.src = imagen1.compressed!;
-      }),
-      new Promise((resolve) => {
-        img2.onload = resolve;
-        img2.src = imagen2.compressed!;
-      })
-    ]);
+    try {
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          img1.onload = resolve;
+          img1.onerror = reject;
+          img1.src = imagen1.compressed!;
+        }),
+        new Promise((resolve, reject) => {
+          img2.onload = resolve;
+          img2.onerror = reject;
+          img2.src = imagen2.compressed!;
+        })
+      ]);
 
-    // Calcular dimensiones del canvas final segun orientacion
-    if (orientacion === 'vertical') {
-      // Usar el ancho maximo de ambas imagenes
-      const maxWidth = Math.max(img1.width, img2.width);
-      canvas.width = maxWidth;
-      canvas.height = img1.height + img2.height;
+      // Calcular dimensiones del canvas final segun orientacion
+      if (orientacion === 'vertical') {
+        // Usar el ancho maximo de ambas imagenes
+        const maxWidth = Math.max(img1.width, img2.width);
+        canvas.width = maxWidth;
+        canvas.height = img1.height + img2.height;
+        
+        // Centrar las imagenes horizontalmente
+        const x1 = (maxWidth - img1.width) / 2;
+        const x2 = (maxWidth - img2.width) / 2;
+        
+        ctx.drawImage(img1, x1, 0, img1.width, img1.height);
+        ctx.drawImage(img2, x2, img1.height, img2.width, img2.height);
+      } else {
+        // Usar la altura maxima de ambas imagenes
+        const maxHeight = Math.max(img1.height, img2.height);
+        canvas.width = img1.width + img2.width;
+        canvas.height = maxHeight;
+        
+        // Centrar las imagenes verticalmente
+        const y1 = (maxHeight - img1.height) / 2;
+        const y2 = (maxHeight - img2.height) / 2;
+        
+        ctx.drawImage(img1, 0, y1, img1.width, img1.height);
+        ctx.drawImage(img2, img1.width, y2, img2.width, img2.height);
+      }
+
+      // Comprimir resultado final con calidad 70%
+      const imagenUnidaData = canvas.toDataURL('image/webp', 0.70);
+      setImagenUnida(imagenUnidaData);
       
-      // Centrar las imagenes horizontalmente
-      const x1 = (maxWidth - img1.width) / 2;
-      const x2 = (maxWidth - img2.width) / 2;
-      
-      ctx.drawImage(img1, x1, 0, img1.width, img1.height);
-      ctx.drawImage(img2, x2, img1.height, img2.width, img2.height);
-    } else {
-      // Usar la altura maxima de ambas imagenes
-      const maxHeight = Math.max(img1.height, img2.height);
-      canvas.width = img1.width + img2.width;
-      canvas.height = maxHeight;
-      
-      // Centrar las imagenes verticalmente
-      const y1 = (maxHeight - img1.height) / 2;
-      const y2 = (maxHeight - img2.height) / 2;
-      
-      ctx.drawImage(img1, 0, y1, img1.width, img1.height);
-      ctx.drawImage(img2, img1.width, y2, img2.width, img2.height);
+      console.log('✅ Imágenes unidas exitosamente');
+    } catch (error) {
+      console.error('❌ Error al unir imágenes:', error);
+    } finally {
+      // 🧹 LIMPIEZA: Limpiar referencias de imágenes y canvas
+      img1.src = '';
+      img2.src = '';
+      canvas.width = 0;
+      canvas.height = 0;
     }
-
-    // Comprimir resultado final con calidad 70%
-    const imagenUnidaData = canvas.toDataURL('image/webp', 0.70);
-    setImagenUnida(imagenUnidaData);
-  }, [imagen1.compressed, imagen2.compressed, orientacion]);
+  }, [imagen1.compressed, imagen2.compressed, orientacion, imagenUnida]);
 
   // Efecto para unir imagenes automaticamente
   useEffect(() => {
@@ -437,40 +488,74 @@ export default function UnirImagenes() {
 
   // 🧹 Función global para limpiar todos los campos y liberar recursos
   const limpiarCampos = () => {
-    // Liberar URLs de objeto de imágenes individuales
-    if (imagen1.compressed) revokeImagePreview(imagen1.compressed);
-    if (imagen2.compressed) revokeImagePreview(imagen2.compressed);
+    console.log('🧹 INICIANDO limpieza completa de campos...');
+    
+    try {
+      // Liberar URLs de objeto de imágenes individuales con manejo de errores
+      if (imagen1.compressed) {
+        console.log('🧹 Liberando imagen1:', imagen1.compressed.substring(0, 50) + '...');
+        revokeImagePreview(imagen1.compressed);
+      }
+      if (imagen2.compressed) {
+        console.log('🧹 Liberando imagen2:', imagen2.compressed.substring(0, 50) + '...');
+        revokeImagePreview(imagen2.compressed);
+      }
 
-    // Revocar posible blob de la imagen unida (por si cambiamos a createObjectURL en el futuro)
-    if (imagenUnida && imagenUnida.startsWith('blob:')) {
-      URL.revokeObjectURL(imagenUnida);
+      // Revocar posible blob de la imagen unida
+      if (imagenUnida && imagenUnida.startsWith('blob:')) {
+        console.log('🧹 Liberando imagen unida:', imagenUnida.substring(0, 50) + '...');
+        try {
+          URL.revokeObjectURL(imagenUnida);
+        } catch (error) {
+          console.warn('⚠️ Error revocando imagen unida:', error);
+        }
+      }
+
+      // Resetear estados de imágenes
+      setImagen1({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
+      setImagen2({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
+      setImagenUnida(null);
+
+      // Resetear progreso de compresión y controles
+      setCompressionProgress1(null);
+      setCompressionProgress2(null);
+      setIsCompressing1(false);
+      setIsCompressing2(false);
+      setLoading({ img1: false, img2: false });
+
+      // Resetear zoom, posición y orientación
+      setZoom(1);
+      setPosition({ x: 0, y: 0 });
+      setIsDragging(false);
+      setDragStart({ x: 0, y: 0 });
+      setOrientacion('vertical');
+
+      // Limpiar inputs de archivo con manejo de errores
+      try {
+        if (fileInputRef1.current) fileInputRef1.current.value = '';
+        if (fileInputRef2.current) fileInputRef2.current.value = '';
+      } catch (error) {
+        console.warn('⚠️ Error limpiando inputs:', error);
+      }
+
+      // Cerrar modal si estuviera abierto y limpiar referencia de imagen
+      setModalVisible(false);
+      setModalImg(null);
+
+      // 🧹 FORZAR GARBAGE COLLECTION (si está disponible en desarrollo)
+      if (typeof window !== 'undefined' && 'gc' in window) {
+        try {
+          (window as any).gc();
+          console.log('🗑️ Garbage collection forzado');
+        } catch (error) {
+          // Silencioso - gc no siempre está disponible
+        }
+      }
+
+      console.log('✅ Limpieza completa de campos finalizada exitosamente');
+    } catch (error) {
+      console.error('❌ Error durante la limpieza de campos:', error);
     }
-
-    // Resetear estados de imágenes
-    setImagen1({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
-    setImagen2({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
-    setImagenUnida(null);
-
-    // Resetear progreso de compresión y controles
-    setCompressionProgress1(null);
-    setCompressionProgress2(null);
-    setIsCompressing1(false);
-    setIsCompressing2(false);
-
-    // Resetear zoom, posición y orientación
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
-    setOrientacion('vertical');
-
-    // Limpiar inputs de archivo
-    if (fileInputRef1.current) fileInputRef1.current.value = '';
-    if (fileInputRef2.current) fileInputRef2.current.value = '';
-
-    // Cerrar modal si estuviera abierto y limpiar referencia de imagen
-    setModalVisible(false);
-    setModalImg(null);
-
-    console.log('🧹 Todos los campos e imágenes han sido limpiados');
   };
 
   return (

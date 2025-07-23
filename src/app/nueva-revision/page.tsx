@@ -108,15 +108,9 @@ const fieldLabels: Record<string, string> = {
 };
 
 export default function NuevaRevision() {
-  // Estado para logs de compresión
-  const [compressionLogs, setCompressionLogs] = useState<string[]>([]);
-  // Función para agregar un log
-  const addCompressionLog = (msg: string, data?: any) => {
-    setCompressionLogs(prev => [
-      `${new Date().toLocaleTimeString()} | ${msg}${data ? ' | ' + JSON.stringify(data) : ''}`,
-      ...prev.slice(0, 99) // Máximo 100 logs
-    ]);
-  };
+  // Función para agregar un log (ahora vacía, no hace nada)
+  const addCompressionLog = (_msg: string, _data?: any) => {};
+
   const router = useRouter();
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -431,17 +425,10 @@ export default function NuevaRevision() {
     const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a';
     const isIOS = /iPad|iPhone|iPod/.test(userAgent);
     const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
+    const isAndroid = /Android/i.test(userAgent);
     const logId = `${field}-${Date.now()}-${Math.floor(Math.random()*10000)}`;
-    console.log(`[LOG_COMPRESION][${logId}] UserAgent:`, userAgent);
     addCompressionLog(`[LOG_COMPRESION][${logId}] UserAgent: ${userAgent}`);
-    console.log(`[LOG_COMPRESION][${logId}] isIOS:`, isIOS, '| isSafari:', isSafari);
-    addCompressionLog(`[LOG_COMPRESION][${logId}] isIOS: ${isIOS} | isSafari: ${isSafari}`);
-    console.log(`[LOG_COMPRESION][${logId}] Archivo recibido:`, {
-      nombre: file.name,
-      tamaño: file.size,
-      tipo: file.type,
-      lastModified: file.lastModified
-    });
+    addCompressionLog(`[LOG_COMPRESION][${logId}] isIOS: ${isIOS} | isSafari: ${isSafari} | isAndroid: ${isAndroid}`);
     addCompressionLog(`[LOG_COMPRESION][${logId}] Archivo recibido`, {
       nombre: file.name,
       tamaño: file.size,
@@ -449,9 +436,32 @@ export default function NuevaRevision() {
       lastModified: file.lastModified
     });
     // --- FIN LOG AVANZADO ---
+    
+    // 🔄 NUEVO: Validación y conversión de formatos para Android
+    const fileName = file.name.toLowerCase();
+    const isHeicFile = file.type === 'image/heic' || file.type === 'image/heif' || fileName.endsWith('.heic') || fileName.endsWith('.heif');
+    if (isHeicFile) {
+      showError('Tu dispositivo tomó la foto en formato HEIC, que no es compatible con la web. Por favor, cambia la configuración de tu cámara a JPG/JPEG');
+      addCompressionLog(`[LOG_COMPRESION][${logId}] Archivo HEIC/HEIF detectado. Se mostró advertencia al usuario.`);
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       showError('Por favor selecciona un archivo de imagen válido');
       return;
+    }
+    
+    const needsConversion = isAndroid && (
+      file.type === 'image/heic' || 
+      file.type === 'image/heif' ||
+      fileName.endsWith('.heic') ||
+      fileName.endsWith('.heif') ||
+      file.type === 'image/png' ||
+      file.type === 'image/jpg' ||
+      file.type === 'image/jpeg'
+    );
+    
+    if (needsConversion) {
+      addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado - Forzando conversión a WebP para formato: ${file.type || 'unknown'}`);
     }
 
     console.log(`🚀 Iniciando compresión avanzada para ${field}:`, {
@@ -482,13 +492,19 @@ export default function NuevaRevision() {
 
     try {
       // 🎯 Configuración personalizada para evidencias
-      // Ajuste dinámico según navegador
+      // Ajuste dinámico según navegador y conversión de formatos
       let targetSizeKB = 200;
       let format: 'webp' | 'jpeg' = 'webp';
+      
       if (isIOS || isSafari) {
         targetSizeKB = 600;
         format = 'jpeg';
         addCompressionLog(`[LOG_COMPRESION][${logId}] Safari/iOS detectado: usando JPEG y 600KB como objetivo`);
+      } else if (needsConversion) {
+        // En Android, forzar WebP para mejor compresión de HEIC/PNG/JPG
+        targetSizeKB = 150; // Más agresivo en Android para mejor rendimiento
+        format = 'webp';
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Android con conversión: usando WebP y 150KB como objetivo`);
       }
       const compressionConfig = {
         targetSizeKB,      // Objetivo según navegador
@@ -519,7 +535,6 @@ export default function NuevaRevision() {
           resolución: progress.resolution,
           estado: progress.status
         };
-        console.log(`[LOG_COMPRESION][${logId}] Progreso:`, logObj);
         addCompressionLog(`[LOG_COMPRESION][${logId}] Progreso`, logObj);
         // --- FIN LOG AVANZADO DE PROGRESO ---
 
@@ -540,7 +555,6 @@ export default function NuevaRevision() {
 
       // 🚀 Ejecutar compresión avanzada
       console.log(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config:`, compressionConfig);
-      addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config`, compressionConfig);
       if (isIOS || isSafari) {
         addCompressionLog(`[LOG_COMPRESION][${logId}] ADVERTENCIA: En Safari/iOS la compresión puede no ser tan eficiente como en otros navegadores.`);
       }
@@ -939,7 +953,7 @@ export default function NuevaRevision() {
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                       <svg className="w-5 h-5 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -1200,39 +1214,6 @@ export default function NuevaRevision() {
                       />
                     ))}
                   </div>
-
-                  {/* 🔍 Panel de Logs de Compresión - Solo visible en Check in */}
-                  {formData.caja_fuerte === 'Check in' && compressionLogs.length > 0 && (
-                    <div className="mt-6 bg-gray-900/50 border border-gray-700 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-lg font-medium text-yellow-400 flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Logs de Compresión de Imágenes
-                        </h4>
-                        <button
-                          onClick={() => setCompressionLogs([])}
-                          className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-600 hover:border-gray-500 transition-colors"
-                        >
-                          Limpiar Logs
-                        </button>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto space-y-1 text-sm font-mono">
-                        {compressionLogs.map((log, index) => (
-                          <div 
-                            key={index} 
-                            className="text-gray-300 bg-gray-800/50 p-2 rounded border-l-2 border-blue-500/50"
-                          >
-                            {log}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 text-xs text-gray-500">
-                        💡 Estos logs ayudan a diagnosticar problemas de compresión de imágenes en diferentes dispositivos.
-                      </div>
-                    </div>
-                  )}
                 </div>
               </fieldset>
             )}

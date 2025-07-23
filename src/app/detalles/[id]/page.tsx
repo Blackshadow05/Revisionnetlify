@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo, memo, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, memo, useCallback, Suspense, lazy } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,7 +11,8 @@ import { useAuth } from '@/context/AuthContext';
 import { uploadNotaToCloudinary } from '@/lib/cloudinary';
 
 import { useToast } from '@/context/ToastContext';
-import ImageModal from '@/components/revision/ImageModal';
+// Lazy load del modal para mejorar rendimiento inicial
+const ImageModal = lazy(() => import('@/components/revision/ImageModal'));
 import InfoCard from '@/components/ui/InfoCard';
 
 // Componente memoizado para las imágenes de evidencia
@@ -85,7 +86,7 @@ interface RegistroEdicion {
   Dato_nuevo: string;
 }
 
-export default function DetalleRevision() {
+export default memo(function DetalleRevision() {
   const params = useParams();
   const router = useRouter();
   const { showSuccess, showError } = useToast();
@@ -116,14 +117,15 @@ export default function DetalleRevision() {
     evidencia: null as File | null,
   });
 
-  const nombresRevisores = [
+  // 🚀 OPTIMIZACIÓN: Memoizar array de nombres
+  const nombresRevisores = useMemo(() => [
     'Ricardo B', 'Michael J', 'Ramiro Q', 'Adrian S', 'Esteban B',
     'Willy G', 'Juan M', 'Olman Z', 'Daniel V', 'Jefferson V',
     'Cristopher G', 'Emerson S', 'Joseph R'
-  ];
+  ], []);
 
-  // Función para formatear fechas para mostrar en el frontend
-  const formatearFechaParaMostrar = (fechaISO: string): string => {
+  // 🚀 OPTIMIZACIÓN: Memoizar función de formateo de fechas
+  const formatearFechaParaMostrar = useCallback((fechaISO: string): string => {
     try {
       const fecha = new Date(fechaISO);
       const dia = fecha.getDate().toString().padStart(2, '0');
@@ -135,10 +137,10 @@ export default function DetalleRevision() {
     } catch (error) {
       return fechaISO; // Si hay error, devolver la fecha original
     }
-  };
+  }, []);
 
-  // Mapeo de nombres de campos técnicos a nombres legibles
-  const fieldLabels: Record<string, string> = {
+  // 🚀 OPTIMIZACIÓN: Memoizar fieldLabels para evitar recreación
+  const fieldLabels: Record<string, string> = useMemo(() => ({
     id: 'ID',
     casita: 'Casita',
     quien_revisa: 'Quien Revisa',
@@ -165,10 +167,10 @@ export default function DetalleRevision() {
     evidencia_03: 'Evidencia 3',
     notas: 'Notas',
     created_at: 'Fecha de Creación'
-  };
+  }), []);
 
-  // Función para extraer el nombre del campo y valor de los datos de edición
-  const parseEditData = (dataString: string) => {
+  // 🚀 OPTIMIZACIÓN: Memoizar función de parseo
+  const parseEditData = useCallback((dataString: string) => {
     // Formato: [UUID] campo: valor
     const match = dataString.match(/^\[([a-f0-9-]+)\]\s+([^:]+):\s*(.*)$/);
     if (match) {
@@ -185,9 +187,10 @@ export default function DetalleRevision() {
       displayName: 'Campo desconocido',
       value: dataString
     };
-  };
+  }, [fieldLabels]);
 
-  const fetchData = async () => {
+  // 🚀 OPTIMIZACIÓN: Memoizar función de fetch
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       if (!supabase) {
@@ -238,7 +241,7 @@ export default function DetalleRevision() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   useEffect(() => {
     fetchData();
@@ -331,25 +334,26 @@ export default function DetalleRevision() {
     }
   };
 
-  const openModal = (imgUrl: string) => {
+  // 🚀 OPTIMIZACIÓN: Memoizar handlers de modal
+  const openModal = useCallback((imgUrl: string) => {
     setModalImg(imgUrl);
     setModalOpen(true);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalOpen(false);
     setModalImg(null);
-  };
+  }, []);
 
   // Modal functions simplified - using ImageModal component
 
-  const handleEdit = () => {
-    if (!revision) return;
-    setEditedData({ ...revision });
+  // 🚀 OPTIMIZACIÓN: Memoizar handlers de edición
+  const handleEdit = useCallback(() => {
     setIsEditing(true);
-  };
+    setEditedData(revision);
+  }, [revision]);
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = useCallback(async () => {
     if (!revision || !editedData || !supabase) return;
 
     try {
@@ -428,17 +432,17 @@ export default function DetalleRevision() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [revision, editedData, supabase]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     setEditedData(null);
-  };
+  }, []);
 
-  const handleInputChange = (field: keyof Revision, value: string) => {
+  const handleInputChange = useCallback((field: keyof Revision, value: string) => {
     if (!editedData) return;
     setEditedData({ ...editedData, [field]: value });
-  };
+  }, [editedData]);
 
   // Función de compresión de imágenes para notas
   const comprimirImagenWebP = useCallback((file: File): Promise<File> => {
@@ -528,7 +532,8 @@ export default function DetalleRevision() {
     });
   }, []);
 
-  const renderField = (key: keyof Revision, value: any) => {
+  // 🚀 OPTIMIZACIÓN: Memoizar renderField para evitar re-renders innecesarios
+  const renderField = useCallback((key: keyof Revision, value: any) => {
     // Mostrar TODOS los campos siempre, sin ocultar ninguno
     // Solo excluir el campo 'id' que no es relevante para mostrar
     if (key === 'id') {
@@ -725,7 +730,7 @@ export default function DetalleRevision() {
         onChange={(newVal) => handleInputChange(key, newVal)}
       />
     );
-  };
+  }, [fieldLabels, isEditing, editedData, handleInputChange]);
 
   if (loading) return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a1f35] to-[#1e2538] relative overflow-hidden">
@@ -778,10 +783,6 @@ export default function DetalleRevision() {
             <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Optimizado: JSX estático en lugar de Array.map */}
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
                 <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
                   <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
                   <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
@@ -888,11 +889,21 @@ export default function DetalleRevision() {
     }}>
 
       {/* Modal de imagen simplificado */}
-      <ImageModal 
-        isOpen={modalOpen} 
-        imageUrl={modalImg} 
-        onClose={closeModal} 
-      />
+      {modalOpen && modalImg && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-4">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+          </div>
+        }>
+          <ImageModal
+            isOpen={true}
+            imageUrl={modalImg}
+            onClose={closeModal}
+          />
+        </Suspense>
+      )}
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden"
@@ -1405,4 +1416,4 @@ export default function DetalleRevision() {
       </div>
     </main>
   );
-} 
+});

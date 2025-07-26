@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
-    "verify-imagekit": "node scripts/verify-imagekit.js"
+    "verify-imagekit": "node scripts/verify-imagekit.js",
+    "bundle-analyzer": "npx @next/bundle-analyzer"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",
@@ -38,11 +40,13 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.11.6",
+    "@next/bundle-analyzer": "^15.4.4",
     "@types/node": "^24.0.14",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "eslint": "^8",
-    "eslint-config-next": "^15.4.1"
+    "eslint-config-next": "^15.4.1",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "engines": {
     "node": ">=18.0.0"

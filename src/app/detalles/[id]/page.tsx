@@ -2,18 +2,29 @@
 
 import { useEffect, useState, useRef, useMemo, memo, useCallback, Suspense, lazy } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { supabase } from '@/lib/supabase';
-import { compressImage as compressImageUtil } from '@/lib/imageUtils';
-import { getWeek } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
-import { uploadNotaToCloudinary } from '@/lib/cloudinary';
-
 import { useToast } from '@/context/ToastContext';
-// Lazy load del modal para mejorar rendimiento inicial
+import { supabase } from '@/lib/supabase';
+import ComponentSkeleton from '@/components/ui/ComponentSkeleton';
+
+// 🚀 CODE SPLITTING: Lazy load de componentes no críticos
 const ImageModal = lazy(() => import('@/components/revision/ImageModal'));
-import InfoCard from '@/components/ui/InfoCard';
+const InfoCard = lazy(() => import('@/components/ui/InfoCard'));
+
+// 🚀 CODE SPLITTING: Funciones helper para carga dinámica de utilidades
+const loadDateUtils = async () => {
+  const { format, getWeek } = await import('date-fns');
+  const { es } = await import('date-fns/locale');
+  return { format, es, getWeek };
+};
+
+const loadImageUtils = async () => {
+  return await import('@/lib/imageUtils');
+};
+
+const loadCloudinaryUtils = async () => {
+  return await import('@/lib/cloudinary');
+};
 
 // 🚀 OPTIMIZADO: Componente memoizado para las imágenes de evidencia sin backdrop-blur
 const EvidenceImage = memo(({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) => (
@@ -124,7 +135,7 @@ export default memo(function DetalleRevision() {
     'Cristopher G', 'Emerson S', 'Joseph R'
   ], []);
 
-  // 🚀 OPTIMIZACIÓN: Memoizar función de formateo de fechas
+  // 🚀 CODE SPLITTING: Función de formateo de fechas con carga dinámica
   const formatearFechaParaMostrar = useCallback((fechaISO: string): string => {
     try {
       const fecha = new Date(fechaISO);
@@ -189,27 +200,52 @@ export default memo(function DetalleRevision() {
     };
   }, [fieldLabels]);
 
-  // 🚀 OPTIMIZACIÓN: Memoizar función de fetch
-  const fetchData = useCallback(async () => {
+  // 🚀 OPTIMIZACIÓN AVANZADA: Carga diferida de datos críticos vs no críticos
+  const [secondaryDataLoading, setSecondaryDataLoading] = useState(false);
+  const [secondaryDataLoaded, setSecondaryDataLoaded] = useState(false);
+  
+  // Función para cargar solo datos críticos (información principal de la revisión)
+  const fetchCriticalData = useCallback(async () => {
     try {
       setLoading(true);
       if (!supabase) {
         throw new Error('No se pudo conectar con la base de datos');
       }
 
-      // Ejecutar todas las consultas en paralelo para mejor rendimiento
+      // Solo cargar datos críticos para mostrar la página principal
+      const { data: revisionData, error: revisionError } = await supabase
+        .from('revisiones_casitas')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (revisionError) throw revisionError;
+
+      // Establecer solo los datos críticos
+      setRevision(revisionData);
+
+    } catch (error: any) {
+      console.error('Error al cargar datos críticos:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id]);
+
+  // Función para cargar datos no críticos (notas e historial)
+  const fetchSecondaryData = useCallback(async () => {
+    // Evitar cargas múltiples simultáneas
+    if (secondaryDataLoading || secondaryDataLoaded) return;
+    
+    try {
+      setSecondaryDataLoading(true);
+      if (!supabase) return;
+
+      // Cargar datos no críticos en paralelo
       const [
-        { data: revisionData, error: revisionError },
         { data: notasData, error: notasError },
         { data: edicionesData, error: edicionesError }
       ] = await Promise.all([
-        // Consulta principal de la revisión
-        supabase
-          .from('revisiones_casitas')
-          .select('*')
-          .eq('id', params.id)
-          .single(),
-
         // Consulta de notas asociadas a esta revisión
         supabase
           .from('Notas')
@@ -217,7 +253,7 @@ export default memo(function DetalleRevision() {
           .eq('revision_id', String(params.id))
           .order('id', { ascending: false }),
 
-        // Consulta optimizada de ediciones - usar like para filtrar directamente en la DB
+        // Consulta optimizada de ediciones
         supabase
           .from('Registro_ediciones')
           .select('*')
@@ -225,27 +261,48 @@ export default memo(function DetalleRevision() {
           .order('created_at', { ascending: false })
       ]);
 
-      // Manejar errores de cada consulta
-      if (revisionError) throw revisionError;
-      if (notasError) throw notasError;
-      if (edicionesError) throw edicionesError;
+      // Manejar errores (no críticos, no bloquean la página)
+      if (notasError) {
+        console.warn('Error al cargar notas:', notasError);
+      } else {
+        setNotas(notasData || []);
+      }
 
-      // Establecer los datos obtenidos
-      setRevision(revisionData);
-      setNotas(notasData || []);
-      setRegistroEdiciones(edicionesData || []);
+      if (edicionesError) {
+        console.warn('Error al cargar historial:', edicionesError);
+      } else {
+        setRegistroEdiciones(edicionesData || []);
+      }
+
+      // Marcar como cargado exitosamente
+      setSecondaryDataLoaded(true);
 
     } catch (error: any) {
-      console.error('Error al cargar datos:', error);
-      setError(error.message);
+      console.warn('Error al cargar datos secundarios:', error);
     } finally {
-      setLoading(false);
+      setSecondaryDataLoading(false);
     }
+  }, [params.id, secondaryDataLoading, secondaryDataLoaded]);
+
+  // Cargar datos críticos inmediatamente
+  useEffect(() => {
+    // Resetear estado de datos secundarios al cambiar de revisión
+    setSecondaryDataLoaded(false);
+    setSecondaryDataLoading(false);
+    fetchCriticalData();
   }, [params.id]);
 
+  // 🚀 CORREGIDO: Cargar datos no críticos después de que se carguen los críticos
   useEffect(() => {
-    fetchData();
-  }, [params.id]);
+    if (revision && !secondaryDataLoading && !secondaryDataLoaded) {
+      // Pequeño delay para priorizar el render de datos críticos
+      const timer = setTimeout(() => {
+        fetchSecondaryData();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [revision, secondaryDataLoading, secondaryDataLoaded]); // ✅ Incluir las banderas de control
 
   const handleSubmitNota = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,7 +316,9 @@ export default memo(function DetalleRevision() {
         try {
           // Comprimir imagen antes de subir a Cloudinary (carpeta notas)
           const compressedImage = await comprimirImagenWebP(nuevaNota.evidencia);
-          // Subir a Cloudinary en la carpeta notas
+          
+          // 🚀 CODE SPLITTING: Cargar dinámicamente la función de Cloudinary
+          const { uploadNotaToCloudinary } = await import('@/lib/cloudinary');
           evidenciaUrl = await uploadNotaToCloudinary(compressedImage);
           console.log('✅ Imagen de nota subida exitosamente a Cloudinary/notas:', evidenciaUrl);
         } catch (uploadError) {
@@ -325,7 +384,9 @@ export default memo(function DetalleRevision() {
         evidencia: null
       });
       setShowNotaForm(false);
-      fetchData();
+      // Recargar datos secundarios después de agregar nota
+      setSecondaryDataLoaded(false);
+      fetchSecondaryData();
     } catch (error: any) {
       console.error('Error al guardar la nota:', error);
       alert('Error al guardar la nota');
@@ -425,7 +486,10 @@ export default memo(function DetalleRevision() {
 
       setIsEditing(false);
       setEditedData(null);
-      await fetchData();
+      // Recargar datos críticos y secundarios después de editar
+      await fetchCriticalData();
+      setSecondaryDataLoaded(false);
+      await fetchSecondaryData();
     } catch (error: any) {
       console.error('Error detallado:', error);
       setError(`Error al guardar los cambios: ${error.message}`);
@@ -444,92 +508,83 @@ export default memo(function DetalleRevision() {
     setEditedData({ ...editedData, [field]: value });
   }, [editedData]);
 
-  // Función de compresión de imágenes para notas
-  const comprimirImagenWebP = useCallback((file: File): Promise<File> => {
+  // 🚀 CODE SPLITTING: Función de compresión con carga dinámica de utilidades
+  const comprimirImagenWebP = useCallback(async (file: File): Promise<File> => {
     console.log('🚀 INICIANDO COMPRESIÓN:', file.name, file.type, `${(file.size / 1024).toFixed(1)} KB`);
     
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      let objectUrl: string | null = null;
+    // Cargar dinámicamente las utilidades de imagen solo cuando se necesiten
+    try {
+      const { compressImage } = await import('@/lib/imageUtils');
+      return await compressImage(file);
+    } catch (error) {
+      console.warn('Error cargando utilidades de imagen, usando compresión básica:', error);
       
-      img.onload = () => {
-        // 🧹 LIMPIEZA: Liberar Object URL inmediatamente después de cargar
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-          objectUrl = null;
-        }
+      // Fallback a compresión básica si falla la carga dinámica
+      return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        let objectUrl: string | null = null;
         
-        // Configurar dimensiones máximas para notas (más pequeñas que evidencias)
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
+        img.onload = () => {
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
           }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
-            height = maxHeight;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
           
-          const compressRecursively = (quality: number, attempt: number = 1): void => {
+          const maxWidth = 1200;
+          const maxHeight = 1200;
+          let { width, height } = img;
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            
             canvas.toBlob(
               (blob) => {
                 if (blob) {
-                  const sizeKB = blob.size / 1024;
-                  console.log(`📊 Intento ${attempt}: calidad ${(quality * 100).toFixed(0)}% = ${sizeKB.toFixed(1)} KB`);
-                  
-                  if (sizeKB <= 250 || attempt >= 8) {
-                    const compressedFile = new File([blob], file.name, {
-                      type: 'image/webp',
-                      lastModified: Date.now(),
-                    });
-                    
-                    console.log(`✅ COMPRESIÓN COMPLETADA: ${sizeKB.toFixed(1)} KB (${attempt} intentos)`);
-                    resolve(compressedFile);
-                  } else {
-                    const newQuality = Math.max(0.1, quality - 0.1);
-                    compressRecursively(newQuality, attempt + 1);
-                  }
+                  const compressedFile = new File([blob], file.name, {
+                    type: 'image/webp',
+                    lastModified: Date.now(),
+                  });
+                  resolve(compressedFile);
                 } else {
                   reject(new Error('No se pudo generar el blob de la imagen'));
                 }
               },
               'image/webp',
-              quality
+              0.8
             );
-          };
-          
-          compressRecursively(0.8);
-        } else {
-          reject(new Error('No se pudo obtener el contexto del canvas'));
-        }
-      };
-      
-      img.onerror = () => {
-        // 🧹 LIMPIEZA: Liberar Object URL en caso de error
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-        }
-        reject(new Error('Error al cargar la imagen'));
-      };
-      
-      // 🧹 SEGURIDAD: Crear Object URL y guardarlo para limpiar después
-      objectUrl = URL.createObjectURL(file);
-      img.src = objectUrl;
-    });
+          } else {
+            reject(new Error('No se pudo obtener el contexto del canvas'));
+          }
+        };
+        
+        img.onerror = () => {
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+          }
+          reject(new Error('Error al cargar la imagen'));
+        };
+        
+        objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
+      });
+    }
   }, []);
 
   // 🚀 OPTIMIZACIÓN: Memoizar renderField para evitar re-renders innecesarios
@@ -721,14 +776,16 @@ export default memo(function DetalleRevision() {
     }
 
     return (
-      <InfoCard
-        key={key}
-        label={label}
-        value={displayValue}
-        editable={editable}
-        accent={accent}
-        onChange={(newVal) => handleInputChange(key, newVal)}
-      />
+      <Suspense key={key} fallback={<ComponentSkeleton type="card" />}>
+        <InfoCard
+          key={key}
+          label={label}
+          value={displayValue}
+          editable={editable}
+          accent={accent}
+          onChange={(newVal) => handleInputChange(key, newVal)}
+        />
+      </Suspense>
     );
   }, [fieldLabels, isEditing, editedData, handleInputChange]);
 
@@ -1002,20 +1059,27 @@ export default memo(function DetalleRevision() {
             </div>
 
 
-            {/* 🚀 OPTIMIZADO: Notas sin backdrop-blur */}
+            {/* 🚀 OPTIMIZADO: Notas con carga diferida */}
             <div className="bg-[#2a3347]/70 rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
+                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                    {secondaryDataLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    )}
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-500 bg-clip-text text-transparent">
+                    <h2 className="text-xl sm:text-2xl font-bold text-purple-400">
                       Notas y Observaciones
+                      {secondaryDataLoading && <span className="text-sm text-gray-400 ml-2">Cargando...</span>}
                     </h2>
-                    <p className="text-gray-400 text-sm mt-1">{notas.length} nota{notas.length !== 1 ? 's' : ''} registrada{notas.length !== 1 ? 's' : ''}</p>
+                    <p className="text-gray-400 text-sm mt-1">
+                      {secondaryDataLoading ? 'Cargando notas...' : `${notas.length} nota${notas.length !== 1 ? 's' : ''} registrada${notas.length !== 1 ? 's' : ''}`}
+                    </p>
                   </div>
                 </div>
                 
@@ -1217,7 +1281,26 @@ export default memo(function DetalleRevision() {
               )}
 
               <div className="space-y-4">
-                {notas.length > 0 ? (
+                {secondaryDataLoading ? (
+                  // Skeleton para notas mientras cargan
+                  <div className="space-y-4">
+                    {Array.from({ length: 2 }, (_, i) => (
+                      <div key={i} className="bg-[#1e2538]/50 rounded-xl p-4 sm:p-5 border border-[#3d4659]/20 animate-pulse">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 bg-purple-500/20 rounded-lg"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-purple-500/20 rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-purple-500/10 rounded w-24"></div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-gray-600/20 rounded w-full"></div>
+                          <div className="h-3 bg-gray-600/20 rounded w-3/4"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : notas.length > 0 ? (
                   notas.map((nota) => (
                     <div key={nota.id} className="bg-gradient-to-br from-[#1e2538]/50 to-[#2a3347]/50 rounded-xl p-4 sm:p-5 border border-[#3d4659]/20 hover:border-purple-400/30 transition-all duration-300 hover:shadow-lg">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
@@ -1270,24 +1353,56 @@ export default memo(function DetalleRevision() {
               </div>
             </div>
 
-            {/* 🚀 OPTIMIZADO: Historial de Ediciones sin backdrop-blur */}
+            {/* 🚀 OPTIMIZADO: Historial de Ediciones con carga diferida */}
             <div className="bg-[#2a3347]/70 rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
               <div className="flex items-center gap-3 mb-4 sm:mb-6">
                 <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  {secondaryDataLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </div>
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent">
+                  <h2 className="text-xl sm:text-2xl font-bold text-amber-400">
                     Historial de Ediciones
+                    {secondaryDataLoading && <span className="text-sm text-gray-400 ml-2">Cargando...</span>}
                   </h2>
-                  <p className="text-gray-400 text-sm mt-1">{registroEdiciones.length} edición{registroEdiciones.length !== 1 ? 'es' : ''} registrada{registroEdiciones.length !== 1 ? 's' : ''}</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    {secondaryDataLoading ? 'Cargando historial...' : `${registroEdiciones.length} edición${registroEdiciones.length !== 1 ? 'es' : ''} registrada${registroEdiciones.length !== 1 ? 's' : ''}`}
+                  </p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                {registroEdiciones.length > 0 ? (
+                {secondaryDataLoading ? (
+                  // Skeleton para historial mientras carga
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <div key={i} className="bg-[#1e2538]/50 rounded-xl p-4 sm:p-5 border border-[#3d4659]/20 animate-pulse">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 bg-amber-500/20 rounded-lg"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-amber-500/20 rounded w-40 mb-2"></div>
+                            <div className="h-3 bg-amber-500/10 rounded w-28"></div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="h-3 bg-gray-600/20 rounded w-20"></div>
+                            <div className="h-4 bg-gray-600/10 rounded w-full"></div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-3 bg-gray-600/20 rounded w-20"></div>
+                            <div className="h-4 bg-gray-600/10 rounded w-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : registroEdiciones.length > 0 ? (
                   registroEdiciones.map((edicion, index) => (
                     <div key={index} className="bg-gradient-to-br from-[#1e2538]/50 to-[#2a3347]/50 rounded-xl p-4 sm:p-5 border border-[#3d4659]/20 hover:border-amber-400/30 transition-all duration-300 hover:shadow-lg">
                       <div className="flex items-center gap-3 mb-4">

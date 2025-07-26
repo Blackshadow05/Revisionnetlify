@@ -32,7 +32,7 @@
   }
 }
 
-/* Animaciones personalizadas */
+/* 🚀 OPTIMIZADAS: Animaciones usando transform y opacity para mejor rendimiento */
 @keyframes shimmer {
   0% { transform: translateX(-200%); }
   100% { transform: translateX(200%); }
@@ -45,16 +45,16 @@
 
 @keyframes pulse-green {
   0%, 100% {
-    background-color: rgb(34, 197, 94);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+    opacity: 1;
+    transform: scale(1);
   }
   50% {
-    background-color: rgb(22, 163, 74);
-    box-shadow: 0 0 30px rgba(34, 197, 94, 0.8);
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 
-/* Animación de brillo metálico deslizante */
+/* 🚀 OPTIMIZADA: Animación de brillo usando solo transform y opacity */
 @keyframes metallic-shine {
   0% { 
     transform: translateX(-100%);
@@ -77,11 +77,11 @@
   animation: pulse-green 1.5s ease-in-out infinite;
 }
 
-/* Botones con efecto metálico */
+/* 🚀 OPTIMIZADO: Botones con efecto metálico simplificado */
 .metallic-button {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%);
+  background: #4b5563;
   border: 1px solid #6b7280;
 }
 
@@ -140,14 +140,14 @@
   z-index: 2;
 }
 
-/* Botón personalizado Nueva Revisión con fondo negro metálico */
+/* 🚀 OPTIMIZADO: Botón Nueva Revisión simplificado */
 .nueva-revision-button {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 30%, #2d2d2d 50%, #1a1a1a 70%, #000000 100%);
+  background: #1a1a1a;
   border: 1px solid #333;
   color: white;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .nueva-revision-button::before {
@@ -372,11 +372,9 @@ button, [role="button"] {
   transition-duration: 300ms;
 }
 
-/* Estilos específicos para el sidebar glassmorphism */
+/* 🚀 OPTIMIZADO: Sidebar sin backdrop-filter */
 .sidebar-glassmorphism {
   background: rgba(30, 37, 56, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid rgba(201, 164, 92, 0.2);
 }
 
@@ -407,11 +405,9 @@ button, [role="button"] {
   }
 }
 
-/* Efectos de glassmorphism */
+/* 🚀 OPTIMIZADO: Efectos de glassmorphism sin backdrop-filter */
 .glass-effect {
-  background: rgba(42, 51, 71, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(42, 51, 71, 0.8);
   border: 1px solid rgba(61, 70, 89, 0.3);
 }
 

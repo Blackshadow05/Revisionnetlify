@@ -15,21 +15,21 @@ import { useToast } from '@/context/ToastContext';
 const ImageModal = lazy(() => import('@/components/revision/ImageModal'));
 import InfoCard from '@/components/ui/InfoCard';
 
-// Componente memoizado para las imágenes de evidencia
+// 🚀 OPTIMIZADO: Componente memoizado para las imágenes de evidencia sin backdrop-blur
 const EvidenceImage = memo(({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) => (
   <div className="relative group cursor-pointer" onClick={onClick}>
     <img 
       src={src} 
       alt={alt} 
       loading="lazy"
-      className="w-full h-48 object-cover rounded-lg transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl"
+      className="w-full h-48 object-cover rounded-lg transform transition-transform duration-200 group-hover:scale-[1.02]"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
         target.src = '/placeholder-image.png';
       }}
     />
-    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-lg flex items-center justify-center">
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/20 backdrop-blur-sm rounded-full p-3">
+    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 rounded-lg flex items-center justify-center">
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 rounded-full p-3">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
         </svg>
@@ -545,19 +545,19 @@ export default memo(function DetalleRevision() {
     // Campos que no se pueden editar: casita, quien_revisa, created_at, evidencias
     const nonEditableFields = ['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03'];
     
-    // Campos principales con estilo especial
+    // 🚀 OPTIMIZADO: Campos principales con estilo simplificado
     if (key === 'casita') {
       return (
-        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#c9a45c]/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
+        <div key={key} className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transform transition-transform duration-200 hover:scale-[1.01] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#c9a45c]/5 rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-[#c9a45c] rounded-lg flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#1a1f35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold bg-gradient-to-r from-[#c9a45c] to-[#f0c987] bg-clip-text text-transparent">{label}</h3>
+              <h3 className="text-lg font-bold text-[#c9a45c]">{label}</h3>
             </div>
             <p className="text-2xl font-black text-white drop-shadow-lg">
               {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
@@ -571,16 +571,16 @@ export default memo(function DetalleRevision() {
 
     if (key === 'created_at') {
       return (
-        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
+        <div key={key} className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transform transition-transform duration-200 hover:scale-[1.01] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">Fecha de Revisión</h3>
+              <h3 className="text-lg font-bold text-blue-400">Fecha de Revisión</h3>
             </div>
             <p className="text-xl font-bold text-white drop-shadow-lg">
               {value && value !== '' && value !== '0' ? formatearFechaParaMostrar(value as string) : (
@@ -594,16 +594,16 @@ export default memo(function DetalleRevision() {
 
     if (key === 'quien_revisa') {
       return (
-        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
+        <div key={key} className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transform transition-transform duration-200 hover:scale-[1.01] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/5 rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">Revisado por</h3>
+              <h3 className="text-lg font-bold text-green-400">Revisado por</h3>
             </div>
             <p className="text-xl font-bold text-white drop-shadow-lg">
               {value !== null && value !== undefined && !(typeof value === 'string' && value.trim() === '') ? (value as string) : (
@@ -617,23 +617,23 @@ export default memo(function DetalleRevision() {
 
     if (key === 'caja_fuerte') {
       return (
-        <div key={key} className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
+        <div key={key} className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transform transition-transform duration-200 hover:scale-[1.01] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -translate-y-6 translate-x-6"></div>
           <div className="relative">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-purple-500 bg-clip-text text-transparent">{label}</h3>
+              <h3 className="text-lg font-bold text-purple-400">{label}</h3>
             </div>
             {isEditing && editedData ? (
               <input
                 type="text"
                 value={editedData[key] as string}
                 onChange={(e) => handleInputChange(key, e.target.value)}
-                className="w-full px-4 py-3 bg-[#1e2538]/80 border border-purple-500/50 rounded-lg text-white text-xl font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/70 transition-all backdrop-blur-sm"
+                className="w-full px-4 py-3 bg-[#1e2538]/90 border border-purple-500/50 rounded-lg text-white text-xl font-bold focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/70 transition-colors"
                 placeholder={`Editar ${label.toLowerCase()}...`}
               />
             ) : (
@@ -648,10 +648,10 @@ export default memo(function DetalleRevision() {
       );
     }
     
-    // Campos de imagen
+    // 🚀 OPTIMIZADO: Campos de imagen sin backdrop-blur
     if (key === 'evidencia_01' || key === 'evidencia_02' || key === 'evidencia_03') {
       return (
-        <div key={key} className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-600/50">
+        <div key={key} className="bg-gray-800/60 p-4 rounded-lg border border-gray-600/50">
           <h3 className="text-sm font-semibold text-[#ff8c42] mb-2 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Z" />
@@ -667,10 +667,10 @@ export default memo(function DetalleRevision() {
       );
     }
     
-    // Campo especial para notas
+    // 🚀 OPTIMIZADO: Campo especial para notas sin backdrop-blur
     if (key === 'notas') {
       return (
-        <div key={key} className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg border border-gray-600/50">
+        <div key={key} className="bg-gray-800/60 p-4 rounded-lg border border-gray-600/50">
           <h3 className="text-sm font-semibold text-[#ff8c42] mb-2 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
@@ -681,7 +681,7 @@ export default memo(function DetalleRevision() {
             <textarea
               value={editedData[key] as string}
               onChange={(e) => handleInputChange(key, e.target.value)}
-              className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all resize-none"
+              className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-colors resize-none"
               rows={4}
               placeholder="Escribe las notas aquí..."
             />
@@ -732,21 +732,20 @@ export default memo(function DetalleRevision() {
     );
   }, [fieldLabels, isEditing, editedData, handleInputChange]);
 
+  // 🚀 OPTIMIZADO: Loading simplificado sin gradientes complejos ni backdrop-blur
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a1f35] to-[#1e2538] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23c9a45c%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+    <div className="min-h-screen bg-[#1a1f35] relative overflow-hidden">
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: 'radial-gradient(circle at 50% 50%, #c9a45c 1px, transparent 1px)',
+        backgroundSize: '50px 50px'
+      }}></div>
       
-      {/* Loading skeleton que simula la estructura real */}
+      {/* Loading skeleton optimizado */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden"
-          style={{
-            background: '#334d50',
-            backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-          }}
-        >
+        <div className="bg-[#1e2538]/90 rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden">
           
           {/* Header skeleton */}
-          <div className="bg-gradient-to-r from-[#c9a45c]/10 to-[#f0c987]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
+          <div className="bg-[#c9a45c]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-[#c9a45c]/20 rounded-xl animate-pulse"></div>
               <div className="space-y-2">
@@ -758,89 +757,45 @@ export default memo(function DetalleRevision() {
           
           <div className="space-y-6 p-6">
             {/* Info general skeleton */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
+            <div className="bg-[#2a3347]/60 rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
-                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
-                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
-                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
-                  <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
-                </div>
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="bg-[#1e2538]/40 rounded-lg p-4 border border-[#3d4659]/20">
+                    <div className="h-4 bg-[#c9a45c]/20 rounded w-24 mb-2 animate-pulse"></div>
+                    <div className="h-6 bg-[#c9a45c]/10 rounded w-32 animate-pulse"></div>
+                  </div>
+                ))}
               </div>
             </div>
             
             {/* Accesorios skeleton */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
+            <div className="bg-[#2a3347]/60 rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Optimizado: JSX estático en lugar de Array.map */}
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
-                </div>
+                {Array.from({ length: 8 }, (_, i) => (
+                  <div key={i} className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                    <div className="h-4 bg-orange-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                    <div className="h-5 bg-orange-500/10 rounded w-16 animate-pulse"></div>
+                  </div>
+                ))}
               </div>
             </div>
             
             {/* Evidencias skeleton */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-6 border border-[#3d4659]/30">
+            <div className="bg-[#2a3347]/60 rounded-xl p-6 border border-[#3d4659]/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
-                </div>
-                <div className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
-                  <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
-                  <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
-                </div>
+                {Array.from({ length: 3 }, (_, i) => (
+                  <div key={i} className="bg-[#1e2538]/50 rounded-lg p-4 border border-[#3d4659]/20">
+                    <div className="h-4 bg-blue-500/20 rounded w-20 mb-2 animate-pulse"></div>
+                    <div className="h-48 bg-blue-500/10 rounded-lg animate-pulse"></div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
         
-        {/* Loading indicator */}
-                  {/* 🚀 OPTIMIZADO: Eliminado backdrop-blur costoso */}
-          <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-[#1e2538] rounded-full px-4 py-3 border border-[#3d4659]/50">
+        {/* Loading indicator optimizado */}
+        <div className="fixed bottom-8 right-8 flex items-center gap-3 bg-[#1e2538] rounded-full px-4 py-3 border border-[#3d4659]/50">
           <div className="w-5 h-5 border-2 border-[#c9a45c]/30 border-t-[#c9a45c] rounded-full animate-spin"></div>
           <span className="text-[#c9a45c] font-medium text-sm">Cargando detalles...</span>
         </div>
@@ -848,10 +803,14 @@ export default memo(function DetalleRevision() {
     </div>
   );
   
+  // 🚀 OPTIMIZADO: Error simplificado sin gradientes complejos ni backdrop-blur
   if (error) return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a1f35] to-[#1e2538] flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23c9a45c%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
-      <div className="relative z-10 bg-gradient-to-br from-red-500/10 to-red-600/10 backdrop-blur-md rounded-2xl p-8 border border-red-500/20 max-w-md mx-4">
+    <div className="min-h-screen bg-[#1a1f35] flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: 'radial-gradient(circle at 50% 50%, #c9a45c 1px, transparent 1px)',
+        backgroundSize: '50px 50px'
+      }}></div>
+      <div className="relative z-10 bg-red-500/10 rounded-2xl p-8 border border-red-500/20 max-w-md mx-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -866,9 +825,12 @@ export default memo(function DetalleRevision() {
   );
   
   if (!revision) return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a1f35] to-[#1e2538] flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23c9a45c%22%20fill-opacity%3D%220.03%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
-      <div className="relative z-10 bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl p-8 border border-[#3d4659]/50 max-w-md mx-4">
+    <div className="min-h-screen bg-[#1a1f35] flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: 'radial-gradient(circle at 50% 50%, #c9a45c 1px, transparent 1px)',
+        backgroundSize: '50px 50px'
+      }}></div>
+      <div className="relative z-10 bg-[#1e2538]/90 rounded-2xl p-8 border border-[#3d4659]/50 max-w-md mx-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-[#c9a45c]/20 rounded-full flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#c9a45c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -891,7 +853,7 @@ export default memo(function DetalleRevision() {
       {/* Modal de imagen simplificado */}
       {modalOpen && modalImg && (
         <Suspense fallback={
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-4">
               <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
             </div>
@@ -905,34 +867,27 @@ export default memo(function DetalleRevision() {
         </Suspense>
       )}
 
+      {/* 🚀 OPTIMIZADO: Contenedor principal simplificado */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden"
-          style={{
-            background: '#334d50',
-            backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-          }}
-        >
-          {/* Header con gradiente y efectos */}
-          <div className="bg-gradient-to-r from-[#c9a45c]/10 to-[#f0c987]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
+        <div className="bg-[#1e2538]/90 rounded-2xl shadow-2xl border border-[#3d4659]/50 overflow-hidden">
+          {/* Header optimizado */}
+          <div className="bg-[#c9a45c]/10 border-b border-[#3d4659]/30 p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-12 h-12 bg-[#c9a45c] rounded-xl flex items-center justify-center shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#1a1f35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5.291A7.962 7.962 0 0112 20c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8c0 1.913-.67 3.669-1.791 5.043L19.5 20.5 17 18" />
                   </svg>
                 </div>
                 <div className="relative">
-                  {/* Efecto de resplandor sutil */}
-                  <div className="absolute -inset-2 bg-gradient-to-r from-[#c9a45c]/10 via-[#f0c987]/10 to-[#c9a45c]/10 blur-xl rounded-2xl"></div>
-                  
                   <div className="relative">
                     <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] leading-tight">
                       Detalles de la Revisión
                     </h1>
                     
-                    {/* Badge moderno para la casita */}
-                    <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-gradient-to-r from-[#c9a45c]/20 to-[#f0c987]/20 backdrop-blur-sm rounded-full border border-[#c9a45c]/30">
-                      <div className="w-2 h-2 bg-gradient-to-r from-[#c9a45c] to-[#f0c987] rounded-full animate-pulse"></div>
+                    {/* Badge optimizado para la casita */}
+                    <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#c9a45c]/20 rounded-full border border-[#c9a45c]/30">
+                      <div className="w-2 h-2 bg-[#c9a45c] rounded-full animate-pulse"></div>
                       <span className="text-[#f0c987] font-semibold text-sm tracking-wide">
                         CASITA {revision?.casita}
                       </span>
@@ -1009,10 +964,10 @@ export default memo(function DetalleRevision() {
           </div>
 
           <div className="space-y-6">
-            {/* Información de la Revisión */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
+            {/* 🚀 OPTIMIZADO: Información de la Revisión sin backdrop-blur */}
+            <div className="bg-[#2a3347]/70 rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
               <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
@@ -1047,8 +1002,8 @@ export default memo(function DetalleRevision() {
             </div>
 
 
-            {/* Notas */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
+            {/* 🚀 OPTIMIZADO: Notas sin backdrop-blur */}
+            <div className="bg-[#2a3347]/70 rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -1076,9 +1031,9 @@ export default memo(function DetalleRevision() {
               </div>
 
               {showNotaForm && (
-                <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-[#3d4659]/40 mb-6 shadow-lg">
+                <div className="bg-[#1e2538]/90 rounded-xl p-4 sm:p-6 border border-[#3d4659]/40 mb-6 shadow-lg">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
@@ -1315,10 +1270,10 @@ export default memo(function DetalleRevision() {
               </div>
             </div>
 
-            {/* Historial de Ediciones */}
-            <div className="bg-gradient-to-br from-[#2a3347]/60 to-[#1e2538]/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
+            {/* 🚀 OPTIMIZADO: Historial de Ediciones sin backdrop-blur */}
+            <div className="bg-[#2a3347]/70 rounded-xl p-4 sm:p-6 border border-[#3d4659]/30 shadow-lg">
               <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

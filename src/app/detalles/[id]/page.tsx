@@ -182,9 +182,16 @@ const DetalleRevision = memo(() => {
       const cambios = Object.entries(editedData).reduce((acc, [key, value]) => {
         // Excluir campos que no deben generar registros de edición
         if (key === 'id' || key === 'created_at' || key === 'fecha_edicion' || 
-            key === 'quien_edito' || key === 'datos_anteriores' || key === 'datos_actuales') {
+            key === 'quien_edito' || key === 'datos_anteriores' || key === 'datos_actuales' || 
+            key === 'notas_count') {
           return acc;
         }
+        
+        // Verificar que la clave existe en el tipo Revision
+        if (!(key in revision)) {
+          return acc;
+        }
+        
         const valorAnterior = revision[key as keyof Revision];
         if (value !== valorAnterior) {
           const registro = {

@@ -62,7 +62,7 @@ interface UseRevisionDataReturn {
   refetchSecondaryData: () => Promise<void>;
 }
 
-export const useRevisionData = (revisionId: string | string[]): UseRevisionDataReturn => {
+export const useRevisionData = (revisionId: string | string[] | undefined): UseRevisionDataReturn => {
   const [revision, setRevision] = useState<Revision | null>(null);
   const [notas, setNotas] = useState<Nota[]>([]);
   const [registroEdiciones, setRegistroEdiciones] = useState<RegistroEdicion[]>([]);
@@ -76,8 +76,8 @@ export const useRevisionData = (revisionId: string | string[]): UseRevisionDataR
       setLoading(true);
       setError(null);
       
-      if (!supabase) {
-        throw new Error('No se pudo conectar con la base de datos');
+      if (!supabase || !revisionId) {
+        throw new Error('No se pudo conectar con la base de datos o ID de revisión no válido');
       }
 
       const { data: revisionData, error: revisionError } = await supabase
@@ -102,7 +102,7 @@ export const useRevisionData = (revisionId: string | string[]): UseRevisionDataR
     try {
       setSecondaryLoading(true);
       
-      if (!supabase) return;
+      if (!supabase || !revisionId) return;
 
       // Cargar datos no críticos en paralelo
       const [
@@ -143,7 +143,7 @@ export const useRevisionData = (revisionId: string | string[]): UseRevisionDataR
 
   // Cargar datos críticos inmediatamente
   useEffect(() => {
-    if (revisionId) {
+    if (revisionId && revisionId !== undefined) {
       fetchCriticalData();
     }
   }, [revisionId, fetchCriticalData]);

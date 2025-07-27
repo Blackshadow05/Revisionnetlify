@@ -10,6 +10,7 @@ interface LoadingButtonProps {
   className?: string;
   variant?: 'primary' | 'secondary' | 'success' | 'danger';
   size?: 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const LoadingButton = memo(({
@@ -19,7 +20,8 @@ const LoadingButton = memo(({
   children,
   className = '',
   variant = 'primary',
-  size = 'md'
+  size = 'md',
+  type = 'button'
 }: LoadingButtonProps) => {
   const baseClasses = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
@@ -40,6 +42,7 @@ const LoadingButton = memo(({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={isDisabled}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}

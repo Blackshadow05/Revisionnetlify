@@ -44,7 +44,6 @@ interface Revision {
   evidencia_02: string;
   evidencia_03: string;
   notas: string;
-  notas_count?: number;
   created_at: string;
 }
 
@@ -429,7 +428,7 @@ const DetalleRevision = memo(() => {
   // 🚀 FUNCIÓN PARA DETERMINAR SI UN CAMPO DEBE MOSTRARSE
   const shouldShowField = useCallback((key: keyof Revision, value: any) => {
     // Nunca mostrar estos campos
-    if (key === 'id' || key === 'notas_count') return false;
+    if (key === 'id') return false;
     
     // Siempre mostrar el campo notas, aunque esté vacío
     if (key === 'notas') return true;
@@ -731,7 +730,7 @@ const DetalleRevision = memo(() => {
       {/* Grid de elementos de revisión */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
         {Object.entries(revision)
-          .filter(([key]) => !['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas', 'notas_count'].includes(key))
+          .filter(([key]) => !['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas'].includes(key))
           .filter(([key, value]) => shouldShowField(key as keyof Revision, value))
           .map(([key, value]) => renderField(key as keyof Revision, value))}
       </div>

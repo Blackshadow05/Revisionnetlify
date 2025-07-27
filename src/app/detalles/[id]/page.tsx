@@ -194,8 +194,13 @@ const DetalleRevision = memo(() => {
           return acc;
         }
         
-        const revisionKey = key as keyof Revision;
-        const valorAnterior = revision[revisionKey];
+        // Verificación adicional de que la propiedad existe
+        if (!revision.hasOwnProperty(key)) {
+          return acc;
+        }
+        
+        // Acceso seguro usando bracket notation con any
+        const valorAnterior = (revision as any)[key];
         if (value !== valorAnterior) {
           const registro = {
             "Usuario que Edito": user || 'Usuario',

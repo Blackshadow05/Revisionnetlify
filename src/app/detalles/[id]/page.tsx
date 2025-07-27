@@ -180,19 +180,22 @@ const DetalleRevision = memo(() => {
 
       // Guardar el registro de cambios en Registro_ediciones
       const cambios = Object.entries(editedData).reduce((acc, [key, value]) => {
-        // Excluir campos que no deben generar registros de edición
-        if (key === 'id' || key === 'created_at' || key === 'fecha_edicion' || 
-            key === 'quien_edito' || key === 'datos_anteriores' || key === 'datos_actuales' || 
-            key === 'notas_count') {
+        // Lista de campos válidos para registrar cambios
+        const validFields: (keyof Revision)[] = [
+          'casita', 'quien_revisa', 'caja_fuerte', 'puertas_ventanas', 'chromecast',
+          'binoculares', 'trapo_binoculares', 'speaker', 'usb_speaker', 'controles_tv',
+          'secadora', 'accesorios_secadora', 'steamer', 'bolsa_vapor', 'plancha_cabello',
+          'bulto', 'sombrero', 'bolso_yute', 'camas_ordenadas', 'cola_caballo',
+          'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas'
+        ];
+        
+        // Solo procesar campos válidos
+        if (!validFields.includes(key as keyof Revision)) {
           return acc;
         }
         
-        // Verificar que la clave existe en el tipo Revision
-        if (!(key in revision)) {
-          return acc;
-        }
-        
-        const valorAnterior = revision[key as keyof Revision];
+        const revisionKey = key as keyof Revision;
+        const valorAnterior = revision[revisionKey];
         if (value !== valorAnterior) {
           const registro = {
             "Usuario que Edito": user || 'Usuario',

@@ -735,10 +735,8 @@ export default function NuevaRevision() {
   // 📱 Función para compartir datos específicos (móvil-first)
   const compartirDatosRevision = async (datosRevision: any) => {
     try {
-      // 📋 Preparar texto con datos específicos
-      const textoCompartir = `🏠 REVISIÓN CASITA ${datosRevision.casita}
-
-📦 Estado Caja Fuerte: ${datosRevision.caja_fuerte}
+      // 📋 Preparar texto con datos específicos (formato resumido)
+      const textoCompartir = `${datosRevision.caja_fuerte} ${datosRevision.casita}
 
 🎒 ELEMENTOS ADICIONALES:
 • Bulto: ${datosRevision.bulto}
@@ -746,8 +744,7 @@ export default function NuevaRevision() {
 • Sombrero: ${datosRevision.sombrero}
 • Cola Caballo: ${datosRevision.cola_caballo}
 
-📅 Fecha: ${new Date().toLocaleDateString('es-ES')}
-👤 Revisado por: ${datosRevision.quien_revisa}`;
+📅 ${new Date().toLocaleDateString('es-ES')}`;
 
       // 📸 Preparar archivos de evidencia para compartir
       const archivosParaCompartir: File[] = [];
@@ -771,7 +768,7 @@ export default function NuevaRevision() {
       // 🚀 COMPARTIR NATIVO (Web Share API) - Prioridad para móviles
       if (navigator.share) {
         const datosCompartir: any = {
-          title: `Revisión Casita ${datosRevision.casita}`,
+          title: `${datosRevision.caja_fuerte} ${datosRevision.casita}`,
           text: textoCompartir
         };
 

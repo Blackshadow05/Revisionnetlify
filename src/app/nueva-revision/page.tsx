@@ -732,6 +732,106 @@ export default function NuevaRevision() {
     console.log('✅ Datos insertados exitosamente');
   };
 
+  // 📱 Función para compartir datos específicos (móvil-first)
+  const compartirDatosRevision = async (datosRevision: any) => {
+    try {
+      // 📋 Preparar texto con datos específicos
+      const textoCompartir = `🏠 REVISIÓN CASITA ${datosRevision.casita}
+
+📦 Estado Caja Fuerte: ${datosRevision.caja_fuerte}
+
+🎒 ELEMENTOS ADICIONALES:
+• Bulto: ${datosRevision.bulto}
+• Bolso Yute: ${datosRevision.bolso_yute}
+• Sombrero: ${datosRevision.sombrero}
+• Cola Caballo: ${datosRevision.cola_caballo}
+
+📅 Fecha: ${new Date().toLocaleDateString('es-ES')}
+👤 Revisado por: ${datosRevision.quien_revisa}`;
+
+      // 📸 Preparar archivos de evidencia para compartir
+      const archivosParaCompartir: File[] = [];
+      
+      // Convertir imágenes comprimidas a archivos
+      const evidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
+      for (const field of evidenceFields) {
+        const compressedFile = compressedFiles[field];
+        if (compressedFile) {
+          // Crear nombre descriptivo para el archivo
+          const nombreArchivo = `casita-${datosRevision.casita}-${field}-${Date.now()}.webp`;
+          const archivoRenombrado = new File([compressedFile], nombreArchivo, { 
+            type: compressedFile.type 
+          });
+          archivosParaCompartir.push(archivoRenombrado);
+        }
+      }
+
+      console.log(`📱 Preparando compartir: ${archivosParaCompartir.length} imágenes + texto`);
+
+      // 🚀 COMPARTIR NATIVO (Web Share API) - Prioridad para móviles
+      if (navigator.share) {
+        const datosCompartir: any = {
+          title: `Revisión Casita ${datosRevision.casita}`,
+          text: textoCompartir
+        };
+
+        // Verificar si se pueden compartir archivos
+        if (archivosParaCompartir.length > 0 && navigator.canShare && navigator.canShare({ files: archivosParaCompartir })) {
+          datosCompartir.files = archivosParaCompartir;
+          console.log('📱 Compartiendo con archivos incluidos');
+        } else {
+          console.log('📱 Compartiendo solo texto (archivos no soportados)');
+        }
+
+        await navigator.share(datosCompartir);
+        showSuccess('Datos compartidos exitosamente');
+        return;
+      }
+
+      // 🔄 FALLBACK 1: Copiar al portapapeles (si Web Share no está disponible)
+      if (navigator.clipboard && 'writeText' in navigator.clipboard) {
+        await navigator.clipboard.writeText(textoCompartir);
+        showSuccess('Datos copiados al portapapeles. Las imágenes se descargarán automáticamente.');
+        
+        // Descargar imágenes automáticamente
+        archivosParaCompartir.forEach((archivo, index) => {
+          setTimeout(() => {
+            const url = URL.createObjectURL(archivo);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = archivo.name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, index * 500); // Espaciar descargas
+        });
+        return;
+      }
+
+      // 🔄 FALLBACK 2: Mostrar modal con datos (último recurso)
+      alert(`${textoCompartir}\n\n📸 Las imágenes se descargarán automáticamente.`);
+      
+      // Descargar imágenes
+      archivosParaCompartir.forEach((archivo, index) => {
+        setTimeout(() => {
+          const url = URL.createObjectURL(archivo);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = archivo.name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, index * 500);
+      });
+
+    } catch (error) {
+      console.error('❌ Error al compartir datos:', error);
+      showError('No se pudieron compartir los datos');
+    }
+  };
+
   // Manejar envío del formulario con soporte offline
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -834,7 +934,26 @@ export default function NuevaRevision() {
         Object.keys(imageFiles).length > 0 ? imageFiles : undefined
       );
 
-      // 🎉 ENVÍO EXITOSO: Limpiar formulario y scroll al top
+      // 🎉 ENVÍO EXITOSO: Mostrar éxito y opción de compartir
+      showSuccess('Revisión guardada exitosamente');
+
+      // 📱 COMPARTIR AUTOMÁTICO para Check in y Upsell
+      const shouldShare = ['Check in', 'Upsell'].includes(formData.caja_fuerte);
+      if (shouldShare) {
+        console.log(`📱 Activando compartir automático para: ${formData.caja_fuerte}`);
+        
+        // Pequeña pausa para que se vea el mensaje de éxito
+        setTimeout(async () => {
+          try {
+            await compartirDatosRevision(finalData);
+          } catch (shareError) {
+            console.error('❌ Error en compartir automático:', shareError);
+            // No mostrar error adicional, ya se manejó en la función compartir
+          }
+        }, 1000);
+      }
+
+      // 🧹 Limpiar formulario y scroll al top
       limpiarFormulario();
       
       // 📜 Scroll suave hacia arriba para comenzar nueva revisión

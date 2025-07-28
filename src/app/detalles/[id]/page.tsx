@@ -819,6 +819,7 @@ const DetalleRevision = memo(() => {
                     Cancelar
                   </LoadingButton>
                   <LoadingButton
+                    onClick={() => {}}
                     loading={isSubmittingNota}
                     variant="success"
                     type="submit"

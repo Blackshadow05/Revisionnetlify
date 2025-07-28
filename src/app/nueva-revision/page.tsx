@@ -735,8 +735,8 @@ export default function NuevaRevision() {
   // 📱 Función para compartir datos específicos (móvil-first)
   const compartirDatosRevision = async (datosRevision: any) => {
     try {
-      // 📋 Preparar texto con datos específicos (formato resumido)
-      const textoCompartir = `${datosRevision.caja_fuerte} ${datosRevision.casita}
+      // 📋 Preparar textos diferenciados
+      const textoCompleto = `${datosRevision.caja_fuerte} ${datosRevision.casita}
 
 🎒 ELEMENTOS ADICIONALES:
 • Bulto: ${datosRevision.bulto}
@@ -746,12 +746,14 @@ export default function NuevaRevision() {
 
 📅 ${new Date().toLocaleDateString('es-ES')}`;
 
-      // 📸 Preparar archivos de evidencia para compartir
-      const archivosParaCompartir: File[] = [];
-      
-      // Convertir imágenes comprimidas a archivos
+      const textoResumido = `${datosRevision.caja_fuerte} ${datosRevision.casita}`;
+
+      // 📸 Preparar archivos de evidencia para compartir individualmente
       const evidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
-      for (const field of evidenceFields) {
+      const archivosConTexto: { archivo: File; texto: string; esCompleto: boolean }[] = [];
+      
+      // Convertir imágenes comprimidas a archivos con texto correspondiente
+      evidenceFields.forEach((field, index) => {
         const compressedFile = compressedFiles[field];
         if (compressedFile) {
           // Crear nombre descriptivo para el archivo
@@ -759,39 +761,59 @@ export default function NuevaRevision() {
           const archivoRenombrado = new File([compressedFile], nombreArchivo, { 
             type: compressedFile.type 
           });
-          archivosParaCompartir.push(archivoRenombrado);
+          
+          // Primera imagen (evidencia_01) lleva texto completo, las demás solo el resumido
+          archivosConTexto.push({
+            archivo: archivoRenombrado,
+            texto: index === 0 ? textoCompleto : textoResumido,
+            esCompleto: index === 0
+          });
         }
-      }
+      });
 
-      console.log(`📱 Preparando compartir: ${archivosParaCompartir.length} imágenes + texto`);
+      console.log(`📱 Preparando compartir: ${archivosConTexto.length} imágenes con textos diferenciados`);
 
-      // 🚀 COMPARTIR NATIVO (Web Share API) - Prioridad para móviles
+      // 🚀 COMPARTIR NATIVO (Web Share API) - Compartir cada imagen individualmente
       if (navigator.share) {
-        const datosCompartir: any = {
-          title: `${datosRevision.caja_fuerte} ${datosRevision.casita}`,
-          text: textoCompartir
-        };
+        for (let i = 0; i < archivosConTexto.length; i++) {
+          const { archivo, texto, esCompleto } = archivosConTexto[i];
+          
+          const datosCompartir: any = {
+            title: `${datosRevision.caja_fuerte} ${datosRevision.casita}${esCompleto ? '' : ` - Evidencia ${i + 1}`}`,
+            text: texto
+          };
 
-        // Verificar si se pueden compartir archivos
-        if (archivosParaCompartir.length > 0 && navigator.canShare && navigator.canShare({ files: archivosParaCompartir })) {
-          datosCompartir.files = archivosParaCompartir;
-          console.log('📱 Compartiendo con archivos incluidos');
-        } else {
-          console.log('📱 Compartiendo solo texto (archivos no soportados)');
+          // Verificar si se pueden compartir archivos
+          if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+            datosCompartir.files = [archivo];
+          }
+
+          try {
+            await navigator.share(datosCompartir);
+            
+            // Pequeña pausa entre comparticiones para evitar spam del sistema
+            if (i < archivosConTexto.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (shareError) {
+            console.log(`⚠️ Usuario canceló compartir imagen ${i + 1}`);
+            // Si el usuario cancela, no continuar con las demás
+            break;
+          }
         }
-
-        await navigator.share(datosCompartir);
+        
         showSuccess('Datos compartidos exitosamente');
         return;
       }
 
-      // 🔄 FALLBACK 1: Copiar al portapapeles (si Web Share no está disponible)
+      // 🔄 FALLBACK 1: Copiar al portapapeles + descargar (si Web Share no está disponible)
       if (navigator.clipboard && 'writeText' in navigator.clipboard) {
-        await navigator.clipboard.writeText(textoCompartir);
+        // Copiar solo el texto completo al portapapeles
+        await navigator.clipboard.writeText(textoCompleto);
         showSuccess('Datos copiados al portapapeles. Las imágenes se descargarán automáticamente.');
         
         // Descargar imágenes automáticamente
-        archivosParaCompartir.forEach((archivo, index) => {
+        archivosConTexto.forEach(({ archivo }, index) => {
           setTimeout(() => {
             const url = URL.createObjectURL(archivo);
             const link = document.createElement('a');
@@ -807,10 +829,10 @@ export default function NuevaRevision() {
       }
 
       // 🔄 FALLBACK 2: Mostrar modal con datos (último recurso)
-      alert(`${textoCompartir}\n\n📸 Las imágenes se descargarán automáticamente.`);
+      alert(`${textoCompleto}\n\n📸 Las imágenes se descargarán automáticamente.`);
       
       // Descargar imágenes
-      archivosParaCompartir.forEach((archivo, index) => {
+      archivosConTexto.forEach(({ archivo }, index) => {
         setTimeout(() => {
           const url = URL.createObjectURL(archivo);
           const link = document.createElement('a');

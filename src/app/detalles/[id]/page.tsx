@@ -723,6 +723,74 @@ const DetalleRevision = memo(() => {
         </div>
       </FadeIn>
 
+      {/* Banner informativo sobre datos adicionales disponibles */}
+      {(hasNotas || hasRegistroEdiciones) && (
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={200}>
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-500/15 via-purple-500/15 to-orange-500/15 border border-blue-400/30 rounded-xl p-5 shadow-lg backdrop-blur-sm">
+              {/* Efecto de brillo animado */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
+              
+              <div className="relative flex items-start gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-blue-300 font-bold text-xl">
+                      📋 Información Adicional Disponible
+                    </h3>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    {hasNotas && (
+                      <div className="flex items-center gap-3 bg-purple-500/10 rounded-lg p-3 border border-purple-400/20">
+                        <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-purple-300 font-semibold text-sm">Notas Adicionales</p>
+                          <p className="text-purple-200/80 text-xs">Observaciones y evidencia</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {hasRegistroEdiciones && (
+                      <div className="flex items-center gap-3 bg-orange-500/10 rounded-lg p-3 border border-orange-400/20">
+                        <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-orange-300 font-semibold text-sm">Historial de Ediciones</p>
+                          <p className="text-orange-200/80 text-xs">Cambios registrados</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-gray-300 text-sm bg-gray-800/30 rounded-lg p-3 border border-gray-600/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>
+                      <strong className="text-yellow-400">Tip:</strong> Desplázate hacia abajo para encontrar los botones que te permitirán ver esta información adicional.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      )}
+
       {/* Información principal */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {renderField('casita', revision.casita)}

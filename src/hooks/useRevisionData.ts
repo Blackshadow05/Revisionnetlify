@@ -58,6 +58,9 @@ interface UseRevisionDataReturn {
   loading: boolean;
   secondaryLoading: boolean;
   error: string | null;
+  hasNotas: boolean;
+  hasRegistroEdiciones: boolean;
+  loadSecondaryData: () => Promise<void>;
   refetchRevision: () => Promise<void>;
   refetchSecondaryData: () => Promise<void>;
 }
@@ -69,6 +72,9 @@ export const useRevisionData = (revisionId: string | string[] | undefined): UseR
   const [loading, setLoading] = useState(true);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasNotas, setHasNotas] = useState(false);
+  const [hasRegistroEdiciones, setHasRegistroEdiciones] = useState(false);
+  const [secondaryDataLoaded, setSecondaryDataLoaded] = useState(false);
 
   // Función para cargar solo datos críticos (información principal)
   const fetchCriticalData = useCallback(async () => {
@@ -97,7 +103,41 @@ export const useRevisionData = (revisionId: string | string[] | undefined): UseR
     }
   }, [revisionId]);
 
-  // Función para cargar datos secundarios (notas e historial)
+  // Función para verificar si existen datos secundarios (solo conteo)
+  const checkSecondaryDataExists = useCallback(async () => {
+    try {
+      if (!supabase || !revisionId) return;
+
+      // Solo verificar si existen datos, no cargarlos
+      const [
+        { count: notasCount, error: notasError },
+        { count: edicionesCount, error: edicionesError }
+      ] = await Promise.all([
+        supabase
+          .from('Notas')
+          .select('*', { count: 'exact', head: true })
+          .eq('revision_id', String(revisionId)),
+
+        supabase
+          .from('Registro_ediciones')
+          .select('*', { count: 'exact', head: true })
+          .or(`Dato_anterior.like.[${revisionId}]%,Dato_nuevo.like.[${revisionId}]%`)
+      ]);
+
+      if (!notasError) {
+        setHasNotas((notasCount || 0) > 0);
+      }
+
+      if (!edicionesError) {
+        setHasRegistroEdiciones((edicionesCount || 0) > 0);
+      }
+
+    } catch (error: any) {
+      console.warn('Error al verificar datos secundarios:', error);
+    }
+  }, [revisionId]);
+
+  // Función para cargar datos secundarios (notas e historial) - solo cuando se necesiten
   const fetchSecondaryData = useCallback(async () => {
     try {
       setSecondaryLoading(true);
@@ -126,13 +166,17 @@ export const useRevisionData = (revisionId: string | string[] | undefined): UseR
         console.warn('Error al cargar notas:', notasError);
       } else {
         setNotas(notasData || []);
+        setHasNotas((notasData || []).length > 0);
       }
 
       if (edicionesError) {
         console.warn('Error al cargar historial:', edicionesError);
       } else {
         setRegistroEdiciones(edicionesData || []);
+        setHasRegistroEdiciones((edicionesData || []).length > 0);
       }
+
+      setSecondaryDataLoaded(true);
 
     } catch (error: any) {
       console.warn('Error al cargar datos secundarios:', error);
@@ -148,17 +192,17 @@ export const useRevisionData = (revisionId: string | string[] | undefined): UseR
     }
   }, [revisionId, fetchCriticalData]);
 
-  // Cargar datos secundarios después de los críticos
+  // Solo verificar si existen datos secundarios después de cargar datos críticos
   useEffect(() => {
-    if (revision && !secondaryLoading) {
+    if (revision && !secondaryDataLoaded) {
       // Pequeño delay para priorizar el render de datos críticos
       const timer = setTimeout(() => {
-        fetchSecondaryData();
+        checkSecondaryDataExists();
       }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [revision, fetchSecondaryData, secondaryLoading]);
+  }, [revision, checkSecondaryDataExists, secondaryDataLoaded]);
 
   return {
     revision,
@@ -167,6 +211,9 @@ export const useRevisionData = (revisionId: string | string[] | undefined): UseR
     loading,
     secondaryLoading,
     error,
+    hasNotas,
+    hasRegistroEdiciones,
+    loadSecondaryData: fetchSecondaryData,
     refetchRevision: fetchCriticalData,
     refetchSecondaryData: fetchSecondaryData
   };

@@ -60,6 +60,9 @@ const DetalleRevision = memo(() => {
     loading,
     secondaryLoading,
     error,
+    hasNotas,
+    hasRegistroEdiciones,
+    loadSecondaryData,
     refetchRevision,
     refetchSecondaryData
   } = useRevisionData(params.id);
@@ -386,7 +389,7 @@ const DetalleRevision = memo(() => {
       setShowNotaForm(false);
       
       // Recargar datos secundarios
-      refetchSecondaryData();
+      await refetchSecondaryData();
 
     } catch (error: any) {
       console.error('Error al guardar la nota:', error);
@@ -747,12 +750,129 @@ const DetalleRevision = memo(() => {
         {renderField('notas', revision.notas)}
       </div>
 
-      {/* Sección de Notas Adicionales */}
-      <div className="max-w-6xl mx-auto mb-8">
-        <FadeIn delay={800}>
-          <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
+      {/* Formulario para agregar nueva nota - Siempre disponible */}
+      {showNotaForm ? (
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={750}>
+            <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-purple-400">Nueva Nota Adicional</h3>
+              </div>
+
+              <form onSubmit={handleSubmitNota} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Usuario
+                    </label>
+                    <input
+                      type="text"
+                      value={nuevaNota.Usuario}
+                      onChange={(e) => setNuevaNota(prev => ({ ...prev, Usuario: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+                      placeholder="Nombre del usuario"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Evidencia (Imagen)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-purple-500 file:text-white hover:file:bg-purple-600"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nota
+                  </label>
+                  <textarea
+                    value={nuevaNota.nota}
+                    onChange={(e) => setNuevaNota(prev => ({ ...prev, nota: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors resize-none"
+                    rows={4}
+                    placeholder="Escribe tu nota u observación aquí..."
+                    required
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-2">
+                  <LoadingButton
+                    onClick={() => {
+                      setShowNotaForm(false);
+                      setNuevaNota({ Usuario: '', nota: '', evidencia: null });
+                    }}
+                    variant="secondary"
+                    type="button"
+                  >
+                    Cancelar
+                  </LoadingButton>
+                  <LoadingButton
+                    loading={isSubmittingNota}
+                    variant="success"
+                    type="submit"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Guardar Nota
+                  </LoadingButton>
+                </div>
+              </form>
+            </div>
+          </FadeIn>
+        </div>
+      ) : (
+        // Botón para mostrar formulario - Siempre visible
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={750}>
+            <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg text-center">
+              <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-purple-400 mb-2">Agregar Nota Adicional</h3>
+              <p className="text-gray-400 mb-4">Añade observaciones, comentarios o evidencia adicional</p>
+              <LoadingButton
+                onClick={() => {
+                  // Si hay notas pero no están cargadas, cargar primero
+                  if (hasNotas && notas.length === 0) {
+                    loadSecondaryData().then(() => setShowNotaForm(true));
+                  } else {
+                    setShowNotaForm(true);
+                  }
+                }}
+                variant="primary"
+                loading={secondaryLoading && hasNotas && notas.length === 0}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                Agregar Nota
+              </LoadingButton>
+            </div>
+          </FadeIn>
+        </div>
+      )}
+
+      {/* Sección de Notas Adicionales Existentes - Solo mostrar si hay notas cargadas */}
+      {notas.length > 0 && (
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={800}>
+            <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -760,108 +880,9 @@ const DetalleRevision = memo(() => {
                 </div>
                 <h3 className="text-lg font-bold text-purple-400">Notas Adicionales ({notas.length})</h3>
               </div>
-              
-              {!showNotaForm && (
-                <LoadingButton
-                  onClick={() => setShowNotaForm(true)}
-                  variant="primary"
-                  size="sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Agregar Nota
-                </LoadingButton>
-              )}
-            </div>
 
-            {/* Formulario para agregar nota */}
-            {showNotaForm && (
-              <FadeIn>
-                <form onSubmit={handleSubmitNota} className="bg-[#2a3441]/50 p-4 rounded-lg border border-[#3d4659]/30 mb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Usuario
-                      </label>
-                      <input
-                        type="text"
-                        value={nuevaNota.Usuario}
-                        onChange={(e) => setNuevaNota(prev => ({ ...prev, Usuario: e.target.value }))}
-                        className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
-                        placeholder="Nombre del usuario"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Evidencia (Imagen)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-purple-500 file:text-white hover:file:bg-purple-600"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Nota
-                    </label>
-                    <textarea
-                      value={nuevaNota.nota}
-                      onChange={(e) => setNuevaNota(prev => ({ ...prev, nota: e.target.value }))}
-                      className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors resize-none"
-                      rows={3}
-                      placeholder="Escribe tu nota aquí..."
-                      required
-                    />
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <LoadingButton
-                      onClick={() => {
-                        setShowNotaForm(false);
-                        setNuevaNota({ Usuario: '', nota: '', evidencia: null });
-                      }}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      Cancelar
-                    </LoadingButton>
-                    <LoadingButton
-                      onClick={() => {}}
-                      loading={isSubmittingNota}
-                      variant="success"
-                      size="sm"
-                      type="submit"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Guardar Nota
-                    </LoadingButton>
-                  </div>
-                </form>
-              </FadeIn>
-            )}
-
-            {/* Lista de notas existentes */}
-            <div className="space-y-4">
-              {notas.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 italic">No hay notas adicionales registradas</p>
-                </div>
-              ) : (
-                notas.map((nota, index) => (
+              <div className="space-y-4">
+                {notas.map((nota, index) => (
                   <FadeIn key={nota.id} delay={900 + (index * 100)}>
                     <div className="bg-[#2a3441]/30 p-4 rounded-lg border border-[#3d4659]/20">
                       <div className="flex items-start justify-between mb-3">
@@ -895,105 +916,150 @@ const DetalleRevision = memo(() => {
                       )}
                     </div>
                   </FadeIn>
-                ))
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-        </FadeIn>
-      </div>
+          </FadeIn>
+        </div>
+      )}
 
-      {/* Sección de Historial de Ediciones */}
-      <div className="max-w-6xl mx-auto mb-8">
-        <FadeIn delay={900}>
-          <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+
+
+      {/* Botón para cargar notas existentes si las hay pero no están cargadas */}
+      {hasNotas && notas.length === 0 && !showNotaForm && (
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={800}>
+            <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg text-center">
+              <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-orange-400">Historial de Ediciones ({registroEdiciones.length})</h3>
+              <h3 className="text-lg font-bold text-purple-400 mb-2">Notas Adicionales Disponibles</h3>
+              <p className="text-gray-400 mb-4">Esta revisión tiene notas adicionales registradas</p>
+              <LoadingButton
+                onClick={loadSecondaryData}
+                loading={secondaryLoading}
+                variant="primary"
+              >
+                Ver Notas Existentes
+              </LoadingButton>
             </div>
+          </FadeIn>
+        </div>
+      )}
 
-            <div className="space-y-4">
-              {registroEdiciones.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* Sección de Historial de Ediciones */}
+      {hasRegistroEdiciones && (
+        <div className="max-w-6xl mx-auto mb-8">
+          <FadeIn delay={900}>
+            {registroEdiciones.length > 0 ? (
+              // Mostrar historial completo cuando los datos están cargados
+              <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 italic">No hay ediciones registradas</p>
+                  <h3 className="text-lg font-bold text-orange-400">Historial de Ediciones ({registroEdiciones.length})</h3>
                 </div>
-              ) : (
-                registroEdiciones.map((edicion, index) => {
-                  const datoAnterior = parseEditData(edicion.Dato_anterior || '');
-                  const datoNuevo = parseEditData(edicion.Dato_nuevo || '');
-                  
-                  return (
-                    <FadeIn key={edicion.id || index} delay={1000 + (index * 100)}>
-                      <div className="bg-[#2a3441]/30 p-4 rounded-lg border border-[#3d4659]/20">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
-                              <span className="text-orange-400 text-sm font-bold">
-                                {edicion["Usuario que Edito"]?.charAt(0)?.toUpperCase() || 'E'}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-white font-medium">{edicion["Usuario que Edito"] || 'Usuario'}</p>
-                              <p className="text-gray-400 text-sm">
-                                {edicion.created_at ? formatearFechaParaMostrar(edicion.created_at) : 'Fecha no disponible'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            <span className="text-orange-400 font-medium text-sm">
-                              Campo editado: {datoAnterior.displayName}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                              <div className="flex items-center gap-2 mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                </svg>
-                                <span className="text-red-400 font-medium text-sm">Valor Anterior</span>
+
+                {secondaryLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
+                    <p className="text-gray-400 mt-2">Cargando historial...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {registroEdiciones.map((edicion, index) => {
+                      const datoAnterior = parseEditData(edicion.Dato_anterior || '');
+                      const datoNuevo = parseEditData(edicion.Dato_nuevo || '');
+                      
+                      return (
+                        <FadeIn key={edicion.id || index} delay={1000 + (index * 100)}>
+                          <div className="bg-[#2a3441]/30 p-4 rounded-lg border border-[#3d4659]/20">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                                  <span className="text-orange-400 text-sm font-bold">
+                                    {edicion["Usuario que Edito"]?.charAt(0)?.toUpperCase() || 'E'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="text-white font-medium">{edicion["Usuario que Edito"] || 'Usuario'}</p>
+                                  <p className="text-gray-400 text-sm">
+                                    {edicion.created_at ? formatearFechaParaMostrar(edicion.created_at) : 'Fecha no disponible'}
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-gray-300 text-sm break-words">
-                                {datoAnterior.value || <span className="text-gray-500 italic">Sin valor</span>}
-                              </p>
                             </div>
                             
-                            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                            <div className="space-y-3">
                               <div className="flex items-center gap-2 mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                                <span className="text-green-400 font-medium text-sm">Valor Nuevo</span>
+                                <span className="text-orange-400 font-medium text-sm">
+                                  Campo editado: {datoAnterior.displayName}
+                                </span>
                               </div>
-                              <p className="text-gray-300 text-sm break-words">
-                                {datoNuevo.value || <span className="text-gray-500 italic">Sin valor</span>}
-                              </p>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                    </svg>
+                                    <span className="text-red-400 font-medium text-sm">Valor Anterior</span>
+                                  </div>
+                                  <p className="text-gray-300 text-sm break-words">
+                                    {datoAnterior.value || <span className="text-gray-500 italic">Sin valor</span>}
+                                  </p>
+                                </div>
+                                
+                                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    <span className="text-green-400 font-medium text-sm">Valor Nuevo</span>
+                                  </div>
+                                  <p className="text-gray-300 text-sm break-words">
+                                    {datoNuevo.value || <span className="text-gray-500 italic">Sin valor</span>}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </FadeIn>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </FadeIn>
-      </div>
+                        </FadeIn>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Mostrar botón para cargar cuando hay datos pero no están cargados
+              <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg text-center">
+                <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-orange-400 mb-2">Historial de Ediciones Disponible</h3>
+                <p className="text-gray-400 mb-4">Esta revisión tiene un historial de cambios</p>
+                <LoadingButton
+                  onClick={loadSecondaryData}
+                  loading={secondaryLoading}
+                  variant="primary"
+                >
+                  Ver Historial
+                </LoadingButton>
+              </div>
+            )}
+          </FadeIn>
+        </div>
+      )}
 
       {/* Modal de imagen */}
       <Suspense fallback={null}>

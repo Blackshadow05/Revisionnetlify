@@ -16,10 +16,7 @@ import { compressImageAdvanced, createImagePreview, revokeImagePreview } from '@
 import FormField from '@/components/revision/FormField';
 import ImageModal from '@/components/revision/ImageModal';
 import EvidenceUploader from '@/components/revision/EvidenceUploader';
-import { OfflineQueue } from '@/components/OfflineQueue';
 
-// Importar hook para offline
-import { useOfflineFormSubmit } from '@/hooks/useOfflineFormSubmit';
 
 // Importar tipos
 import type { 
@@ -115,13 +112,6 @@ export default function NuevaRevision() {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   
-  // Hook para manejo offline
-  const { 
-    submitForm: submitOfflineForm, 
-    isSubmitting: isOfflineSubmitting, 
-    isOnline 
-  } = useOfflineFormSubmit();
-  
   // Estados principales
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<string[]>([]);
@@ -129,8 +119,8 @@ export default function NuevaRevision() {
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
   const [isHydrated, setIsHydrated] = useState(false);
   
-  // Combinar estado de loading local y offline
-  const isFormLoading = loading || isOfflineSubmitting;
+  // Estado de loading del formulario
+  const isFormLoading = loading;
   
   // Estados para formulario y archivos
   const [formData, setFormData] = useState<RevisionData>({
@@ -732,120 +722,7 @@ export default function NuevaRevision() {
     console.log('✅ Datos insertados exitosamente');
   };
 
-  // 📱 Función para compartir datos específicos (móvil-first)
-  const compartirDatosRevision = async (datosRevision: any) => {
-    try {
-      // 📋 Preparar texto completo solo para la primera imagen
-      const textoCompleto = `${datosRevision.caja_fuerte} ${datosRevision.casita}
 
-🎒 ELEMENTOS ADICIONALES:
-• Bulto: ${datosRevision.bulto}
-• Bolso Yute: ${datosRevision.bolso_yute}
-• Sombrero: ${datosRevision.sombrero}
-• Cola Caballo: ${datosRevision.cola_caballo}
-
-📅 ${new Date().toLocaleDateString('es-ES')}`;
-
-      // 📸 Preparar archivos de evidencia para compartir
-      const evidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
-      const archivosParaCompartir: File[] = [];
-      
-      // Convertir imágenes comprimidas a archivos
-      evidenceFields.forEach((field) => {
-        const compressedFile = compressedFiles[field];
-        if (compressedFile) {
-          // Crear nombre descriptivo para el archivo
-          const nombreArchivo = `casita-${datosRevision.casita}-${field}-${Date.now()}.webp`;
-          const archivoRenombrado = new File([compressedFile], nombreArchivo, { 
-            type: compressedFile.type 
-          });
-          archivosParaCompartir.push(archivoRenombrado);
-        }
-      });
-
-      console.log(`📱 Preparando compartir: ${archivosParaCompartir.length} imágenes`);
-
-      // 🚀 COMPARTIR NATIVO (Web Share API) - Compartir cada imagen por separado
-      if (navigator.share) {
-        for (let i = 0; i < archivosParaCompartir.length; i++) {
-          const archivo = archivosParaCompartir[i];
-          
-          const datosCompartir: any = {
-            title: `${datosRevision.caja_fuerte} ${datosRevision.casita}`
-          };
-
-          // Solo la primera imagen (evidencia_01) lleva texto
-          if (i === 0) {
-            datosCompartir.text = textoCompleto;
-          }
-
-          // Verificar si se pueden compartir archivos
-          if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-            datosCompartir.files = [archivo];
-          }
-
-          try {
-            await navigator.share(datosCompartir);
-            
-            // Pequeña pausa entre comparticiones para evitar spam del sistema
-            if (i < archivosParaCompartir.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          } catch (shareError) {
-            console.log(`⚠️ Usuario canceló compartir imagen ${i + 1}`);
-            // Si el usuario cancela, no continuar con las demás
-            break;
-          }
-        }
-        
-        showSuccess('Datos compartidos exitosamente');
-        return;
-      }
-
-      // 🔄 FALLBACK 1: Copiar al portapapeles + descargar (si Web Share no está disponible)
-      if (navigator.clipboard && 'writeText' in navigator.clipboard) {
-        // Copiar el texto completo al portapapeles
-        await navigator.clipboard.writeText(textoCompleto);
-        showSuccess('Datos copiados al portapapeles. Las imágenes se descargarán automáticamente.');
-        
-        // Descargar imágenes automáticamente
-        archivosParaCompartir.forEach((archivo, index) => {
-          setTimeout(() => {
-            const url = URL.createObjectURL(archivo);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = archivo.name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-          }, index * 500); // Espaciar descargas
-        });
-        return;
-      }
-
-      // 🔄 FALLBACK 2: Mostrar modal con datos (último recurso)
-      alert(`${textoCompleto}\n\n📸 Las imágenes se descargarán automáticamente.`);
-      
-      // Descargar imágenes
-      archivosParaCompartir.forEach((archivo, index) => {
-        setTimeout(() => {
-          const url = URL.createObjectURL(archivo);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = archivo.name;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, index * 500);
-      });
-
-    } catch (error) {
-      console.error('❌ Error al compartir datos:', error);
-      showError('No se pudieron compartir los datos');
-    }
-  };
 
   // Manejar envío del formulario con soporte offline
   const handleSubmit = async (e: React.FormEvent) => {
@@ -876,33 +753,21 @@ export default function NuevaRevision() {
       // Preparar datos para envío
       const submitData = { ...formData };
       const evidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
-      const imageFiles: { [key: string]: File } = {};
       
-      // Solo subir imágenes si estamos online
-      if (isOnline) {
-        // Subir imágenes comprimidas a Cloudinary/Evidencias
-        for (const field of evidenceFields) {
-          const compressedFile = compressedFiles[field];
-          if (compressedFile) {
-            try {
-              const uploadedUrl = await uploadEvidenciaToCloudinary(compressedFile);
-              submitData[field] = uploadedUrl;
-              console.log(`✅ ${field} subida exitosamente a Cloudinary/Evidencias:`, uploadedUrl);
-            } catch (uploadError) {
-              console.error(`❌ Error subiendo ${field} a Cloudinary/Evidencias:`, uploadError);
-              showError(`Error al subir ${field} a Cloudinary/Evidencias`);
-              return;
-            }
+      // Subir imágenes comprimidas a Cloudinary/Evidencias
+      for (const field of evidenceFields) {
+        const compressedFile = compressedFiles[field];
+        if (compressedFile) {
+          try {
+            const uploadedUrl = await uploadEvidenciaToCloudinary(compressedFile);
+            submitData[field] = uploadedUrl;
+            console.log(`✅ ${field} subida exitosamente a Cloudinary/Evidencias:`, uploadedUrl);
+          } catch (uploadError) {
+            console.error(`❌ Error subiendo ${field} a Cloudinary/Evidencias:`, uploadError);
+            showError(`Error al subir ${field} a Cloudinary/Evidencias`);
+            return;
           }
         }
-      } else {
-        // Guardar archivos para upload offline posterior
-        evidenceFields.forEach(field => {
-          const compressedFile = compressedFiles[field];
-          if (compressedFile) {
-            imageFiles[field] = compressedFile;
-          }
-        });
       }
 
       // Generar fecha y hora local del dispositivo
@@ -941,32 +806,11 @@ export default function NuevaRevision() {
         created_at: fechaLocal,
       };
 
-      // Usar el sistema offline que maneja automáticamente online/offline
-      await submitOfflineForm(
-        'revision',
-        finalData,
-        submitRevisionOnline,
-        Object.keys(imageFiles).length > 0 ? imageFiles : undefined
-      );
+      // Enviar datos directamente a Supabase
+      await submitRevisionOnline(finalData);
 
-      // 🎉 ENVÍO EXITOSO: Mostrar éxito y opción de compartir
+      // 🎉 ENVÍO EXITOSO: Mostrar éxito
       showSuccess('Revisión guardada exitosamente');
-
-      // 📱 COMPARTIR AUTOMÁTICO para Check in y Upsell
-      const shouldShare = ['Check in', 'Upsell'].includes(formData.caja_fuerte);
-      if (shouldShare) {
-        console.log(`📱 Activando compartir automático para: ${formData.caja_fuerte}`);
-        
-        // Pequeña pausa para que se vea el mensaje de éxito
-        setTimeout(async () => {
-          try {
-            await compartirDatosRevision(finalData);
-          } catch (shareError) {
-            console.error('❌ Error en compartir automático:', shareError);
-            // No mostrar error adicional, ya se manejó en la función compartir
-          }
-        }, 1000);
-      }
 
       // 🧹 Limpiar formulario y scroll al top
       limpiarFormulario();
@@ -1053,8 +897,7 @@ export default function NuevaRevision() {
             </div>
           </header>
 
-          {/* Cola de formularios offline */}
-          <OfflineQueue className="mb-6" />
+
 
           {/* Formulario */}
           <div className="space-y-6">
@@ -1372,16 +1215,8 @@ export default function NuevaRevision() {
               </FormField>
             </fieldset>
 
-            {/* Submit button con estado offline */}
+            {/* Submit button */}
             <div className="space-y-3">
-              {/* Indicador de conexión */}
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                <span className={isOnline ? 'text-green-400' : 'text-yellow-400'}>
-                  {isOnline ? 'En línea - Envío directo' : 'Sin conexión - Se guardará offline'}
-                </span>
-              </div>
-
               {/* 🔍 Indicador de campos pendientes (café claro/naranja) */}
               {nextEmptyField && (
                 <div className="bg-orange-500/20 border border-orange-500/50 rounded-xl p-3 text-orange-200">
@@ -1408,25 +1243,14 @@ export default function NuevaRevision() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {isOnline ? 'Guardando y subiendo imágenes...' : 'Guardando offline...'}
+                      Guardando y subiendo imágenes...
                     </>
                   ) : (
                     <>
-                      {isOnline ? (
-                        <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          Guardar Revisión
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                          </svg>
-                          Guardar Offline
-                        </>
-                      )}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Guardar Revisión
                     </>
                   )}
                 </span>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compartir Fotos PWA</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #25D366;
+            background: #f0fff4;
+        }
+        
+        .upload-area.dragover {
+            border-color: #25D366;
+            background: #f0fff4;
+        }
+        
+        .btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #22c55e;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #1976d2;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Compartir Fotos</h1>
+        <p>Selecciona hasta 3 fotos para compartir en WhatsApp</p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div>📷</div>
+            <p>Haz clic aquí o arrastra fotos</p>
+            <small>Máximo 3 fotos (JPG, PNG, WebP)</small>
+        </div>
+        
+        <input type="file" id="fileInput" multiple accept="image/*" max="3">
+        
+        <div class="error" id="errorMsg"></div>
+        
+        <div class="preview" id="preview"></div>
+        
+        <div style="margin: 20px 0;">
+            <label for="messageText" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                💬 Mensaje (opcional):
+            </label>
+            <textarea 
+                id="messageText" 
+                placeholder="Escribe un mensaje para acompañar las fotos..."
+                style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical; box-sizing: border-box;"
+                maxlength="500"
+            ></textarea>
+            <small style="color: #666; font-size: 12px;">Máximo 500 caracteres</small>
+        </div>
+        
+        <button class="btn" id="shareBtn" disabled>
+            📤 Compartir en WhatsApp
+        </button>
+        
+        <div class="info">
+            💡 <strong>Nota:</strong> La función de compartir funciona mejor en dispositivos móviles con WhatsApp instalado.
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        const maxFiles = 3;
+        
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const shareBtn = document.getElementById('shareBtn');
+        const uploadArea = document.querySelector('.upload-area');
+        const errorMsg = document.getElementById('errorMsg');
+        const messageText = document.getElementById('messageText');
+        
+        // Event listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        shareBtn.addEventListener('click', compartirFotos);
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        
+        // Contador de caracteres para el textarea
+        messageText.addEventListener('input', function() {
+            const remaining = 500 - this.value.length;
+            const small = this.nextElementSibling;
+            small.textContent = `${this.value.length}/500 caracteres`;
+            if (remaining < 50) {
+                small.style.color = remaining < 0 ? '#c62828' : '#ff9800';
+            } else {
+                small.style.color = '#666';
+            }
+        });
+        
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            processFiles(files);
+        }
+        
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+        
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+        
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(event.dataTransfer.files);
+            processFiles(files);
+        }
+        
+        function processFiles(files) {
+            // Filtrar solo imágenes
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                showError('Por favor selecciona archivos de imagen válidos');
+                return;
+            }
+            
+            // Limitar a máximo 3 archivos
+            const remainingSlots = maxFiles - selectedFiles.length;
+            const filesToAdd = imageFiles.slice(0, remainingSlots);
+            
+            if (imageFiles.length > remainingSlots) {
+                showError(`Solo se pueden agregar ${remainingSlots} foto(s) más. Máximo ${maxFiles} fotos.`);
+            } else {
+                hideError();
+            }
+            
+            // Agregar archivos a la selección
+            selectedFiles = [...selectedFiles, ...filesToAdd];
+            
+            updatePreview();
+            updateShareButton();
+        }
+        
+        function updatePreview() {
+            preview.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview ${index + 1}">
+                        <button class="remove-btn" onclick="removeFile(${index})">×</button>
+                    `;
+                    preview.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updatePreview();
+            updateShareButton();
+            hideError();
+        }
+        
+        function updateShareButton() {
+            shareBtn.disabled = selectedFiles.length === 0;
+            const hasMessage = messageText.value.trim().length > 0;
+            const fileText = selectedFiles.length > 0 
+                ? `${selectedFiles.length} foto${selectedFiles.length > 1 ? 's' : ''}`
+                : '';
+            const messageIcon = hasMessage ? '💬 ' : '';
+            
+            if (selectedFiles.length > 0 && hasMessage) {
+                shareBtn.textContent = `📤 ${messageIcon}Compartir ${fileText} con mensaje`;
+            } else if (selectedFiles.length > 0) {
+                shareBtn.textContent = `📤 Compartir ${fileText}`;
+            } else if (hasMessage) {
+                shareBtn.textContent = '📤 Compartir mensaje';
+                shareBtn.disabled = true; // Requiere al menos una foto
+            } else {
+                shareBtn.textContent = '📤 Compartir en WhatsApp';
+            }
+        }
+        
+        async function compartirFotos() {
+            if (selectedFiles.length === 0) {
+                showError('Selecciona al menos una foto');
+                return;
+            }
+            
+            // Verificar soporte de Web Share API
+            if (!navigator.share) {
+                showError('Tu navegador no soporta la función de compartir nativa');
+                return;
+            }
+            
+            // Obtener el mensaje del usuario
+            const userMessage = messageText.value.trim();
+            
+            // Preparar el texto que se enviará
+            let shareText = '';
+            if (userMessage) {
+                shareText = userMessage;
+            } else {
+                shareText = `Compartiendo ${selectedFiles.length} foto${selectedFiles.length > 1 ? 's' : ''}`;
+            }
+            
+            const shareData = {
+                title: 'Fotos compartidas',
+                text: shareText,
+                files: selectedFiles
+            };
+            
+            // Verificar si se pueden compartir archivos
+            if (navigator.canShare && !navigator.canShare(shareData)) {
+                showError('No se pueden compartir estos archivos en este dispositivo');
+                return;
+            }
+            
+            try {
+                shareBtn.disabled = true;
+                shareBtn.textContent = '📤 Compartiendo...';
+                
+                await navigator.share(shareData);
+                
+                // Limpiar después de compartir exitosamente
+                selectedFiles = [];
+                messageText.value = '';
+                messageText.dispatchEvent(new Event('input')); // Actualizar contador
+                updatePreview();
+                updateShareButton();
+                hideError();
+                
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Error al compartir:', error);
+                    showError('Error al compartir las fotos. Intenta nuevamente.');
+                }
+            } finally {
+                shareBtn.disabled = selectedFiles.length === 0;
+                updateShareButton();
+            }
+        }
+        
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+        
+        function hideError() {
+            errorMsg.style.display = 'none';
+        }
+        
+        // Event listeners adicionales para el textarea
+        messageText.addEventListener('input', updateShareButton);
+        window.addEventListener('load', function() {
+            if (!navigator.share) {
+                showError('⚠️ Tu navegador no soporta la función de compartir nativa. Funciona mejor en dispositivos móviles.');
+            }
+        });
+    </script>
+</body>
+</html>

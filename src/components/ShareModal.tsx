@@ -38,10 +38,17 @@ export default function ShareModal({
   const [customMessage, setCustomMessage] = useState('');
 
   useEffect(() => {
+    console.log('📍 ShareModal - casita:', casita);
+    console.log('📍 ShareModal - cajaFuerte:', cajaFuerte);
+    console.log('📍 ShareModal - initialMessage:', initialMessage);
+    
     if (isOpen && initialMessage) {
       setCustomMessage(initialMessage);
+    } else if (isOpen && casita && cajaFuerte) {
+      // Fallback si initialMessage no está disponible
+      setCustomMessage(`${cajaFuerte} ${casita}`);
     }
-  }, [isOpen, initialMessage]);
+  }, [isOpen, initialMessage, casita, cajaFuerte]);
 
   const handleOptionToggle = (option: string) => {
     setSelectedOptions(prev => 
@@ -74,6 +81,12 @@ export default function ShareModal({
           </div>
 
           <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-lg font-bold text-blue-900 text-center">
+                {cajaFuerte} {casita}
+              </p>
+            </div>
+            
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">📋 Estado de la revisión:</h3>
               <div className="space-y-2">

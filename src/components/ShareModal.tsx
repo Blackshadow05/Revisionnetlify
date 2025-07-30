@@ -15,13 +15,13 @@ interface ShareModalProps {
 }
 
 const shareOptions = [
+  'Completa',
+  'Incompleta',
   'No hay bulto',
   'No hay yute',
   'No hay sombrero',
   'No hay bolsa secadora',
-  'Solo hay un yute',
-  'Completa',
-  'Incompleta'
+  'Solo hay un yute'
 ];
 
 export default function ShareModal({ 
@@ -34,7 +34,7 @@ export default function ShareModal({
   onShare, 
   isLoading = false 
 }: ShareModalProps) {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(['Completa']);
   const [customMessage, setCustomMessage] = useState('');
 
   useEffect(() => {

@@ -29,6 +29,7 @@ import type {
 } from '@/types/revision';
 
 import PageTitle from '@/components/ui/PageTitle';
+import ShareModal from '@/components/ShareModal';
 
 // 🚀 Función debounce custom ligera (siguiendo principio de JavaScript mínimo)
 function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
@@ -118,6 +119,11 @@ export default function NuevaRevision() {
 
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
   const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Estados para modal de compartir
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareImages, setShareImages] = useState<File[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
   
   // Estado de loading del formulario
   const isFormLoading = loading;
@@ -809,19 +815,45 @@ export default function NuevaRevision() {
       // Enviar datos directamente a Supabase
       await submitRevisionOnline(finalData);
 
-      // 🎉 ENVÍO EXITOSO: Mostrar éxito
+      // 🎉 ENVÍO EXITOSO: Preparar para compartir
       showSuccess('Revisión guardada exitosamente');
 
-      // 🧹 Limpiar formulario y scroll al top
+      // 📸 Preparar imágenes para compartir
+      const evidenceImages: File[] = [];
+      const shareEvidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
+      
+      shareEvidenceFields.forEach(field => {
+        const file = compressedFiles[field];
+        if (file) {
+          evidenceImages.push(file);
+        }
+      });
+
+      // 🔍 Verificar si se debe activar el modal de compartir
+      console.log('🔍 Valor de caja_fuerte:', finalData.caja_fuerte);
+      console.log('🔍 ¿Debe compartirse?:', ['Check in', 'Upsell'].includes(finalData.caja_fuerte));
+      console.log('🔍 Imágenes de evidencia:', evidenceImages.length);
+      
+      const shouldShare = ['Check in', 'Upsell'].includes(finalData.caja_fuerte);
+      
+      if (shouldShare && evidenceImages.length > 0) {
+        // Guardar imágenes y datos para compartir
+        setShareImages(evidenceImages);
+        setShowShareModal(true);
+      } else if (shouldShare && evidenceImages.length === 0) {
+        showSuccess(`${finalData.caja_fuerte} ${finalData.casita} guardado exitosamente (sin imágenes para compartir)`);
+      } else {
+        showSuccess('Revisión guardada exitosamente');
+      }
+
+      // 🧹 Limpiar formulario después de guardar
       limpiarFormulario();
       
-      // 📜 Scroll suave hacia arriba para comenzar nueva revisión
+      // 📜 Scroll suave hacia arriba
       window.scrollTo({ 
         top: 0, 
         behavior: 'smooth' 
       });
-      
-      console.log('🔄 Formulario limpiado exitosamente. Listo para nueva revisión.');
 
     } catch (error) {
       console.error('Error al guardar revisión:', error);
@@ -1161,7 +1193,7 @@ export default function NuevaRevision() {
                 <div className="space-y-6">
                   <h3 className="text-xl font-semibold text-[#ff8c42] flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Evidencia Fotográfica
@@ -1202,7 +1234,7 @@ export default function NuevaRevision() {
                 label="Notas y observaciones adicionales"
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                   </svg>
                 }
               >
@@ -1266,7 +1298,59 @@ export default function NuevaRevision() {
         imageUrl={modalImg}
         onClose={closeModal}
       />
+
+      {/* Modal de compartir */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        images={shareImages}
+        casita={formData.casita}
+        cajaFuerte={formData.caja_fuerte}
+        onShare={async (options: string[], message: string) => {
+          setIsSharing(true);
+          try {
+            // Preparar mensaje completo
+            let fullMessage = message;
+            if (options.length > 0) {
+              fullMessage += `\n\nEstado:\n${options.join('\n')}`;
+            }
+            fullMessage += `\n\nFecha: ${new Date().toLocaleDateString('es-ES')}`;
+
+            // Verificar soporte de Web Share API
+            if (!navigator.share) {
+              showError('Tu navegador no soporta la función de compartir nativa');
+              return;
+            }
+
+            // Preparar datos para compartir
+            const shareData = {
+              title: 'Revisión de casita',
+              text: fullMessage,
+              files: shareImages
+            };
+
+            // Verificar si se pueden compartir archivos
+            if (navigator.canShare && !navigator.canShare(shareData)) {
+              showError('No se pueden compartir estos archivos en este dispositivo');
+              return;
+            }
+
+            // Compartir
+            await navigator.share(shareData);
+            showSuccess('Revisión compartida exitosamente');
+            setShowShareModal(false);
+
+          } catch (error: any) {
+            if (error.name !== 'AbortError') {
+              console.error('Error al compartir:', error);
+              showError('Error al compartir las fotos');
+            }
+          } finally {
+            setIsSharing(false);
+          }
+        }}
+        isLoading={isSharing}
+      />
   </main>
   );
 } 
-

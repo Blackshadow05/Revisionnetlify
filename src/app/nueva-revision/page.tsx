@@ -1312,9 +1312,9 @@ export default function NuevaRevision() {
             // Preparar mensaje completo
             let fullMessage = message;
             if (options.length > 0) {
-              fullMessage += `\n\nEstado:\n${options.join('\n')}`;
+              fullMessage += `\n\n📋 Estado:\n${options.join('\n')}`;
             }
-            fullMessage += `\n\nFecha: ${new Date().toLocaleDateString('es-ES')}`;
+            fullMessage += `\n\n📅 ${new Date().toLocaleDateString('es-ES')}`;
 
             // Verificar soporte de Web Share API
             if (!navigator.share) {

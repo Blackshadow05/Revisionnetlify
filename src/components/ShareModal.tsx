@@ -6,11 +6,12 @@ import { useState, useEffect } from 'react';
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onShare: (options: string[], message: string) => void;
+  onShare: (options: string[], message: string) => Promise<void>;
   images: File[];
   casita: string;
   cajaFuerte: string;
-  isLoading: boolean;
+  initialMessage: string;
+  isLoading?: boolean;
 }
 
 const shareOptions = [
@@ -26,21 +27,21 @@ const shareOptions = [
 export default function ShareModal({ 
   isOpen, 
   onClose, 
-  onShare, 
   images, 
-  casita,
-  cajaFuerte,
-  isLoading 
+  casita, 
+  cajaFuerte, 
+  initialMessage,
+  onShare, 
+  isLoading = false 
 }: ShareModalProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState('');
 
   useEffect(() => {
-    if (isOpen && casita && cajaFuerte) {
-      const defaultMessage = `${cajaFuerte} ${casita}`;
-      setCustomMessage(defaultMessage);
+    if (isOpen && initialMessage) {
+      setCustomMessage(initialMessage);
     }
-  }, [isOpen, casita, cajaFuerte]);
+  }, [isOpen, initialMessage]);
 
   const handleOptionToggle = (option: string) => {
     setSelectedOptions(prev => 
@@ -99,7 +100,7 @@ export default function ShareModal({
               <textarea
                 value={customMessage}
                 onChange={(e) => setCustomMessage(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[80px] resize-none"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[80px] resize-none"
                 placeholder="Agrega un mensaje personalizado..."
                 maxLength={500}
               />

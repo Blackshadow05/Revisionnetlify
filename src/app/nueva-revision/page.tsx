@@ -123,6 +123,7 @@ export default function NuevaRevision() {
   // Estados para modal de compartir
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareImages, setShareImages] = useState<File[]>([]);
+  const [shareMessage, setShareMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   
   // Estado de loading del formulario
@@ -839,6 +840,7 @@ export default function NuevaRevision() {
       if (shouldShare && evidenceImages.length > 0) {
         // Guardar imágenes y datos para compartir
         setShareImages(evidenceImages);
+        setShareMessage(`${finalData.caja_fuerte} ${finalData.casita}`);
         setShowShareModal(true);
       } else if (shouldShare && evidenceImages.length === 0) {
         showSuccess(`${finalData.caja_fuerte} ${finalData.casita} guardado exitosamente (sin imágenes para compartir)`);
@@ -1306,13 +1308,14 @@ export default function NuevaRevision() {
         images={shareImages}
         casita={formData.casita}
         cajaFuerte={formData.caja_fuerte}
+        initialMessage={shareMessage}
         onShare={async (options: string[], message: string) => {
           setIsSharing(true);
           try {
             // Preparar mensaje completo
             let fullMessage = message;
             if (options.length > 0) {
-              fullMessage += `\n\n📋 Estado:\n${options.join('\n')}`;
+              fullMessage += `\n\n📋 Estado:\n${options.map(opt => `✅ ${opt}`).join('\n')}`;
             }
             fullMessage += `\n\n📅 ${new Date().toLocaleDateString('es-ES')}`;
 

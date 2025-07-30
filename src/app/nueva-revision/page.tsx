@@ -513,25 +513,23 @@ export default function NuevaRevision() {
     setCompressionProgress(prev => ({ ...prev, [field]: null }));
 
     try {
-      // 🎯 Configuración personalizada para evidencias
-      // Ajuste dinámico según navegador y conversión de formatos
-      let targetSizeKB = 200;
+      // 🎯 Configuración personalizada por dispositivo
+      let targetSizeKB = 300; // Android por defecto
       let format: 'webp' | 'jpeg' = 'webp';
       
       if (isIOS || isSafari) {
-        targetSizeKB = 600;
+        targetSizeKB = 600; // iPhone: 600 KB
         format = 'jpeg';
-        addCompressionLog(`[LOG_COMPRESION][${logId}] Safari/iOS detectado: usando JPEG y 600KB como objetivo`);
-      } else if (needsConversion) {
-        // En Android, forzar WebP para mejor compresión de HEIC/PNG/JPG
-        targetSizeKB = 150; // Más agresivo en Android para mejor rendimiento
+        addCompressionLog(`[LOG_COMPRESION][${logId}] iPhone/iOS detectado: usando JPEG y 600KB como objetivo`);
+      } else if (isAndroid) {
+        targetSizeKB = 300; // Android: 300 KB
         format = 'webp';
-        addCompressionLog(`[LOG_COMPRESION][${logId}] Android con conversión: usando WebP y 150KB como objetivo`);
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado: usando WebP y 300KB como objetivo`);
       }
       const compressionConfig = {
-        targetSizeKB,      // Objetivo según navegador
-        maxResolution: 1200,    // Resolución máxima 1200px para todas las evidencias
-        maxQuality: 0.70,       // Calidad máxima 0.70 para todas las evidencias
+        targetSizeKB,      // iPhone: 600KB, Android: 300KB
+        maxResolution: 1100,    // Resolución máxima 1100px para ambos dispositivos
+        maxQuality: 0.75,       // Calidad máxima 0.75 para ambos dispositivos
         minQuality: 0.35,       // Calidad mínima
         maxAttempts: 10,        // Más intentos para mejor resultado
         timeout: 30000,         // 30 segundos timeout

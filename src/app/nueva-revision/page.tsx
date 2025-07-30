@@ -105,9 +105,27 @@ const fieldLabels: Record<string, string> = {
   'cola_caballo': 'Cola Caballo'
 };
 
+// Interfaz para los logs de compresión
+interface CompressionLogEntry {
+  timestamp: number;
+  message: string;
+  data?: any;
+}
+
 export default function NuevaRevision() {
-  // Función para agregar un log (ahora vacía, no hace nada)
-  const addCompressionLog = (_msg: string, _data?: any) => {};
+  // Estado para almacenar los logs de compresión
+  const [compressionLogs, setCompressionLogs] = useState<CompressionLogEntry[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+  
+  // Función para agregar un log de compresión
+  const addCompressionLog = (msg: string, data?: any) => {
+    setCompressionLogs(prev => [...prev, {
+      timestamp: Date.now(),
+      message: msg,
+      data
+    }]);
+  };
 
   const router = useRouter();
   const { user } = useAuth();
@@ -116,6 +134,13 @@ export default function NuevaRevision() {
   // Estados principales
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<string[]>([]);
+  
+  // Efecto para hacer scroll al último log cuando se añade uno nuevo
+  useEffect(() => {
+    if (showLogs && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [compressionLogs, showLogs]);
 
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
   const [isHydrated, setIsHydrated] = useState(false);
@@ -505,8 +530,8 @@ export default function NuevaRevision() {
       }
       const compressionConfig = {
         targetSizeKB,      // Objetivo según navegador
-        maxResolution: 1600,    // Resolución máxima
-        maxQuality: 0.85,       // Calidad máxima
+        maxResolution: 1200,    // Resolución máxima 1200px para todas las evidencias
+        maxQuality: 0.70,       // Calidad máxima 0.70 para todas las evidencias
         minQuality: 0.35,       // Calidad mínima
         maxAttempts: 10,        // Más intentos para mejor resultado
         timeout: 30000,         // 30 segundos timeout
@@ -1354,6 +1379,69 @@ export default function NuevaRevision() {
         }}
         isLoading={isSharing}
       />
+      
+      {/* Panel de logs de compresión */}
+      <div className="mt-8 border-t pt-4">
+        <div className="flex justify-between items-center mb-2">
+          <button 
+            onClick={() => setShowLogs(!showLogs)} 
+            className="text-blue-600 flex items-center gap-1 text-sm font-medium"
+          >
+            <svg className={`w-5 h-5 transition-transform ${showLogs ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            {showLogs ? 'Ocultar logs de compresión' : 'Mostrar logs de compresión'}
+          </button>
+          
+          {compressionLogs.length > 0 && (
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  const logText = compressionLogs.map(log => {
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const dataStr = log.data ? JSON.stringify(log.data, null, 2) : '';
+                    return `[${time}] ${log.message}\n${dataStr ? dataStr + '\n' : ''}`;
+                  }).join('\n');
+                  navigator.clipboard.writeText(logText);
+                  showSuccess('Logs copiados al portapapeles');
+                }}
+                className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200"
+              >
+                Copiar logs
+              </button>
+              <button 
+                onClick={() => setCompressionLogs([])} 
+                className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200"
+              >
+                Limpiar logs
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {showLogs && (
+          <div className="bg-gray-50 rounded-md p-3 mt-2 max-h-96 overflow-y-auto text-xs font-mono">
+            {compressionLogs.length === 0 ? (
+              <p className="text-gray-500 italic">No hay logs de compresión disponibles.</p>
+            ) : (
+              compressionLogs.map((log, index) => (
+                <div key={index} className="mb-2 pb-2 border-b border-gray-200 last:border-0">
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
+                    <span className="font-medium">{log.message}</span>
+                  </div>
+                  {log.data && (
+                    <pre className="mt-1 pl-6 text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                      {typeof log.data === 'string' ? log.data : JSON.stringify(log.data, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              ))
+            )}
+            <div ref={logsEndRef} />
+          </div>
+        )}
+      </div>
   </main>
   );
 } 

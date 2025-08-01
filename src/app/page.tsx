@@ -110,7 +110,36 @@ export default function Home() {
 
 
 
-  // 🎯 Efecto para cargar preferencia de vista desde sessionStorage
+  // 🔄 Efecto para despertar el servidor de Supabase con un ping silencioso
+  useEffect(() => {
+    const wakeupSupabase = async () => {
+      console.log('🚀 Enviando ping silencioso a Supabase...');
+      try {
+        // Consulta ligera específica a la tabla revisiones_casitas
+        const startTime = performance.now();
+        const { data, error } = await supabase
+          .from('revisiones_casitas')
+          .select('id')
+          .limit(1);
+        
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - startTime);
+        
+        if (error) {
+          console.error('❌ Error en ping silencioso:', error.message);
+        } else {
+          console.log(`✅ Servidor Supabase despertado correctamente (${responseTime}ms)`);
+        }
+      } catch (err) {
+        console.error('❌ Error al despertar Supabase:', err);
+      }
+    };
+    
+    // Ejecutar el ping silencioso inmediatamente al cargar la página
+    wakeupSupabase();
+  }, []);
+
+  // Efecto para cargar preferencia de vista desde sessionStorage
   useEffect(() => {
     try {
       const savedViewMode = sessionStorage.getItem('revisionViewMode');

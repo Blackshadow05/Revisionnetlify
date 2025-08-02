@@ -81,6 +81,7 @@ export default function Home() {
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(40);
+  const [supabaseAwake, setSupabaseAwake] = useState(false);
 
   // 🎯 Estado para modo de vista (tabla/tarjeta) - Card por defecto en móvil
   const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
@@ -113,22 +114,26 @@ export default function Home() {
   // 🔄 Efecto para despertar el servidor de Supabase con un ping silencioso
   useEffect(() => {
     const wakeupSupabase = async () => {
-      console.log('🚀 Enviando ping silencioso a Supabase...');
+      console.log('🚀 Despertando Supabase con consulta real...');
       try {
-        // Consulta ligera específica a la tabla revisiones_casitas
+        // Consulta específica para despertar la tabla revisiones_casitas
         const startTime = performance.now();
         const { data, error } = await supabase
           .from('revisiones_casitas')
-          .select('id')
-          .limit(1);
+          .select('*')
+          .eq('id', '8b96beb1-87fb-4cbe-9925-f50846e6b191')
+          .single();
         
         const endTime = performance.now();
         const responseTime = Math.round(endTime - startTime);
         
         if (error) {
-          console.error('❌ Error en ping silencioso:', error.message);
+          console.error('❌ Error al consultar Supabase:', error.message);
+          console.log('📊 Supabase respondió pero con error - servidor activo');
         } else {
-          console.log(`✅ Servidor Supabase despertado correctamente (${responseTime}ms)`);
+          console.log(`✅ Supabase despertado exitosamente (${responseTime}ms)`);
+          console.log('📋 Datos recuperados (no mostrados en UI):', data ? 'Registro encontrado' : 'Registro no encontrado');
+          setSupabaseAwake(true);
         }
       } catch (err) {
         console.error('❌ Error al despertar Supabase:', err);
@@ -163,13 +168,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchRevisiones();
-  }, []);
-
-  useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
   }, []);
 
   // 🚀 Efecto para detectar dispositivo y ajustar elementos por página
@@ -609,9 +607,17 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                   </div>
-                  <div>
-                    <p className="text-white font-medium">{user}</p>
-                    <p className="text-[#c9a45c] text-sm">{userRole}</p>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <p className="text-white font-medium">{user}</p>
+                      <p className="text-[#c9a45c] text-sm">{userRole}</p>
+                    </div>
+                    {supabaseAwake && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="text-green-400 text-xs font-medium">awake</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

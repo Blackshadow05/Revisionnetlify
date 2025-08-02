@@ -1332,14 +1332,11 @@ export default function NuevaRevision() {
         casita={formData.casita}
         cajaFuerte={formData.caja_fuerte}
         initialMessage={shareMessage}
-        onShare={async (options: string[], message: string) => {
+        onShare={async (message: string) => {
           setIsSharing(true);
           try {
             // Preparar mensaje completo
             let fullMessage = message;
-            if (options.length > 0) {
-              fullMessage += `\n\n📋 Estado:\n${options.map(opt => `✅ ${opt}`).join('\n')}`;
-            }
             fullMessage += `\n\n📅 ${new Date().toLocaleDateString('es-ES')}`;
 
             // Verificar soporte de Web Share API

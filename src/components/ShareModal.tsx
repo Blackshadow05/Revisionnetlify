@@ -24,6 +24,7 @@ export default function ShareModal({
   isLoading = false,
 }: ShareModalProps) {
   const [customMessage, setCustomMessage] = useState('');
+  const [checkInDate, setCheckInDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,7 +37,12 @@ export default function ShareModal({
   }, [isOpen, initialMessage, casita, cajaFuerte]);
 
   const handleShare = () => {
-    onShare(customMessage.trim());
+    const messageWithDate = `${customMessage.trim()}\n\n📅 ${new Date(checkInDate).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}`;
+    onShare(messageWithDate);
   };
 
   if (!isOpen) return null;
@@ -74,6 +80,27 @@ export default function ShareModal({
             <p className="text-center text-lg font-bold text-blue-900">
               {cajaFuerte} {casita}
             </p>
+          </div>
+
+          {/* Date picker */}
+          <div className="space-y-2">
+            <label htmlFor="checkin-date" className="block text-sm font-medium text-gray-700">
+              📅 Fecha de check in:
+            </label>
+            <div className="relative">
+              <input
+                id="checkin-date"
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
 
           {/* Custom message */}

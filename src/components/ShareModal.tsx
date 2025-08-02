@@ -37,12 +37,20 @@ export default function ShareModal({
   }, [isOpen, initialMessage, casita, cajaFuerte]);
 
   const handleShare = () => {
-    const messageWithDate = `${customMessage.trim()}\n\n📅 ${new Date(checkInDate).toLocaleDateString('es-ES', {
+    const selectedDate = new Date(checkInDate).toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    })}`;
-    onShare(messageWithDate);
+    });
+    
+    let finalMessage = customMessage.trim();
+    if (finalMessage) {
+      finalMessage += `\n\n📅 ${selectedDate}`;
+    } else {
+      finalMessage = `📅 ${selectedDate}`;
+    }
+    
+    onShare(finalMessage);
   };
 
   if (!isOpen) return null;

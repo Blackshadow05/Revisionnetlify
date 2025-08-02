@@ -1337,7 +1337,6 @@ export default function NuevaRevision() {
           try {
             // Preparar mensaje completo
             let fullMessage = message;
-            fullMessage += `\n\n📅 ${new Date().toLocaleDateString('es-ES')}`;
 
             // Verificar soporte de Web Share API
             if (!navigator.share) {

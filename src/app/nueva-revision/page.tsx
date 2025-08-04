@@ -858,7 +858,7 @@ export default function NuevaRevision() {
       console.log('🔍 ¿Debe compartirse?:', ['Check in', 'Upsell'].includes(finalData.caja_fuerte));
       console.log('🔍 Imágenes de evidencia:', evidenceImages.length);
       
-      const shouldShare = ['Check in', 'Upsell'].includes(finalData.caja_fuerte);
+      const shouldShare = ['Check in', 'Upsell', 'Back to Back'].includes(finalData.caja_fuerte);
       
       if (shouldShare && evidenceImages.length > 0) {
         // Guardar imágenes y datos para compartir
@@ -1438,4 +1438,4 @@ export default function NuevaRevision() {
       </div>
   </main>
   );
-} 
+}

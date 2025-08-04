@@ -177,6 +177,26 @@ export default function Home() {
     setCurrentPage(1);
   }, []);
 
+  // 🚀 Efecto para precargar la página de detalles en caché
+  useEffect(() => {
+    const prefetchDetailsPages = async () => {
+      try {
+        // Prefetch de la ruta dinámica de detalles
+        // Next.js automáticamente manejará el caché
+        await router.prefetch('/detalles/[id]');
+        console.log('✅ Página de detalles precargada en caché');
+      } catch (error) {
+        console.log('⚠️ Error al precargar página de detalles:', error);
+        // Silencioso - no afecta la funcionalidad principal
+      }
+    };
+
+    // Ejecutar después de que la página principal se haya cargado
+    if (typeof window !== 'undefined' && router) {
+      prefetchDetailsPages();
+    }
+  }, [router]);
+
   // Cerrar sidebar con tecla ESC se maneja dentro del componente Sidebar
 
   // Cerrar dropdown de filtros al hacer clic fuera

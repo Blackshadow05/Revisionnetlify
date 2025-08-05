@@ -265,9 +265,13 @@ export default function UnirImagenes() {
   const guardarImagen = () => {
     if (!imagenUnida) return;
     
+    // Generar número aleatorio de 3 dígitos
+    const randomNumber = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const filename = `imagen-unida-${randomNumber}.jpg`;
+    
     const link = document.createElement('a');
     link.href = imagenUnida;
-    link.download = 'imagen-unida.jpg';
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -360,20 +364,46 @@ export default function UnirImagenes() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">Unir Imágenes</h1>
+    <main className="min-h-screen relative overflow-hidden" style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="flex justify-between items-center mb-6 md:mb-8 pt-6">
+          <div className="relative">
+            <h1 className="text-3xl font-bold text-white">Unir Imágenes</h1>
+            <div className="relative mt-2 h-0.5 w-20">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full"></div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Botón Volver */}
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="text-sm text-white bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-xl hover:from-gray-700 hover:via-gray-800 hover:to-gray-900 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl relative overflow-hidden border border-gray-600/40 hover:border-gray-500/60 font-medium flex items-center justify-center gap-2"
+              style={{ padding: '10px 18px' }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0cb35]/80 to-transparent animate-[slide_2s_ease-in-out_infinite] z-0"></div>
+              <div className="relative z-10 flex items-center gap-2">
+                Volver
+              </div>
+            </button>
+          </div>
+        </header>
         
         {/* Controles */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
+        <div className="bg-[#2a3347]/80 backdrop-blur-sm rounded-xl shadow-xl p-6 mb-8 border border-[#3d4659]">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex gap-2">
               <button
                 onClick={() => setOrientacion('vertical')}
                 className={`px-4 py-2 rounded-lg transition-all ${
-                  orientacion === 'vertical' 
-                    ? 'bg-blue-500 text-white shadow-lg' 
-                    : 'bg-gray-200 text-gray-700'
+                  orientacion === 'vertical'
+                    ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg font-medium'
+                    : 'bg-[#3d4659] text-gray-300 hover:bg-[#4a5466]'
                 }`}
               >
                 Vertical
@@ -381,9 +411,9 @@ export default function UnirImagenes() {
               <button
                 onClick={() => setOrientacion('horizontal')}
                 className={`px-4 py-2 rounded-lg transition-all ${
-                  orientacion === 'horizontal' 
-                    ? 'bg-blue-500 text-white shadow-lg' 
-                    : 'bg-gray-200 text-gray-700'
+                  orientacion === 'horizontal'
+                    ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg font-medium'
+                    : 'bg-[#3d4659] text-gray-300 hover:bg-[#4a5466]'
                 }`}
               >
                 Horizontal
@@ -395,38 +425,38 @@ export default function UnirImagenes() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Imagen 1 */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-bold mb-4 text-center text-gray-800">Imagen 1</h2>
+          <div className="bg-[#2a3347]/80 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-[#3d4659]">
+            <h2 className="text-xl font-bold mb-4 text-center text-white">Imagen 1</h2>
             
             {imagen1.compressed ? (
               <div className="space-y-4">
-                <img 
-                  src={imagen1.compressed} 
-                  alt="Imagen 1" 
-                  className="w-full h-64 object-cover rounded-lg"
+                <img
+                  src={imagen1.compressed}
+                  alt="Imagen 1"
+                  className="w-full h-32 object-cover rounded-lg border border-[#3d4659]"
                 />
                 <button
                   onClick={() => limpiarImagen('img1')}
-                  className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="w-full px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-lg font-medium"
                 >
                   Eliminar
                 </button>
-                <CompressionIndicator 
-                  status={compressionStatus1} 
-                  fileSizes={fileSizes1} 
-                  fieldName="Imagen 1" 
+                <CompressionIndicator
+                  status={compressionStatus1}
+                  fileSizes={fileSizes1}
+                  fieldName="Imagen 1"
                 />
               </div>
             ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="space-y-4">
-                  <div className="text-4xl">📸</div>
-                  <p className="text-gray-600">Selecciona una imagen</p>
+              <div className="border-2 border-dashed border-[#3d4659] rounded-lg p-4 text-center">
+                <div className="space-y-3">
+                  <div className="text-3xl">📸</div>
+                  <p className="text-gray-300 text-sm">Selecciona una imagen</p>
                   <button
                     onClick={() => fileInputRef1.current?.click()}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium"
                   >
-                    Seleccionar Imagen
+                    Seleccionar
                   </button>
                 </div>
               </div>
@@ -443,38 +473,38 @@ export default function UnirImagenes() {
           </div>
 
           {/* Imagen 2 */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-bold mb-4 text-center text-gray-800">Imagen 2</h2>
+          <div className="bg-[#2a3347]/80 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-[#3d4659]">
+            <h2 className="text-xl font-bold mb-4 text-center text-white">Imagen 2</h2>
             
             {imagen2.compressed ? (
               <div className="space-y-4">
-                <img 
-                  src={imagen2.compressed} 
-                  alt="Imagen 2" 
-                  className="w-full h-64 object-cover rounded-lg"
+                <img
+                  src={imagen2.compressed}
+                  alt="Imagen 2"
+                  className="w-full h-32 object-cover rounded-lg border border-[#3d4659]"
                 />
                 <button
                   onClick={() => limpiarImagen('img2')}
-                  className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="w-full px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-lg font-medium"
                 >
                   Eliminar
                 </button>
-                <CompressionIndicator 
-                  status={compressionStatus2} 
-                  fileSizes={fileSizes2} 
-                  fieldName="Imagen 2" 
+                <CompressionIndicator
+                  status={compressionStatus2}
+                  fileSizes={fileSizes2}
+                  fieldName="Imagen 2"
                 />
               </div>
             ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="space-y-4">
-                  <div className="text-4xl">📸</div>
-                  <p className="text-gray-600">Selecciona una imagen</p>
+              <div className="border-2 border-dashed border-[#3d4659] rounded-lg p-4 text-center">
+                <div className="space-y-3">
+                  <div className="text-3xl">📸</div>
+                  <p className="text-gray-300 text-sm">Selecciona una imagen</p>
                   <button
                     onClick={() => fileInputRef2.current?.click()}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium"
                   >
-                    Seleccionar Imagen
+                    Seleccionar
                   </button>
                 </div>
               </div>
@@ -493,13 +523,13 @@ export default function UnirImagenes() {
 
         {/* Imagen unida */}
         {imagenUnida && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4 text-center text-gray-800">Imagen Unida</h2>
+          <div className="bg-[#2a3347]/80 backdrop-blur-sm rounded-xl shadow-xl p-6 mb-8 border border-[#3d4659]">
+            <h2 className="text-xl font-bold mb-4 text-center text-white">Imagen Unida</h2>
             <div className="flex justify-center mb-4">
-              <img 
-                src={imagenUnida} 
-                alt="Imagen Unida" 
-                className="max-w-full h-auto rounded-lg shadow-lg"
+              <img
+                src={imagenUnida}
+                alt="Imagen Unida"
+                className="max-w-full h-auto rounded-lg shadow-lg border border-[#3d4659]"
               />
             </div>
             
@@ -507,7 +537,7 @@ export default function UnirImagenes() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
               <button
                 onClick={guardarImagen}
-                className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg font-medium flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -518,10 +548,10 @@ export default function UnirImagenes() {
               <button
                 onClick={compartirImagen}
                 disabled={!isWebShareAvailable()}
-                className={`px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                  isWebShareAvailable() 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                className={`px-6 py-3 rounded-lg transition-all shadow-lg font-medium flex items-center justify-center gap-2 ${
+                  isWebShareAvailable()
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -532,7 +562,7 @@ export default function UnirImagenes() {
               
               <button
                 onClick={limpiarCampos}
-                className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-lg font-medium flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -543,17 +573,23 @@ export default function UnirImagenes() {
           </div>
         )}
 
-        <div className="text-center mt-8">
-          <Link href="/" className="text-blue-500 hover:text-blue-700 transition-colors">
-            ← Volver al inicio
-          </Link>
+        <div className="text-center mt-8 pb-6">
+          <button
+            onClick={() => router.push('/')}
+            className="text-[#c9a45c] hover:text-[#f0c987] transition-colors flex items-center justify-center gap-2 mx-auto"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver al inicio
+          </button>
         </div>
         
         {/* Log de memoria */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black text-white p-2 text-xs font-mono">
+        <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm text-white p-2 text-xs font-mono border-t border-[#3d4659]">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <span>💾 {memoryInfo}</span>
-            <button 
+            <button
               onClick={forceGC}
               className="px-2 py-1 bg-gray-700 rounded hover:bg-gray-600 transition-colors"
             >
@@ -562,6 +598,6 @@ export default function UnirImagenes() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

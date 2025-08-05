@@ -661,7 +661,10 @@ const DetalleRevision = memo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a1f35] to-[#2d3748] p-4">
+    <div className="min-h-screen relative overflow-hidden" style={{
+      background: '#334d50',
+      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+    }}>
       {/* Header */}
       <FadeIn>
         <div className="max-w-6xl mx-auto mb-8">

@@ -266,7 +266,8 @@ export default function EscanearMenu() {
       setSuccess(`¡Menú del ${dia.dia_semana} (${formatearFecha(dia.fecha)}) ${action} correctamente!`);
     } catch (err) {
       console.error('Error al guardar el menú del día:', err);
-      setError(`Error al guardar el menú del ${dia.dia_semana}: ${err.message}`);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(`Error al guardar el menú del ${dia.dia_semana}: ${errorMessage}`);
     } finally {
       setSavingDayIndex(null);
     }

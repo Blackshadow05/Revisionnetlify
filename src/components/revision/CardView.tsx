@@ -92,7 +92,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
           className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10"
         >
           {/* Header con Casita y Estado */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex justify-between items-start mb-3">
             <h3 className={`text-base font-bold truncate ${
               revision.notas_count && revision.notas_count > 0
                 ? 'text-orange-400'
@@ -100,16 +100,22 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
             }`}>
               {revision.casita}
             </h3>
-            <span className={`px-1.5 py-0.5 text-xs rounded border whitespace-nowrap ml-2 font-medium ${
+            <span className={`px-1.5 py-0.5 text-xs rounded border font-medium text-right ${
               revision.caja_fuerte === 'Check out'
                 ? 'bg-red-500/20 text-red-400 border-red-400/40'
                 : revision.caja_fuerte === 'Check in'
                 ? 'bg-green-500/20 text-green-400 border-green-400/40'
                 : revision.caja_fuerte === 'Upsell'
                 ? 'bg-blue-500/20 text-blue-400 border-blue-400/40'
+                : revision.caja_fuerte === 'Guardar Upsell'
+                ? 'bg-purple-500/20 text-purple-400 border-purple-400/40'
                 : 'bg-[#c9a45c]/20 text-[#c9a45c] border-[#c9a45c]/30'
             }`}>
-              {revision.caja_fuerte}
+              {revision.caja_fuerte === 'Guardar Upsell' ? (
+                <span className="block leading-tight text-center">Guardar<br/>Upsell</span>
+              ) : (
+                revision.caja_fuerte
+              )}
             </span>
           </div>
 

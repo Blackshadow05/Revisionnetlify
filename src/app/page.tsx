@@ -745,58 +745,78 @@ export default function Home() {
   // Función para exportar el reporte adecuado usando Web Share API o descarga directa
   const handleExport = async () => {
     try {
+      // Generar blob y nombre de archivo según el tipo de reporte
       let blob: Blob;
       let filename: string;
-      
       if (reportType === 'Revisión Casitas') {
         blob = await generateRevisionesBlob();
-        filename = `Reporte_Revisiones_${reportDateFrom}_${reportDateTo}.csv`;
+        filename = `reporte_casitas_${reportDateFrom}_a_${reportDateTo}.csv`;
       } else {
         blob = await generatePuesto01Blob();
-        filename = `Puesto01_${reportDateFrom}_${reportDateTo}.csv`;
+        filename = `reporte_puesto01_${reportDateFrom}_a_${reportDateTo}.csv`;
       }
-      
-      // Intentar usar Web Share API si está disponible
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], filename, { type: blob.type });
-        
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: `Reporte ${reportType}`,
-            text: `Reporte ${reportType} desde ${reportDateFrom} hasta ${reportDateTo}`,
-            files: [file]
-          });
-          
-          // Cerrar modal y limpiar campos
-          setShowReportModal(false);
-          setShowSidebar(false);
-          setReportDateFrom('');
-          setReportDateTo('');
-          return;
-        }
+ 
+      // Función para descargar el archivo
+      const downloadFile = (blobToDownload: Blob, filenameToUse: string) => {
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blobToDownload);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filenameToUse);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      };
+ 
+      // Intentar compartir mediante Web Share API si está disponible y se pueden compartir archivos
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'text/csv' })] })) {
+        await navigator.share({
+          title: 'Reporte',
+          files: [new File([blob], filename, { type: 'text/csv' })],
+        });
+      } else {
+        // Fallback: descarga directa
+        downloadFile(blob, filename);
       }
-      
-      // Fallback: descarga directa si Web Share API no está disponible o no funciona
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
+ 
       // Cerrar modal y limpiar campos
       setShowReportModal(false);
       setShowSidebar(false);
       setReportDateFrom('');
       setReportDateTo('');
-
       alert(`Reporte exportado exitosamente como CSV`);
     } catch (error: any) {
       console.error('Error al exportar:', error);
-      alert(`Error al exportar reporte: ${error.message || 'Error desconocido'}`);
+      const isPermissionError = error.name === 'NotAllowedError' ||
+        (error.message && error.message.toLowerCase().includes('permission'));
+ 
+      if (isPermissionError) {
+        // Regenerar el blob y filename para el fallback
+        let fallbackBlob: Blob;
+        let fallbackFilename: string;
+        if (reportType === 'Revisión Casitas') {
+          fallbackBlob = await generateRevisionesBlob();
+          fallbackFilename = `reporte_casitas_${reportDateFrom}_a_${reportDateTo}.csv`;
+        } else {
+          fallbackBlob = await generatePuesto01Blob();
+          fallbackFilename = `reporte_puesto01_${reportDateFrom}_a_${reportDateTo}.csv`;
+        }
+        
+        // Fallback a descarga directa
+        const fallbackLink = document.createElement('a');
+        const fallbackUrl = URL.createObjectURL(fallbackBlob);
+        fallbackLink.setAttribute('href', fallbackUrl);
+        fallbackLink.setAttribute('download', fallbackFilename);
+        fallbackLink.style.visibility = 'hidden';
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+        URL.revokeObjectURL(fallbackUrl);
+        alert('No se pudo compartir el reporte (permiso denegado). Se descargó automáticamente.');
+      } else {
+        alert(`Error al exportar reporte: ${error.message || 'Error desconocido'}`);
+      }
     }
   };
 

@@ -34,7 +34,7 @@ export function procesarMenuDiario(textoMenu: string): MenuDiario[] {
   const año = 2025;
   
   // Encontrar todas las posiciones de los encabezados de días
-  const matches = [...textoMenu.matchAll(regexDia)];
+  const matches = Array.from(textoMenu.matchAll(regexDia));
   
   // Procesar cada día encontrado
   for (let i = 0; i < matches.length; i++) {

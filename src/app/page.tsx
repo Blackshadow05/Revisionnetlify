@@ -77,7 +77,32 @@ export default function Home() {
   const [reportDateFrom, setReportDateFrom] = useState('');
   const [reportDateTo, setReportDateTo] = useState('');
   const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto'>('all');
+  // Definir el tipo para el filtro activo
+  type FilterType = 'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto' | 'today' | 'no-cola-caballo';
+  
+  // Estado para el filtro activo, inicializado con el valor guardado en localStorage o 'all' por defecto
+  const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
+    // Solo ejecutar en el cliente, no durante SSR
+    if (typeof window !== 'undefined') {
+      const savedFilter = localStorage.getItem('activeRevisionFilter');
+      // Verificar que el valor guardado sea un filtro válido
+      if (savedFilter && [
+        'all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 
+        'no-trapo-binocular', 'no-sombrero', 'no-bulto', 'today', 'no-cola-caballo'
+      ].includes(savedFilter)) {
+        return savedFilter as FilterType;
+      }
+    }
+    return 'all';
+  });
+  
+  // Función auxiliar para cambiar el filtro y guardarlo en localStorage
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter);
+    localStorage.setItem('activeRevisionFilter', filter);
+    setShowFilterDropdown(false);
+    setCurrentPage(1);
+  };
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
   // 🍽️ Estados para menú del día
@@ -382,6 +407,51 @@ export default function Home() {
     if (activeFilter === 'no-bulto') {
       return getLatestByCasita()
         .filter(row => row.bulto === 'No');
+    }
+
+    if (activeFilter === 'no-cola-caballo') {
+      return getLatestByCasita()
+        .filter(row => row.cola_caballo === 'No');
+    }
+
+    if (activeFilter === 'today') {
+      // Obtener la fecha de hoy en formato YYYY-MM-DD usando la fecha local del dispositivo
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0'); // Los meses son 0-indexados
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      
+      console.log('Filtrando por fecha local de hoy:', todayStr);
+      
+      // Filtrar revisiones de hoy y ordenar por casita ascendente
+      const todayRevisions = data.filter(row => {
+        if (!row.created_at) return false;
+        
+        // Convertir la fecha UTC de la base de datos a fecha local
+        const rowDate = new Date(row.created_at);
+        const rowYear = rowDate.getFullYear();
+        const rowMonth = String(rowDate.getMonth() + 1).padStart(2, '0');
+        const rowDay = String(rowDate.getDate()).padStart(2, '0');
+        const rowDateStr = `${rowYear}-${rowMonth}-${rowDay}`;
+        
+        const isToday = rowDateStr === todayStr;
+        
+        if (isToday) {
+          console.log('Revisión de hoy encontrada:', row.casita, rowDateStr, 'original:', row.created_at);
+        }
+        
+        return isToday;
+      });
+      
+      console.log(`Se encontraron ${todayRevisions.length} revisiones de hoy (fecha local: ${todayStr})`);
+      
+      // Ordenar por casita ascendente
+      return todayRevisions.sort((a, b) => {
+        const numA = parseInt(a.casita, 10) || 0;
+        const numB = parseInt(b.casita, 10) || 0;
+        return numA - numB;
+      });
     }
 
     return data;
@@ -919,6 +989,8 @@ export default function Home() {
                 {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
                 {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
                 {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
+                {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
+                {activeFilter === 'no-cola-caballo' && <span> (sin cola de caballo)</span>}
               </p>
             </div>
           )}
@@ -936,17 +1008,59 @@ export default function Home() {
                 type="button"
                 className={`p-2 bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
                   activeFilter !== 'all'
-                    ? 'border-[#c9a45c]/80 text-[#c9a45c]'
+                    ? 'border-[#c9a45c]/80 text-[#c9a45c] filter-active'
                     : 'border-[#3d4659]/50 text-[#c9a45c] hover:text-[#f0c987] hover:border-[#c9a45c]/50'
                 }`}
                 title="Filtros"
                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <style jsx>{`
+                  @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.15); }
+                    100% { transform: scale(1); }
+                  }
+                  @keyframes glow {
+                    0% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
+                    50% { box-shadow: 0 0 15px rgba(255, 59, 48, 0.8); }
+                    100% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
+                  }
+                  .filter-pulse {
+                    animation: pulse 1.5s infinite;
+                    color: #ff3b30;
+                  }
+                  .filter-active {
+                    border-color: #ff3b30 !important;
+                    animation: glow 2s infinite;
+                  }
+                  .filter-badge {
+                    position: absolute;
+                    top: -6px;
+                    right: -6px;
+                    background-color: #ff3b30;
+                    color: white;
+                    border-radius: 50%;
+                    width: 16px;
+                    height: 16px;
+                    font-size: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                  }
+                `}</style>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={1.5} 
+                  stroke="currentColor" 
+                  className={`w-5 h-5 ${activeFilter !== 'all' ? 'filter-pulse' : ''}`}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
                 </svg>
                 {activeFilter !== 'all' && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#c9a45c] rounded-full"></span>
+                  <span className="filter-badge">!</span>
                 )}
               </button>
               
@@ -960,13 +1074,20 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('all');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('all')}
                     >
                       Todas las revisiones
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'today'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => handleFilterChange('today')}
+                    >
+                      Revisiones de Hoy
                     </button>
                     <button
                       type="button"
@@ -975,11 +1096,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('latest');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('latest')}
                     >
                       Última Revisión
                     </button>
@@ -990,11 +1107,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('no-yute');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('no-yute')}
                     >
                       No hay yute
                     </button>
@@ -1005,11 +1118,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('has-yute-1');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('has-yute-1')}
                     >
                       Hay un yute
                     </button>
@@ -1020,11 +1129,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('has-yute-2');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('has-yute-2')}
                     >
                       Hay 2 Yutes
                     </button>
@@ -1035,11 +1140,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('no-trapo-binocular');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('no-trapo-binocular')}
                     >
                       No hay trapo binocular
                     </button>
@@ -1050,11 +1151,7 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('no-sombrero');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('no-sombrero')}
                     >
                       No hay sombrero
                     </button>
@@ -1065,13 +1162,20 @@ export default function Home() {
                           ? 'text-[#c9a45c] bg-[#2a3347]/50'
                           : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
                       }`}
-                      onClick={() => {
-                        setActiveFilter('no-bulto');
-                        setShowFilterDropdown(false);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => handleFilterChange('no-bulto')}
                     >
                       No hay Bulto
+                    </button>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                        activeFilter === 'no-cola-caballo'
+                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                      }`}
+                      onClick={() => handleFilterChange('no-cola-caballo')}
+                    >
+                      No hay Cola de Caballo
                     </button>
                   </div>
                 </div>

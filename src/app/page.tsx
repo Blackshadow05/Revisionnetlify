@@ -654,72 +654,138 @@ export default function Home() {
     setIsSharing(false);
   };
 
-  const handleExportExcel = async () => {
+  // Función para generar el blob del reporte de Revisión Casitas
+  const generateRevisionesBlob = async () => {
+    // Filtrar datos por rango de fechas
+    const filteredDataForExport = data.filter(row => {
+      const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+      return rowDate >= reportDateFrom && rowDate <= reportDateTo;
+    });
+
+    if (filteredDataForExport.length === 0) {
+      throw new Error('No hay datos en el rango de fechas seleccionado');
+    }
+
+    // Preparar datos para Excel
+    const excelData = filteredDataForExport.map(row => {
+      // Usar la fecha tal como está almacenada, sin conversiones de zona horaria
+      const fechaOriginal = row.created_at;
+      const fechaFormateada = fechaOriginal.replace('T', ' ').substring(0, 16); // YYYY-MM-DD HH:MM
+      const [fecha, hora] = fechaFormateada.split(' ');
+      const [year, month, day] = fecha.split('-');
+      const fechaFinal = `${day}/${month}/${year} ${hora}`;
+
+      return {
+        'Fecha': fechaFinal,
+        'Casita': row.casita,
+        'Quien Revisa': row.quien_revisa,
+        'Caja Fuerte': row.caja_fuerte,
+        'Puertas/Ventanas': row.puertas_ventanas,
+        'Chromecast': row.chromecast,
+        'Binoculares': row.binoculares,
+        'Trapo Binoculares': row.trapo_binoculares,
+        'Speaker': row.speaker,
+        'USB Speaker': row.usb_speaker,
+        'Controles TV': row.controles_tv,
+        'Secadora': row.secadora,
+        'Accesorios Secadora': row.accesorios_secadora,
+        'Steamer': row.steamer,
+        'Bolsa Vapor': row.bolsa_vapor,
+        'Plancha Cabello': row.plancha_cabello,
+        'Bulto': row.bulto,
+        'Sombrero': row.sombrero,
+        'Bolso Yute': row.bolso_yute,
+        'Camas Ordenadas': row.camas_ordenadas,
+        'Cola Caballo': row.cola_caballo,
+        'Notas': row.notas || '',
+        'Evidencia 1': row.evidencia_01 ? 'Sí' : 'No',
+        'Evidencia 2': row.evidencia_02 ? 'Sí' : 'No',
+        'Evidencia 3': row.evidencia_03 ? 'Sí' : 'No'
+      };
+    });
+
+    // Crear archivo CSV
+    const csvContent = [
+      Object.keys(excelData[0]).join(','),
+      ...excelData.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+    ].join('\n');
+
+    return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  };
+
+  // Función para generar el blob del reporte de Puesto 01
+  const generatePuesto01Blob = async () => {
+    if (!reportDateFrom || !reportDateTo) {
+      throw new Error('Debes seleccionar un rango de fechas para exportar el reporte de Puesto 01');
+    }
+    
+    const fechaDesde = formatToDDMMYYYY(reportDateFrom);
+    const fechaHasta = formatToDDMMYYYY(reportDateTo);
+    const data = await PuestoService.getRecordsByDateRange(fechaDesde, fechaHasta);
+    
+    if (!data.length) {
+      throw new Error('No hay registros de Puesto 01 en el rango de fechas seleccionado');
+    }
+    
+    // @ts-ignore - sheetjs types opcional
+    const XLSX = await import('xlsx');
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    
+    return new Blob([csv], { type: 'text/csv' });
+  };
+
+  // Exportar reporte de Puesto_01 por rango de fechas en CSV
+  function formatToDDMMYYYY(dateStr: string): string {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  // Función para exportar el reporte adecuado usando Web Share API o descarga directa
+  const handleExport = async () => {
     try {
-      // Filtrar datos por rango de fechas
-      const filteredDataForExport = data.filter(row => {
-        const rowDate = new Date(row.created_at).toISOString().split('T')[0];
-        return rowDate >= reportDateFrom && rowDate <= reportDateTo;
-      });
-
-      if (filteredDataForExport.length === 0) {
-        alert('No hay datos en el rango de fechas seleccionado');
-        return;
+      let blob: Blob;
+      let filename: string;
+      
+      if (reportType === 'Revisión Casitas') {
+        blob = await generateRevisionesBlob();
+        filename = `Reporte_Revisiones_${reportDateFrom}_${reportDateTo}.csv`;
+      } else {
+        blob = await generatePuesto01Blob();
+        filename = `Puesto01_${reportDateFrom}_${reportDateTo}.csv`;
       }
-
-      // Preparar datos para Excel
-      const excelData = filteredDataForExport.map(row => {
-        // Usar la fecha tal como está almacenada, sin conversiones de zona horaria
-        const fechaOriginal = row.created_at;
-        const fechaFormateada = fechaOriginal.replace('T', ' ').substring(0, 16); // YYYY-MM-DD HH:MM
-        const [fecha, hora] = fechaFormateada.split(' ');
-        const [year, month, day] = fecha.split('-');
-        const fechaFinal = `${day}/${month}/${year} ${hora}`;
-
-        return {
-          'Fecha': fechaFinal,
-          'Casita': row.casita,
-          'Quien Revisa': row.quien_revisa,
-          'Caja Fuerte': row.caja_fuerte,
-          'Puertas/Ventanas': row.puertas_ventanas,
-          'Chromecast': row.chromecast,
-          'Binoculares': row.binoculares,
-          'Trapo Binoculares': row.trapo_binoculares,
-          'Speaker': row.speaker,
-          'USB Speaker': row.usb_speaker,
-          'Controles TV': row.controles_tv,
-          'Secadora': row.secadora,
-          'Accesorios Secadora': row.accesorios_secadora,
-          'Steamer': row.steamer,
-          'Bolsa Vapor': row.bolsa_vapor,
-          'Plancha Cabello': row.plancha_cabello,
-          'Bulto': row.bulto,
-          'Sombrero': row.sombrero,
-          'Bolso Yute': row.bolso_yute,
-          'Camas Ordenadas': row.camas_ordenadas,
-          'Cola Caballo': row.cola_caballo,
-          'Notas': row.notas || '',
-          'Evidencia 1': row.evidencia_01 ? 'Sí' : 'No',
-          'Evidencia 2': row.evidencia_02 ? 'Sí' : 'No',
-          'Evidencia 3': row.evidencia_03 ? 'Sí' : 'No'
-        };
-      });
-
-      // Crear archivo Excel usando una implementación simple
-      const csvContent = [
-        Object.keys(excelData[0]).join(','),
-        ...excelData.map(row => Object.values(row).map(val => `"${val}"`).join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      // Intentar usar Web Share API si está disponible
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], filename, { type: blob.type });
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Reporte ${reportType}`,
+            text: `Reporte ${reportType} desde ${reportDateFrom} hasta ${reportDateTo}`,
+            files: [file]
+          });
+          
+          // Cerrar modal y limpiar campos
+          setShowReportModal(false);
+          setShowSidebar(false);
+          setReportDateFrom('');
+          setReportDateTo('');
+          return;
+        }
+      }
+      
+      // Fallback: descarga directa si Web Share API no está disponible o no funciona
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `Reporte_Revisiones_${reportDateFrom}_${reportDateTo}.csv`);
+      link.setAttribute('download', filename);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       // Cerrar modal y limpiar campos
       setShowReportModal(false);
@@ -728,56 +794,9 @@ export default function Home() {
       setReportDateTo('');
 
       alert(`Reporte exportado exitosamente como CSV`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al exportar:', error);
-    }
-  };
-
-  // Exportar reporte de Puesto_01 por rango de fechas en CSV
-  // Exportar reporte de Puesto_01 por rango de fechas en CSV
-  function formatToDDMMYYYY(dateStr: string): string {
-    if (!dateStr) return '';
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
-  }
-
-  const handleExportPuesto01 = async () => {
-    try {
-      if (!reportDateFrom || !reportDateTo) {
-        alert('Debes seleccionar un rango de fechas para exportar el reporte de Puesto 01');
-        return;
-      }
-      const fechaDesde = formatToDDMMYYYY(reportDateFrom);
-      const fechaHasta = formatToDDMMYYYY(reportDateTo);
-      const data = await PuestoService.getRecordsByDateRange(fechaDesde, fechaHasta);
-      if (!data.length) {
-        alert('No hay registros de Puesto 01 en el rango de fechas seleccionado');
-        return;
-      }
-      // @ts-ignore - sheetjs types opcional
-      const XLSX = await import('xlsx');
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const csv = XLSX.utils.sheet_to_csv(worksheet);
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Puesto01_${reportDateFrom}_${reportDateTo}.csv`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      alert('Reporte Puesto 01 exportado exitosamente como CSV');
-    } catch (err) {
-      console.error(err);
-      alert('Error al exportar reporte Puesto 01');
-    }
-  };
-
-  // Función para exportar el reporte adecuado
-  const handleExport = async () => {
-    if (reportType === 'Revisión Casitas') {
-      await handleExportExcel();
-    } else {
-      await handleExportPuesto01();
+      alert(`Error al exportar reporte: ${error.message || 'Error desconocido'}`);
     }
   };
 

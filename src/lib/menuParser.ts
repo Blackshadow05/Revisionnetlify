@@ -25,8 +25,8 @@ export function procesarMenuDiario(textoMenu: string): MenuDiario[] {
   
   // Mapeo de nombres de meses a números
   const meses: Record<string, string> = {
-    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04', 
-    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08', 
+    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
     'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
   };
   
@@ -92,8 +92,8 @@ export function procesarMenuAlternativo(textoMenu: string): MenuDiario[] {
   
   // Mapeo de nombres de meses a números
   const meses: Record<string, string> = {
-    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04', 
-    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08', 
+    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
     'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
   };
   
@@ -144,17 +144,37 @@ export function procesarMenuAlternativo(textoMenu: string): MenuDiario[] {
 }
 
 /**
+ * Normaliza el texto del menú agregando asteriscos a los días que no los tienen
+ * @param textoMenu Texto del menú
+ * @returns Texto del menú normalizado
+ */
+export function normalizarMenu(textoMenu: string): string {
+  // Expresión regular para encontrar días sin asteriscos
+  const regexDia = /([Ll]unes|[Mm]artes|[Mm]i[ée]rcoles|[Jj]ueves|[Vv]iernes|[Ss][áa]bado|[Dd]omingo)\s+(\d{1,2})\s+de\s+([Ee]nero|[Ff]ebrero|[Mm]arzo|[Aa]bril|[Mm]ayo|[Jj]unio|[Jj]ulio|[Aa]gosto|[Ss]eptiembre|[Oo]ctubre|[Nn]oviembre|[Dd]iciembre)/g;
+  
+  // Reemplazar días sin asteriscos con días con asteriscos
+  return textoMenu.replace(regexDia, '**$1 $2 de $3**');
+}
+
+/**
  * Procesa el texto del menú utilizando múltiples estrategias
  * @param textoMenu Texto del menú
  * @returns Array de objetos MenuDiario
  */
 export function extraerMenusDiarios(textoMenu: string): MenuDiario[] {
-  // Intentar con el primer método
-  let resultado = procesarMenuDiario(textoMenu);
+  // Normalizar el texto del menú
+  const textoNormalizado = normalizarMenu(textoMenu);
   
-  // Si no se encontraron días, intentar con el método alternativo
-  if (resultado.length === 0) {
-    resultado = procesarMenuAlternativo(textoMenu);
+  // Intentar con el primer método usando el texto normalizado
+  let resultado = procesarMenuDiario(textoNormalizado);
+  
+  // Si no se encontraron días o se encontraron muy pocos, intentar con el método alternativo
+  if (resultado.length < 3) {  // Menos de 3 días encontrados, probablemente incompleto
+    const resultadoAlternativo = procesarMenuAlternativo(textoNormalizado);
+    // Usar el resultado alternativo si encontró más días
+    if (resultadoAlternativo.length > resultado.length) {
+      resultado = resultadoAlternativo;
+    }
   }
   
   return resultado;

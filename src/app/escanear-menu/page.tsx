@@ -417,11 +417,12 @@ export default function EscanearMenu() {
         </div>
       )}
 
+      {/* Menú Extraído - Solo se muestra si hay datos del menú completo */}
       {menuData && (
         <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-green-400">Menú Extraído</h2>
-              <button 
+              <button
                 onClick={() => navigator.clipboard.writeText(menuData.texto)}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
@@ -431,80 +432,81 @@ export default function EscanearMenu() {
                 Copiar Texto
               </button>
             </div>
-              
+        </div>
+      )}
 
+      {/* Menús Diarios - Se muestra independientemente de menuData si hay menús diarios */}
+      {menusDiarios.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 mb-8">
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-purple-400">
+                Días Detectados ({menusDiarios.length})
+              </h3>
+              {menusDiarios.length > 1 && (
+                <span className="text-sm bg-purple-900/50 px-3 py-1 rounded-lg border border-purple-700 text-purple-300">
+                  Del {formatearFecha(menusDiarios[0]?.fecha)} al {formatearFecha(menusDiarios[menusDiarios.length - 1]?.fecha)}
+                </span>
+              )}
+            </div>
             
-            {menusDiarios.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-bold text-purple-400">
-                    Días Detectados ({menusDiarios.length})
-                  </h3>
-                  {menusDiarios.length > 1 && (
-                    <span className="text-sm bg-purple-900/50 px-3 py-1 rounded-lg border border-purple-700 text-purple-300">
-                      Del {formatearFecha(menusDiarios[0]?.fecha)} al {formatearFecha(menusDiarios[menusDiarios.length - 1]?.fecha)}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Botón general para guardar todos los menús */}
-                {menusDiarios.length > 1 && (
-                  <div className="mb-4">
-                    <button
-                      onClick={handleGuardarMenu}
-                      disabled={isLoading || savingDayIndex !== null}
-                      className={`w-full px-6 py-3 rounded-xl font-medium transition-all ${
-                        isLoading || savingDayIndex !== null
-                          ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-500 hover:to-purple-600 text-white shadow-lg hover:shadow-blue-500/30 transform hover:scale-[1.02]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        {isLoading ? 'Guardando todos los menús...' : `Guardar Todos los Menús (${menusDiarios.length} días)`}
-                      </div>
-                    </button>
-                    <p className="text-xs text-gray-400 mt-2 text-center">
-                      Se guardarán todos los menús secuencialmente. También puedes guardar días individuales usando los botones de abajo.
-                    </p>
+            {/* Botón general para guardar todos los menús */}
+            {menusDiarios.length > 1 && (
+              <div className="mb-4">
+                <button
+                  onClick={handleGuardarMenu}
+                  disabled={isLoading || savingDayIndex !== null}
+                  className={`w-full px-6 py-3 rounded-xl font-medium transition-all ${
+                    isLoading || savingDayIndex !== null
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-500 hover:to-purple-600 text-white shadow-lg hover:shadow-blue-500/30 transform hover:scale-[1.02]'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {isLoading ? 'Guardando todos los menús...' : `Guardar Todos los Menús (${menusDiarios.length} días)`}
                   </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {menusDiarios.map((dia, index) => (
-                    <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-green-400">{dia.dia_semana}</h4>
-                        <span className="text-sm px-3 py-1 bg-purple-900/50 text-purple-300 rounded-lg border border-purple-800 font-medium">
-                          {formatearFecha(dia.fecha)}
-                        </span>
-                      </div>
-                      <ul className="list-disc pl-5 text-sm text-gray-300 mb-3">
-                        {dia.comidas.map((comida, i) => (
-                          <li key={i}>{comida}</li>
-                        ))}
-                      </ul>
-                      <button
-                        onClick={() => handleGuardarMenuDia(dia, index)}
-                        disabled={savingDayIndex !== null}
-                        className={`w-full px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-                          savingDayIndex === index
-                            ? 'bg-green-700 text-white cursor-not-allowed'
-                            : savingDayIndex !== null
-                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white shadow-lg hover:shadow-green-500/30'
-                        }`}
-                      >
-                        {savingDayIndex === index ? 'Guardando...' : `Guardar ${dia.dia_semana}`}
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                </button>
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  Se guardarán todos los menús secuencialmente. También puedes guardar días individuales usando los botones de abajo.
+                </p>
               </div>
             )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {menusDiarios.map((dia, index) => (
+                <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-green-400">{dia.dia_semana}</h4>
+                    <span className="text-sm px-3 py-1 bg-purple-900/50 text-purple-300 rounded-lg border border-purple-800 font-medium">
+                      {formatearFecha(dia.fecha)}
+                    </span>
+                  </div>
+                  <ul className="list-disc pl-5 text-sm text-gray-300 mb-3">
+                    {dia.comidas.map((comida, i) => (
+                      <li key={i}>{comida}</li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handleGuardarMenuDia(dia, index)}
+                    disabled={savingDayIndex !== null}
+                    className={`w-full px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                      savingDayIndex === index
+                        ? 'bg-green-700 text-white cursor-not-allowed'
+                        : savingDayIndex !== null
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white shadow-lg hover:shadow-green-500/30'
+                    }`}
+                  >
+                    {savingDayIndex === index ? 'Guardando...' : `Guardar ${dia.dia_semana}`}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
         <div className="text-center text-gray-500 text-sm mt-12">
           <p>Selecciona una imagen clara del menú semanal para obtener los resultados más precisos</p>

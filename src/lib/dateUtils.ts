@@ -61,10 +61,9 @@ export function formatearFecha(fecha: string): string {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
   ];
   
-  const fechaObj = new Date(fecha);
-  const dia = fechaObj.getDate();
-  const mes = meses[fechaObj.getMonth()];
-  const año = fechaObj.getFullYear();
+  // Parsear la fecha manualmente para evitar problemas de zona horaria
+  const [año, mesNum, dia] = fecha.split('-').map(Number);
+  const mes = meses[mesNum - 1];
   
   return `${dia} de ${mes} de ${año}`;
 }

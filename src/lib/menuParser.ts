@@ -33,45 +33,38 @@ export function procesarMenuDiario(textoMenu: string): MenuDiario[] {
   // Año actual (2025)
   const año = 2025;
   
-  // Dividir el texto en secciones por día
-  const secciones = textoMenu.split(/\*\*[^*]+\*\*/);
+  // Encontrar todas las posiciones de los encabezados de días
+  const matches = [...textoMenu.matchAll(regexDia)];
   
-  // Extraer los encabezados de días
-  const encabezados = textoMenu.match(regexDia) || [];
-  
-  // Procesar cada sección (ignoramos la primera que suele ser la introducción)
-  for (let i = 0; i < encabezados.length; i++) {
-    // Obtener el encabezado actual
-    const encabezado = encabezados[i];
+  // Procesar cada día encontrado
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const diaSemana = match[1].trim();
+    const diaMes = match[2].padStart(2, '0');
+    const mes = match[3].toLowerCase();
     
-    // Extraer información del día usando regex
-    const regexInfo = /\*\*([\wáéíóúÁÉÍÓÚüÜñÑ]+)\s+(\d{1,2})\s+de\s+([\wáéíóúÁÉÍÓÚüÜñÑ]+)\*\*/i;
-    const infoMatch = encabezado.match(regexInfo);
+    // Crear fecha en formato YYYY-MM-DD
+    const fecha = `${año}-${meses[mes] || '01'}-${diaMes}`;
     
-    if (infoMatch) {
-      const diaSemana = infoMatch[1].trim();
-      const diaMes = infoMatch[2].padStart(2, '0');
-      const mes = infoMatch[3].toLowerCase();
-      
-      // Crear fecha en formato YYYY-MM-DD
-      const fecha = `${año}-${meses[mes] || '01'}-${diaMes}`;
-      
-      // Obtener el contenido de la sección (el texto después del encabezado)
-      const contenido = i + 1 < secciones.length ? secciones[i + 1] : '';
-      
-      // Extraer las comidas (elementos con formato de lista)
-      const comidas = contenido
-        .split('*')
-        .map(item => item.trim())
-        .filter(item => item && item !== '\n' && !item.startsWith('**'));
-      
-      // Añadir al resultado
-      resultado.push({
-        fecha,
-        dia_semana: diaSemana,
-        comidas
-      });
-    }
+    // Encontrar el contenido entre este día y el siguiente
+    const startIndex = match.index + match[0].length;
+    const endIndex = i + 1 < matches.length ? matches[i + 1].index : textoMenu.length;
+    
+    // Obtener el contenido de este día
+    const contenido = textoMenu.substring(startIndex, endIndex);
+    
+    // Extraer las comidas (elementos con formato de lista)
+    const comidas = contenido
+      .split('*')
+      .map(item => item.trim())
+      .filter(item => item && item !== '\n' && !item.startsWith('**'));
+    
+    // Añadir al resultado
+    resultado.push({
+      fecha,
+      dia_semana: diaSemana,
+      comidas
+    });
   }
   
   return resultado;

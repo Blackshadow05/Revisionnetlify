@@ -6,7 +6,7 @@ interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShare: (message: string) => Promise<void>;
-  images: File[];
+  images: File[] | string[]; // Permitir tanto archivos como URLs
   casita: string;
   cajaFuerte: string;
   initialMessage: string;
@@ -73,16 +73,27 @@ export default function ShareModal({
                 Imágenes a compartir ({images.length}):
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {images.map((image, index) => (
-                  <div key={index} className="relative aspect-square overflow-hidden rounded-lg">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Evidencia ${index + 1}`}
-                      className="h-full w-full object-cover"
-                      onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
-                    />
-                  </div>
-                ))}
+                {images.map((image, index) => {
+                  // Determinar si es un archivo o una URL
+                  const isFile = image instanceof File;
+                  const imageUrl = isFile ? URL.createObjectURL(image) : image as string;
+                  
+                  return (
+                    <div key={index} className="relative aspect-square overflow-hidden rounded-lg">
+                      <img
+                        src={imageUrl}
+                        alt={`Evidencia ${index + 1}`}
+                        className="h-full w-full object-cover"
+                        onLoad={(e) => {
+                          // Solo revocar URL si es un archivo
+                          if (isFile) {
+                            URL.revokeObjectURL((e.target as HTMLImageElement).src);
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

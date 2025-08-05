@@ -15,7 +15,9 @@ import ImageModal from '@/components/revision/ImageModal';
 import PageTitle from '@/components/ui/PageTitle';
 import ViewToggle from '@/components/ui/ViewToggle';
 import CardView from '@/components/revision/CardView';
+import ShareModal from '@/components/ShareModal';
 import { PuestoService } from '@/lib/puesto-service';
+import { formatearFecha } from '@/lib/dateUtils';
 
 interface RevisionData {
   id?: string;
@@ -77,6 +79,10 @@ export default function Home() {
   const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
   const [activeFilter, setActiveFilter] = useState<'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto'>('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  
+  // 🍽️ Estados para menú del día
+  const [menuDelDia, setMenuDelDia] = useState<any>(null);
+  const [loadingMenu, setLoadingMenu] = useState(true);
 
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +98,12 @@ export default function Home() {
     }
     return 'table';
   });
+
+  // 📱 Estados para modal de compartir WhatsApp
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareImages, setShareImages] = useState<string[]>([]);
+  const [shareRevision, setShareRevision] = useState<RevisionData | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Función para manejar el toggle del menú
   const handleMenuToggle = () => {
@@ -109,7 +121,53 @@ export default function Home() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // 🍽️ Función para cargar el menú del día actual
+  const fetchMenuDelDia = async () => {
+    try {
+      setLoadingMenu(true);
+      // Obtener fecha local sin conversión UTC
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayLocal = `${year}-${month}-${day}`; // Formato YYYY-MM-DD
+      
+      console.log('Buscando menú para la fecha:', todayLocal);
+      
+      const { data, error } = await supabase
+        .from('menus')
+        .select('*')
+        .eq('fecha_menu', todayLocal)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error al cargar menú del día:', error);
+        setMenuDelDia(null);
+      } else {
+        setMenuDelDia(data);
+      }
+    } catch (err) {
+      console.error('Error al cargar menú del día:', err);
+      setMenuDelDia(null);
+    } finally {
+      setLoadingMenu(false);
+    }
+  };
 
+  // 🍽️ Función para parsear el contenido del menú
+  const parseMenuContent = (contenidoMenu: string) => {
+    try {
+      return JSON.parse(contenidoMenu);
+    } catch (err) {
+      console.error('Error al parsear contenido del menú:', err);
+      return null;
+    }
+  };
+
+  // 🍽️ Efecto para cargar el menú del día
+  useEffect(() => {
+    fetchMenuDelDia();
+  }, []);
 
   // 🔄 Efecto para despertar el servidor de Supabase con un ping silencioso
   useEffect(() => {
@@ -443,6 +501,89 @@ export default function Home() {
     }
   };
 
+  // 📱 Funciones para compartir en WhatsApp
+  const handleShareClick = (revision: RevisionData) => {
+    const images = [];
+    if (revision.evidencia_01) images.push(revision.evidencia_01);
+    if (revision.evidencia_02) images.push(revision.evidencia_02);
+    if (revision.evidencia_03) images.push(revision.evidencia_03);
+    
+    setShareRevision(revision);
+    setShareImages(images);
+    setShowShareModal(true);
+  };
+
+  const handleShare = async (message: string) => {
+    if (!shareRevision || shareImages.length === 0) return;
+    
+    setIsSharing(true);
+    
+    try {
+      // Convertir URLs de Cloudinary a archivos para compartir
+      const imageFiles: File[] = [];
+      
+      for (let i = 0; i < shareImages.length; i++) {
+        const imageUrl = shareImages[i];
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `evidencia_${i + 1}.jpg`, { type: 'image/jpeg' });
+          imageFiles.push(file);
+        } catch (error) {
+          console.error(`Error al cargar imagen ${i + 1}:`, error);
+        }
+      }
+      
+      if (imageFiles.length === 0) {
+        alert('No se pudieron cargar las imágenes para compartir');
+        return;
+      }
+      
+      // Usar Web Share API si está disponible
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: imageFiles })) {
+        await navigator.share({
+          title: `${shareRevision.caja_fuerte} ${shareRevision.casita}`,
+          text: message,
+          files: imageFiles
+        });
+      } else {
+        // Fallback: crear URLs para WhatsApp Web
+        const whatsappMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
+        window.open(whatsappUrl, '_blank');
+        
+        // Mostrar las imágenes para que el usuario las pueda descargar manualmente
+        shareImages.forEach((imageUrl, index) => {
+          const link = document.createElement('a');
+          link.href = imageUrl;
+          link.download = `evidencia_${shareRevision.casita}_${index + 1}.jpg`;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+      }
+      
+      // Cerrar modal
+      setShowShareModal(false);
+      setShareRevision(null);
+      setShareImages([]);
+      
+    } catch (error) {
+      console.error('Error al compartir:', error);
+      alert('Error al compartir. Inténtalo de nuevo.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const closeShareModal = () => {
+    setShowShareModal(false);
+    setShareRevision(null);
+    setShareImages([]);
+    setIsSharing(false);
+  };
+
   const handleExportExcel = async () => {
     try {
       // Filtrar datos por rango de fechas
@@ -671,6 +812,51 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* 🍽️ Menú del Día */}
+        {!loadingMenu && menuDelDia && (
+          <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 backdrop-blur-md rounded-xl p-6 border border-green-500/30 mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5-1.5M3 21l1.5-1.5m15-5.25v-2.513C19.5 10.608 18.155 9.51 16.976 9.166 15.697 8.944 14.355 8.25 13 8.25s-2.697.694-3.976.916C7.845 9.51 6.5 10.608 6.5 11.735v2.513m13-2.513v2.513" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">🍽️ Menú del Día</h3>
+                <p className="text-green-400 text-sm">{formatearFecha(menuDelDia.fecha_menu)}</p>
+              </div>
+            </div>
+            
+            {(() => {
+              const menuContent = parseMenuContent(menuDelDia.contenido_menu);
+              if (menuContent && menuContent.comidas) {
+                return (
+                  <div className="bg-gray-900/30 rounded-lg p-4 border border-green-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-green-400 font-semibold">{menuContent.dia_semana}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {menuContent.comidas.map((comida: string, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
+                          <span className="text-green-500">•</span>
+                          <span>{comida}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="bg-gray-900/30 rounded-lg p-4 border border-green-500/20">
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{menuDelDia.contenido_menu}</p>
+                  </div>
+                );
+              }
+            })()
+            }
+          </div>
+        )}
 
         {/* Barra de Búsqueda y Filtros Mejorada */}
         <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-6 border border-[#3d4659]/50 mb-8">
@@ -907,6 +1093,7 @@ export default function Home() {
                 data={paginatedData}
                 onCardClick={(id) => router.push(`/detalles/${id}`)}
                 onImageClick={openModal}
+                onShareClick={handleShareClick}
                 loading={loading}
               />
             ) : (
@@ -1365,6 +1552,20 @@ export default function Home() {
           </svg>
         </button>
       </div>
+
+      {/* 📱 Modal de Compartir WhatsApp */}
+      {showShareModal && shareRevision && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={closeShareModal}
+          onShare={handleShare}
+          images={shareImages}
+          casita={shareRevision.casita}
+          cajaFuerte={shareRevision.caja_fuerte}
+          initialMessage={`${shareRevision.caja_fuerte} ${shareRevision.casita}`}
+          isLoading={isSharing}
+        />
+      )}
     </main>
   );
 }

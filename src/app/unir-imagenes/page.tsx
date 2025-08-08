@@ -79,9 +79,19 @@ export default function UnirImagenes() {
     
     // Verificar si el navegador soporta compartir archivos
     // @ts-ignore - navigator.canShare puede no estar definido en todos los navegadores
-    return typeof navigator.canShare === 'function' 
-      ? navigator.canShare({ files: [new File([], 'test.jpg', { type: 'image/jpeg' })] })
-      : true; // Fallback para navegadores que no tienen canShare
+    if (typeof navigator.canShare === 'function') {
+      try {
+        // Crear un pequeño archivo de prueba para verificar soporte
+        const testBlob = new Blob(['a'], { type: 'image/jpeg' });
+        const testFile = new File([testBlob], 'test.jpg', { type: 'image/jpeg' });
+        // Si canShare falla, atrapamos y devolvemos false
+        return navigator.canShare({ files: [testFile] });
+      } catch {
+        return false;
+      }
+    }
+    // Si no hay canShare, asumimos soporte
+    return true;
   };
   
   // Forzar GC cuando se limpian las imágenes
@@ -185,50 +195,107 @@ export default function UnirImagenes() {
     }
   };
 
-  // Función para unir las imágenes
+  // Función para unir las imágenes con límite de dimensiones y permitiendo re-evaluar orientación
   const unirImagenes = useCallback(() => {
     if (!imagen1.compressed || !imagen2.compressed) return;
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const MAX_DIM = 1200;
 
     const img1 = new Image();
     const img2 = new Image();
 
+    img1.crossOrigin = 'anonymous';
+    img2.crossOrigin = 'anonymous';
+
+    const getScaled = (w: number, h: number, max: number) => {
+      if (w <= max && h <= max) return { w, h };
+      const ratio = Math.max(w / max, h / max);
+      return { w: Math.round(w / ratio), h: Math.round(h / ratio) };
+    };
+
     img1.onload = () => {
       img2.onload = () => {
-        let width, height;
-        
-        if (orientacion === 'vertical') {
-          width = Math.max(img1.width, img2.width);
-          height = img1.height + img2.height;
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img1, 0, 0);
-          ctx.drawImage(img2, 0, img1.height);
-        } else {
-          width = img1.width + img2.width;
-          height = Math.max(img1.height, img2.height);
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img1, 0, 0);
-          ctx.drawImage(img2, img1.width, 0);
+        // Escalar dimensiones manteniendo proporción antes de dibujar
+        const s1 = getScaled(img1.width, img1.height, MAX_DIM);
+        const s2 = getScaled(img2.width, img2.height, MAX_DIM);
+
+        let canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          img1.src = '';
+          img2.src = '';
+          canvas = null as any;
+          return;
         }
 
-        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-        setImagenUnida(dataURL);
+        if (orientacion === 'vertical') {
+          const width = Math.max(s1.w, s2.w);
+          const height = s1.h + s2.h;
+          canvas.width = width;
+          canvas.height = height;
+          // Fondo blanco para evitar transparencias raras en JPEG
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img1, 0, 0, s1.w, s1.h);
+          ctx.drawImage(img2, 0, s1.h, s2.w, s2.h);
+        } else {
+          const width = s1.w + s2.w;
+          const height = Math.max(s1.h, s2.h);
+          canvas.width = width;
+          canvas.height = height;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img1, 0, 0, s1.w, s1.h);
+          ctx.drawImage(img2, s1.w, 0, s2.w, s2.h);
+        }
+
+        // Convertir a blob (evitar toDataURL)
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            try { canvas.width = 0; canvas.height = 0; } catch { /* ignore */ }
+            img1.src = '';
+            img2.src = '';
+            return;
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+
+          // Reemplazar imagen unida anterior y revocar si era blob
+          setImagenUnida(prev => {
+            try {
+              if (prev && typeof prev === 'string' && prev.startsWith('blob:')) {
+                URL.revokeObjectURL(prev);
+              }
+            } catch (e) { /* ignore */ }
+            return objectUrl;
+          });
+
+          // NO revocar ni limpiar las previews comprimidas aquí:
+          // las dejamos para permitir re-unir con otra orientación.
+          // Si el usuario desea liberar memoria manualmente puede usar "Limpiar Todo".
+
+          // Liberar canvas y referencias a imágenes para facilitar GC
+          try { canvas.width = 0; canvas.height = 0; } catch { /* ignore */ }
+          img1.src = '';
+          img2.src = '';
+        }, 'image/jpeg', 0.9);
       };
-      
+
       if (imagen2.compressed) {
         img2.src = imagen2.compressed;
       }
     };
-    
+
     if (imagen1.compressed) {
       img1.src = imagen1.compressed;
     }
   }, [imagen1.compressed, imagen2.compressed, orientacion]);
+
+  // Helper para cambiar orientación — dejamos que el efecto que depende de `orientacion`
+  // ejecute `unirImagenes` automáticamente (evita usar closures con valores desactualizados)
+  const handleSetOrientacion = (o: 'vertical' | 'horizontal') => {
+    setOrientacion(o);
+  };
 
   // Efecto para unir imágenes automáticamente cuando cambian
   useEffect(() => {
@@ -240,24 +307,31 @@ export default function UnirImagenes() {
   // Función para limpiar una imagen
   const limpiarImagen = (tipo: 'img1' | 'img2') => {
     if (tipo === 'img1') {
-      // Revocar URL de previsualización
-      if (imagen1.compressed) {
-        URL.revokeObjectURL(imagen1.compressed);
-      }
+      // Revocar URL de previsualización sólo si es object URL (blob:)
+      try {
+        if (imagen1.compressed && imagen1.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen1.compressed);
+        }
+      } catch (e) { /* ignore */ }
+
       setImagen1({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
       setCompressionStatus1({ status: 'idle', progress: 0, stage: '' });
       setFileSizes1({ original: 0, compressed: 0 });
       if (fileInputRef1.current) fileInputRef1.current.value = '';
     } else {
-      // Revocar URL de previsualización
-      if (imagen2.compressed) {
-        URL.revokeObjectURL(imagen2.compressed);
-      }
+      // Revocar URL de previsualización sólo si es object URL (blob:)
+      try {
+        if (imagen2.compressed && imagen2.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen2.compressed);
+        }
+      } catch (e) { /* ignore */ }
+
       setImagen2({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
       setCompressionStatus2({ status: 'idle', progress: 0, stage: '' });
       setFileSizes2({ original: 0, compressed: 0 });
       if (fileInputRef2.current) fileInputRef2.current.value = '';
     }
+    // No revocar imagenUnida aquí para evitar pérdida accidental si el usuario solo limpia una preview.
     setImagenUnida(null);
   };
 
@@ -279,29 +353,55 @@ export default function UnirImagenes() {
 
   // Función para compartir la imagen usando Web Share API
   const compartirImagen = async () => {
-    if (!imagenUnida || !navigator.share) return;
+    if (!imagenUnida) return;
     
+    // Helper to download if sharing with files is not available
+    const descargar = (url: string, name: string) => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    if (!navigator.share) {
+      // Fall back: descargar
+      descargar(imagenUnida, 'imagen-unida.jpg');
+      return;
+    }
+
     try {
       // Convertir data URL a blob
       const response = await fetch(imagenUnida);
       const blob = await response.blob();
-      
-      // Compartir usando Web Share API
-      await navigator.share({
-        title: 'Imagen Unida',
-        text: 'Imagen creada con la aplicación de unión de imágenes',
-        files: [
-          new File([blob], 'imagen-unida.jpg', { 
-            type: blob.type 
-          })
-        ]
-      });
+
+      // Intentar compartir como File si es compatible
+      let shareFile: File | null = null;
+      if (typeof File === 'function') {
+        shareFile = new File([blob], 'imagen-unida.jpg', { type: blob.type });
+      }
+
+      // Si el navegador soporta canShare, verificar compatibilidad
+      const canShareWithFile = shareFile && (typeof navigator.canShare === 'function'
+        ? navigator.canShare({ files: [shareFile] } as any)
+        : true);
+
+      if (shareFile && canShareWithFile) {
+        await navigator.share({
+          title: 'Imagen Unida',
+          text: 'Imagen creada con la aplicación de unión de imágenes',
+          files: [shareFile] as any
+        });
+      } else {
+        // Fall back a descarga
+        descargar(imagenUnida, 'imagen-unida.jpg');
+      }
       
       console.log('Imagen compartida exitosamente');
     } catch (error) {
       console.error('Error al compartir la imagen:', error);
-      
-      // Fallback: mostrar mensaje al usuario
+      // Fall back: permitir guardar manualmente si falla
       if ((error as Error).name !== 'AbortError') {
         alert('No se pudo compartir la imagen. Puedes guardarla y compartirla manualmente.');
       }
@@ -310,6 +410,23 @@ export default function UnirImagenes() {
   
   // Función para limpiar todos los campos
   const limpiarCampos = () => {
+    // Revocar sólo si son object URLs (blob:)
+    try {
+      if (imagen1.compressed && imagen1.compressed.startsWith('blob:')) {
+        URL.revokeObjectURL(imagen1.compressed);
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (imagen2.compressed && imagen2.compressed.startsWith('blob:')) {
+        URL.revokeObjectURL(imagen2.compressed);
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (imagenUnida && imagenUnida.startsWith('blob:')) {
+        URL.revokeObjectURL(imagenUnida);
+      }
+    } catch (e) { /* ignore */ }
+
     // Limpiar estado de imágenes
     setImagen1({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
     setImagen2({ file: null, compressed: null, originalSize: 0, compressedSize: 0 });
@@ -320,46 +437,65 @@ export default function UnirImagenes() {
     setCompressionStatus2({ status: 'idle', progress: 0, stage: '' });
     setFileSizes1({ original: 0, compressed: 0 });
     setFileSizes2({ original: 0, compressed: 0 });
-    
-    // Revocar object URLs
-    if (imagen1.compressed) URL.revokeObjectURL(imagen1.compressed);
-    if (imagen2.compressed) URL.revokeObjectURL(imagen2.compressed);
-    if (imagenUnida) URL.revokeObjectURL(imagenUnida);
   };
   
   // Efecto para limpiar URLs de imagen 1 cuando cambia
   useEffect(() => {
     // Este efecto se ejecuta cuando imagen1.compressed cambia
-    // La función de limpieza revocará la URL anterior
+    // La función de limpieza revocará la URL anterior si es blob:
     return () => {
-      if (imagen1.compressed) URL.revokeObjectURL(imagen1.compressed);
+      try {
+        if (imagen1.compressed && imagen1.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen1.compressed);
+        }
+      } catch (e) { /* ignore */ }
     };
   }, [imagen1.compressed]);
   
   // Efecto para limpiar URLs de imagen 2 cuando cambia
   useEffect(() => {
     // Este efecto se ejecuta cuando imagen2.compressed cambia
-    // La función de limpieza revocará la URL anterior
+    // La función de limpieza revocará la URL anterior si es blob:
     return () => {
-      if (imagen2.compressed) URL.revokeObjectURL(imagen2.compressed);
+      try {
+        if (imagen2.compressed && imagen2.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen2.compressed);
+        }
+      } catch (e) { /* ignore */ }
     };
   }, [imagen2.compressed]);
   
   // Efecto para limpiar URL de imagen unida cuando cambia
   useEffect(() => {
     // Este efecto se ejecuta cuando imagenUnida cambia
-    // La función de limpieza revocará la URL anterior
+    // La función de limpieza revocará la URL anterior si es blob:
     return () => {
-      if (imagenUnida) URL.revokeObjectURL(imagenUnida);
+      try {
+        if (imagenUnida && imagenUnida.startsWith('blob:')) {
+          URL.revokeObjectURL(imagenUnida);
+        }
+      } catch (e) { /* ignore */ }
     };
   }, [imagenUnida]);
   
   // Efecto para limpiar URLs al desmontar el componente
   useEffect(() => {
     return () => {
-      if (imagen1.compressed) URL.revokeObjectURL(imagen1.compressed);
-      if (imagen2.compressed) URL.revokeObjectURL(imagen2.compressed);
-      if (imagenUnida) URL.revokeObjectURL(imagenUnida);
+      try {
+        if (imagen1.compressed && imagen1.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen1.compressed);
+        }
+      } catch (e) { /* ignore */ }
+      try {
+        if (imagen2.compressed && imagen2.compressed.startsWith('blob:')) {
+          URL.revokeObjectURL(imagen2.compressed);
+        }
+      } catch (e) { /* ignore */ }
+      try {
+        if (imagenUnida && imagenUnida.startsWith('blob:')) {
+          URL.revokeObjectURL(imagenUnida);
+        }
+      } catch (e) { /* ignore */ }
     };
   }, []);
 
@@ -399,7 +535,7 @@ export default function UnirImagenes() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex gap-2">
               <button
-                onClick={() => setOrientacion('vertical')}
+                onClick={() => handleSetOrientacion('vertical')}
                 className={`px-4 py-2 rounded-lg transition-all ${
                   orientacion === 'vertical'
                     ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg font-medium'
@@ -409,7 +545,7 @@ export default function UnirImagenes() {
                 Vertical
               </button>
               <button
-                onClick={() => setOrientacion('horizontal')}
+                onClick={() => handleSetOrientacion('horizontal')}
                 className={`px-4 py-2 rounded-lg transition-all ${
                   orientacion === 'horizontal'
                     ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg font-medium'
@@ -417,6 +553,18 @@ export default function UnirImagenes() {
                 }`}
               >
                 Horizontal
+              </button>
+
+              <button
+                onClick={() => { if (imagen1.compressed && imagen2.compressed) unirImagenes(); }}
+                disabled={!(imagen1.compressed && imagen2.compressed)}
+                className={`px-4 py-2 rounded-lg transition-all ml-2 ${
+                  (imagen1.compressed && imagen2.compressed)
+                    ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-md font-medium'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Reunir ahora
               </button>
             </div>
 
@@ -547,9 +695,9 @@ export default function UnirImagenes() {
               
               <button
                 onClick={compartirImagen}
-                disabled={!isWebShareAvailable()}
+                disabled={!imagenUnida}
                 className={`px-6 py-3 rounded-lg transition-all shadow-lg font-medium flex items-center justify-center gap-2 ${
-                  isWebShareAvailable()
+                  imagenUnida
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}

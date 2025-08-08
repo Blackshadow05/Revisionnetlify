@@ -80,21 +80,8 @@ export default function Home() {
   // Definir el tipo para el filtro activo
   type FilterType = 'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto' | 'today' | 'no-cola-caballo';
   
-  // Estado para el filtro activo, inicializado con el valor guardado en localStorage o 'all' por defecto
-  const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
-    // Solo ejecutar en el cliente, no durante SSR
-    if (typeof window !== 'undefined') {
-      const savedFilter = localStorage.getItem('activeRevisionFilter');
-      // Verificar que el valor guardado sea un filtro válido
-      if (savedFilter && [
-        'all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 
-        'no-trapo-binocular', 'no-sombrero', 'no-bulto', 'today', 'no-cola-caballo'
-      ].includes(savedFilter)) {
-        return savedFilter as FilterType;
-      }
-    }
-    return 'all';
-  });
+  // Estado para el filtro activo: inicial estable en SSR. Leer localStorage en useEffect para evitar hydration mismatch.
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   
   // Función auxiliar para cambiar el filtro y guardarlo en localStorage
   const handleFilterChange = (filter: FilterType) => {
@@ -114,15 +101,8 @@ export default function Home() {
   const [itemsPerPage, setItemsPerPage] = useState(40);
   const [supabaseAwake, setSupabaseAwake] = useState(false);
 
-  // 🎯 Estado para modo de vista (tabla/tarjeta) - Card por defecto en móvil
-  const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
-    // Detectar si es móvil para establecer vista por defecto
-    if (typeof window !== 'undefined') {
-      const isMobile = window.innerWidth < 768; // md breakpoint
-      return isMobile ? 'card' : 'table';
-    }
-    return 'table';
-  });
+  // 🎯 Estado para modo de vista (tabla/tarjeta) - inicial estable en SSR; se ajustará en cliente en useEffect
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   // 📱 Estados para modal de compartir WhatsApp
   const [showShareModal, setShowShareModal] = useState(false);
@@ -233,10 +213,21 @@ export default function Home() {
       const savedViewMode = sessionStorage.getItem('revisionViewMode');
       if (savedViewMode === 'card' || savedViewMode === 'table') {
         setViewMode(savedViewMode);
+        return;
       }
     } catch (error) {
       console.log('Error al cargar preferencia de vista:', error);
     }
+    // Si no hay preferencia guardada, detectar ancho en cliente (solo en cliente)
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setViewMode('card');
+    }
+  }, []);
+
+  // Bandera de montaje para evitar mismatches SSR/CSR en condiciones que dependen de valores del cliente
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // 🎯 Función para cambiar modo de vista
@@ -415,6 +406,12 @@ export default function Home() {
     }
 
     if (activeFilter === 'today') {
+      // Ejecutar este filtro solo en cliente para evitar hydration mismatch.
+      // Si todavía no estamos montados en el cliente, devolvemos los datos sin filtrar.
+      if (!mounted) {
+        return data;
+      }
+
       // Obtener la fecha de hoy en formato YYYY-MM-DD usando la fecha local del dispositivo
       const today = new Date();
       const year = today.getFullYear();
@@ -1020,7 +1017,7 @@ export default function Home() {
           </div>
 
           {/* Resultados de búsqueda y filtros */}
-          {(searchTerm || cajaFuerteFilter || activeFilter !== 'all') && (
+          {(mounted && (searchTerm || cajaFuerteFilter || activeFilter !== 'all')) && (
             <div className="mt-4 pt-4 border-t border-[#3d4659]/50">
               <p className="text-gray-400 text-sm">
                 Mostrando {finalFilteredData.length} de {data.length} revisiones

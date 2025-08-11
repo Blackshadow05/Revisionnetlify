@@ -111,7 +111,7 @@ export default function ButtonGroup({
 
   return (
     <div className="space-y-3">
-      <label className="block text-base font-semibold bg-black/40 text-white px-3 py-1 rounded-lg shadow-sm flex items-center gap-2">
+      <label className="flex items-center gap-2 text-base font-semibold bg-black/40 text-white px-3 py-1 rounded-lg shadow-sm">
         {getIcon()}
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}

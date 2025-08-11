@@ -936,17 +936,49 @@ export default function Home() {
             
             {(() => {
               const menuContent = parseMenuContent(menuDelDia.contenido_menu);
+
+              // Helper: agrupa tokens hasta encontrar uno que comienza en mayúscula,
+              // que se interpreta como inicio de un nuevo ítem del menú.
+              const splitOnCapitalizedWords = (text: string) => {
+                if (!text) return [];
+                const tokens = text.split(/\s+/);
+                const groups: string[] = [];
+                let current: string[] = [];
+
+                tokens.forEach((token) => {
+                  const firstChar = token.charAt(0) || '';
+                  const isUpper = firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase();
+
+                  if (current.length === 0) {
+                    current.push(token);
+                  } else if (isUpper) {
+                    groups.push(current.join(' '));
+                    current = [token];
+                  } else {
+                    current.push(token);
+                  }
+                });
+
+                if (current.length) groups.push(current.join(' '));
+                return groups;
+              };
+
               if (menuContent && menuContent.comidas) {
+                // Convertir cada entrada en uno o varios ítems según las mayúsculas internas
+                const allItems = menuContent.comidas.flatMap((comida: string) =>
+                  splitOnCapitalizedWords(String(comida))
+                );
+
                 return (
                   <div className="bg-gray-900/30 rounded-lg p-4 border border-green-500/20">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-green-400 font-semibold">{menuContent.dia_semana}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {menuContent.comidas.map((comida: string, idx: number) => (
+                      {allItems.map((item: string, idx: number) => (
                         <div key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
                           <span className="text-green-500">•</span>
-                          <span>{comida}</span>
+                          <span>{item}</span>
                         </div>
                       ))}
                     </div>

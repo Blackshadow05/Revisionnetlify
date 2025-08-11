@@ -1,36 +1,43 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-// Asegurarnos de que las variables de entorno estén disponibles
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Crear el cliente de Supabase solo si las variables están disponibles
-const supabase = supabaseUrl && supabaseKey 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+import { supabase } from '@/lib/supabase';
+import UpstashCache, { createUpstashCache } from '@/lib/upstash-cache';
 
 export const dynamic = 'force-dynamic';
+
+// Inicializar caché Upstash si están las variables de entorno
+const upstash = createUpstashCache();
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!supabase) {
-      console.error('Error: Variables de entorno no configuradas');
-      return NextResponse.json(
-        { error: 'Configuración del servidor incompleta' },
-        { status: 500 }
-      );
-    }
-    
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'ID no proporcionado' },
         { status: 400 }
+      );
+    }
+
+    // Intentar obtener de caché antes de consultar a Supabase
+    if (upstash) {
+      try {
+        const cached = await upstash.get<any>(`revisiones_casitas:${id}`);
+        if (cached) {
+          return NextResponse.json(cached);
+        }
+      } catch (err) {
+        console.error('Upstash cache GET error', err);
+      }
+    }
+
+    if (!supabase) {
+      console.error('Error: Supabase client no configurado');
+      return NextResponse.json(
+        { error: 'Configuración del servidor incompleta' },
+        { status: 500 }
       );
     }
 
@@ -55,6 +62,15 @@ export async function GET(
       );
     }
 
+    // Almacenar en caché para futuras consultas
+    if (upstash) {
+      try {
+        await upstash.set(`revisiones_casitas:${id}`, data, 60);
+      } catch (err) {
+        console.error('Upstash cache SET error', err);
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Error en el servidor:', error);
@@ -63,4 +79,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

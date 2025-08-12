@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, memo, useCallback, Suspense, lazy } from 'react';
+import { useState, useMemo, memo, useCallback, Suspense, lazy, useEffect, useRef } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
-import { uploadNotaToCloudinary } from '@/lib/cloudinary';
+import { uploadNotaToCloudinary, uploadEvidenciaToCloudinary } from '@/lib/cloudinary';
+
 import { useRevisionData } from '@/hooks/useRevisionData';
 import DetallesSkeleton from '@/components/ui/DetallesSkeleton';
 import LoadingButton from '@/components/ui/LoadingButton';
@@ -15,7 +17,6 @@ import ClickableImage from '@/components/ui/ClickableImage';
 // 🚀 CODE SPLITTING: Lazy load de componentes no críticos
 const ImageModal = lazy(() => import('@/components/revision/ImageModal'));
 const InfoCard = lazy(() => import('@/components/ui/InfoCard'));
-
 
 
 interface Revision {
@@ -67,12 +68,34 @@ const DetalleRevision = memo(() => {
     refetchSecondaryData
   } = useRevisionData(params.id);
 
+  // Auto-cargar historial y notas si existen sin necesidad de botón
+  const autoLoadedRef = useRef(false);
+  useEffect(() => {
+    if (autoLoadedRef.current) return;
+    if ((hasNotas || hasRegistroEdiciones) && !secondaryLoading) {
+      autoLoadedRef.current = true;
+      loadSecondaryData();
+    }
+  }, [hasNotas, hasRegistroEdiciones, secondaryLoading, loadSecondaryData]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Revision | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  // Archivos seleccionados para evidencias durante el modo edición
+  const [newEvidenceFiles, setNewEvidenceFiles] = useState<{
+    evidencia_01?: File;
+    evidencia_02?: File;
+    evidencia_03?: File;
+  }>({});
+  // Previews locales para mostrar las nuevas evidencias seleccionadas
+  const [evidencePreviews, setEvidencePreviews] = useState<{
+    evidencia_01?: string;
+    evidencia_02?: string;
+    evidencia_03?: string;
+  }>({});
+
   // Estados para el formulario de notas
   const [showNotaForm, setShowNotaForm] = useState(false);
   const [isSubmittingNota, setIsSubmittingNota] = useState(false);
@@ -148,6 +171,14 @@ const DetalleRevision = memo(() => {
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     setEditedData(null);
+    // Limpiar selecciones de nuevas evidencias y liberar object URLs
+    setNewEvidenceFiles({});
+    setEvidencePreviews(prev => {
+      Object.values(prev).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      return {};
+    });
   }, []);
 
   const handleSaveEdit = useCallback(async () => {
@@ -163,8 +194,27 @@ const DetalleRevision = memo(() => {
       console.log('Fecha local generada:', fechaFormateada);
       console.log('Iniciando actualización...');
 
+      // Si hay nuevas evidencias seleccionadas, comprimir y subir antes de guardar
+      const updatedData: Revision = { ...editedData } as Revision;
+      const evidenceKeys: (keyof Revision)[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
+      for (const key of evidenceKeys) {
+        const file = (newEvidenceFiles as any)[key] as File | undefined;
+        if (file) {
+          try {
+            const compressed = await comprimirImagenWebP(file);
+            const url = await uploadEvidenciaToCloudinary(compressed);
+            (updatedData as any)[key] = url;
+          } catch (err) {
+            console.error(`Error al procesar ${String(key)}:`, err);
+            showError('Error al subir una de las evidencias');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+
       // Preparar datos para actualizar (sin modificar created_at)
-      const { created_at, ...dataToUpdate } = editedData;
+      const { created_at, ...dataToUpdate } = updatedData;
       
       // Actualizar los datos en revisiones_casitas (preservando fecha original)
       const { error: updateError } = await supabase
@@ -181,7 +231,7 @@ const DetalleRevision = memo(() => {
       console.log('Actualización en revisiones_casitas exitosa');
 
       // Guardar el registro de cambios en Registro_ediciones
-      const cambios = Object.entries(editedData).reduce((acc, [key, value]) => {
+      const cambios = Object.entries(updatedData).reduce((acc, [key, value]) => {
         // Lista de campos válidos para registrar cambios
         const validFields: (keyof Revision)[] = [
           'casita', 'quien_revisa', 'caja_fuerte', 'puertas_ventanas', 'chromecast',
@@ -238,6 +288,14 @@ const DetalleRevision = memo(() => {
 
       setIsEditing(false);
       setEditedData(null);
+      // Limpiar selecciones y previews tras guardar
+      setNewEvidenceFiles({});
+      setEvidencePreviews(prev => {
+        Object.values(prev).forEach(url => {
+          if (url) URL.revokeObjectURL(url);
+        });
+        return {};
+      });
       showSuccess('Cambios guardados correctamente');
       
       // Recargar datos críticos y secundarios después de editar
@@ -250,12 +308,25 @@ const DetalleRevision = memo(() => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [revision, editedData, supabase, user, showError, showSuccess, refetchRevision, refetchSecondaryData]);
+  }, [revision, editedData, supabase, user, showError, showSuccess, refetchRevision, refetchSecondaryData, newEvidenceFiles]);
 
   const handleInputChange = useCallback((field: keyof Revision, value: string) => {
     if (!editedData) return;
     setEditedData({ ...editedData, [field]: value });
   }, [editedData]);
+
+  // Handler de cambio de archivo para evidencias
+  const handleEvidenceInputChange = useCallback((key: 'evidencia_01' | 'evidencia_02' | 'evidencia_03') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewEvidenceFiles(prev => ({ ...prev, [key]: file }));
+      setEvidencePreviews(prev => {
+        // Liberar URL previa si existía
+        if (prev[key]) URL.revokeObjectURL(prev[key]!);
+        return { ...prev, [key]: URL.createObjectURL(file) };
+      });
+    }
+  }, []);
 
   // 🚀 FUNCIONES PARA MANEJO DE NOTAS
   const comprimirImagenWebP = useCallback(async (file: File): Promise<File> => {
@@ -328,83 +399,60 @@ const DetalleRevision = memo(() => {
     });
   }, []);
 
+  // Handler de archivo para nueva nota (imagen opcional)
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setNuevaNota(prev => ({ ...prev, evidencia: file }));
+  }, []);
 
-
+  // Envío del formulario de nueva nota
   const handleSubmitNota = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!revision || !supabase) return;
-    
+    if (!supabase) {
+      showError('No se pudo conectar con la base de datos');
+      return;
+    }
+
     try {
       setIsSubmittingNota(true);
-      let evidenciaUrl = null;
 
+      // Subir evidencia si existe
+      let evidenciaUrl: string | null = null;
       if (nuevaNota.evidencia) {
-        try {
-          // Comprimir imagen antes de subir a Cloudinary
-          const compressedImage = await comprimirImagenWebP(nuevaNota.evidencia);
-          evidenciaUrl = await uploadNotaToCloudinary(compressedImage);
-          console.log('✅ Imagen de nota subida exitosamente a Cloudinary/notas:', evidenciaUrl);
-        } catch (uploadError) {
-          console.error('❌ Error al subir imagen a Cloudinary:', uploadError);
-          showError('Error al subir la imagen');
-          return;
-        }
+        const compressed = await comprimirImagenWebP(nuevaNota.evidencia);
+        evidenciaUrl = await uploadNotaToCloudinary(compressed);
       }
 
-      // Obtener fecha y hora local del dispositivo sin zona horaria
       const now = new Date();
       const fechaLocal = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-      
-      const notaData = {
-        fecha: fechaLocal.toISOString().slice(0, 19), // Formato: YYYY-MM-DDTHH:mm:ss (sin Z)
-        Casita: revision.casita,
-        revision_id: String(params.id),
-        Usuario: nuevaNota.Usuario,
-        nota: nuevaNota.nota,
-        Evidencia: evidenciaUrl
-      };
-      
-      console.log('💾 Insertando nota con datos:', notaData);
-      
-      const { data: insertResult, error } = await supabase
+
+      const { error } = await supabase
         .from('Notas')
-        .insert([notaData])
-        .select();
-      
-      if (error) {
-        console.error('❌ Error de inserción:', error);
-        showError('Error al guardar la nota');
-        return;
-      }
+        .insert([
+          {
+            fecha: fechaLocal.toISOString(),
+            Casita: revision?.casita || '',
+            Usuario: nuevaNota.Usuario || 'Usuario',
+            nota: nuevaNota.nota,
+            Evidencia: evidenciaUrl
+          }
+        ]);
 
-      console.log('✅ Nota guardada exitosamente:', insertResult);
-      showSuccess('Nota agregada correctamente');
+      if (error) throw error;
 
-      // Limpiar formulario
-      setNuevaNota({
-        Usuario: '',
-        nota: '',
-        evidencia: null
-      });
+      showSuccess('Nota guardada correctamente');
+      setNuevaNota({ Usuario: '', nota: '', evidencia: null });
       setShowNotaForm(false);
-      
-      // Recargar datos secundarios
-      await refetchSecondaryData();
 
-    } catch (error: any) {
-      console.error('Error al guardar la nota:', error);
-      showError('Error al guardar la nota');
+      // Actualizar lista de notas/historial
+      await refetchSecondaryData();
+    } catch (err: any) {
+      console.error(err);
+      showError(err.message || 'Error al guardar la nota');
     } finally {
       setIsSubmittingNota(false);
     }
-  }, [revision, params.id, nuevaNota, supabase, comprimirImagenWebP, showError, showSuccess, refetchSecondaryData]);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setNuevaNota(prev => ({ ...prev, evidencia: file }));
-    }
-  }, []);
+  }, [supabase, revision?.casita, nuevaNota, user, showError, showSuccess, refetchSecondaryData, comprimirImagenWebP]);
 
   // 🚀 FUNCIÓN PARA PARSEAR DATOS DE EDICIÓN
   const parseEditData = useCallback((dataString: string) => {
@@ -432,20 +480,28 @@ const DetalleRevision = memo(() => {
   const shouldShowField = useCallback((key: keyof Revision, value: any) => {
     // Nunca mostrar estos campos
     if (key === 'id') return false;
-    
+
     // Siempre mostrar el campo notas, aunque esté vacío
     if (key === 'notas') return true;
-    
+
+    // Siempre mostrar casita (especialmente en modo edición), aunque esté vacío
+    if (key === 'casita') return true;
+
+    // Mostrar siempre los campos de evidencia en modo edición, aunque estén vacíos
+    if (key === 'evidencia_01' || key === 'evidencia_02' || key === 'evidencia_03') {
+      if (isEditing) return true;
+    }
+
     // Para otros campos, verificar si tienen valor
     // El número 0 cuenta como valor válido
     if (value === 0) return true;
-    
+
     // Verificar si el valor está vacío (null, undefined, string vacía o solo espacios)
     if (value === null || value === undefined) return false;
     if (typeof value === 'string' && value.trim() === '') return false;
-    
+
     return true;
-  }, []);
+  }, [isEditing]);
 
   // 🚀 OPTIMIZACIÓN: Renderizar campo individual
   const renderField = useCallback((key: keyof Revision, value: any) => {
@@ -453,7 +509,7 @@ const DetalleRevision = memo(() => {
     if (!shouldShowField(key, value)) return null;
     
     const label = fieldLabels[key] || key;
-    const nonEditableFields = ['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03'];
+    const nonEditableFields = ['id', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03'];
     
     // Campos principales con estilo especial
     if (key === 'casita') {
@@ -470,9 +526,29 @@ const DetalleRevision = memo(() => {
                 </div>
                 <h3 className="text-lg font-bold text-[#c9a45c]">{label}</h3>
               </div>
-              <p className="text-2xl font-black text-white drop-shadow-lg">
-                {value || <span className="text-gray-400 italic text-lg">Sin información</span>}
-              </p>
+              {isEditing && user ? (
+                <>
+                  <input
+                    type="text"
+                    value={String((editedData?.[key] as string) ?? revision?.casita ?? '')}
+                    onChange={(e) => handleInputChange(key, e.target.value)}
+                    className="w-full px-3 py-2 bg-[#1e2538] border border-[#3d4659] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-colors"
+                    placeholder={`Editar ${label?.toLowerCase() || 'campo'}...`}
+                  />
+                  <div className="flex justify-end mt-3">
+                    <LoadingButton onClick={handleSaveEdit} loading={isSubmitting} variant="success">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Actualizar
+                    </LoadingButton>
+                  </div>
+                </>
+              ) : (
+                <p className="text-2xl font-black text-white drop-shadow-lg">
+                  {value || <span className="text-gray-400 italic text-lg">Sin información</span>}
+                </p>
+              )}
             </div>
           </div>
         </FadeIn>
@@ -527,23 +603,33 @@ const DetalleRevision = memo(() => {
 
     // Campos de imagen
     if (key === 'evidencia_01' || key === 'evidencia_02' || key === 'evidencia_03') {
-      const delays = { evidencia_01: 400, evidencia_02: 500, evidencia_03: 600 };
+      const delays = { evidencia_01: 400, evidencia_02: 500, evidencia_03: 600 } as const;
+      const k = key as 'evidencia_01' | 'evidencia_02' | 'evidencia_03';
+      const previewUrl = evidencePreviews[k];
+      const imageToShow = previewUrl || (value as string | undefined);
       return (
-        <FadeIn key={key} delay={delays[key as keyof typeof delays]}>
+        <FadeIn key={key} delay={delays[k]}>
           <div className="bg-gray-800/60 p-4 rounded-lg border border-gray-600/50">
-            <h3 className="text-sm font-semibold text-[#ff8c42] mb-2 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Z" />
-              </svg>
-              {label}
-            </h3>
-            {value && (
-              <ClickableImage 
-                src={value} 
-                alt={label} 
-                onClick={() => openModal(value)} 
-              />
-            )}
+            <h3 className="text-sm font-semibold text-[#ff8c42] mb-2">{label}</h3>
+            <div className="flex flex-col gap-3">
+              {imageToShow ? (
+                <ClickableImage
+                  src={imageToShow}
+                  alt={label}
+                  onClick={() => openModal(imageToShow)}
+                />
+              ) : (
+                <p className="text-gray-400 italic">Sin imagen</p>
+              )}
+              {isEditing && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEvidenceInputChange(k)}
+                  className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#3d4659] file:text-white hover:file:bg-[#4a5568]"
+                />
+              )}
+            </div>
           </div>
         </FadeIn>
       );
@@ -573,6 +659,20 @@ const DetalleRevision = memo(() => {
                 {value || <span className="text-gray-500 italic">Sin notas registradas</span>}
               </p>
             )}
+            {isEditing && (
+              <div className="flex justify-end mt-2">
+                <LoadingButton
+                  onClick={handleSaveEdit}
+                  loading={isSubmitting}
+                  variant="success"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Actualizar
+                </LoadingButton>
+              </div>
+            )}
           </div>
         </FadeIn>
       );
@@ -599,7 +699,7 @@ const DetalleRevision = memo(() => {
         </div>
       </FadeIn>
     );
-  }, [fieldLabels, isEditing, editedData, handleInputChange, openModal, formatearFechaParaMostrar, shouldShowField]);
+  }, [fieldLabels, isEditing, editedData, handleInputChange, openModal, formatearFechaParaMostrar, shouldShowField, evidencePreviews, user]);
 
   // 🚀 VALIDACIÓN: Verificar que existe ID de revisión
   if (!params.id) {
@@ -706,7 +806,7 @@ const DetalleRevision = memo(() => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Guardar
+                    Actualizar
                   </LoadingButton>
                 </>
               ) : (
@@ -784,7 +884,12 @@ const DetalleRevision = memo(() => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>
-                      <strong className="text-yellow-400">Tip:</strong> Desplázate hacia abajo para encontrar los botones que te permitirán ver esta información adicional.
+                      <strong className="text-yellow-400">Tip:</strong>{' '}
+                      {hasNotas && hasRegistroEdiciones
+                        ? 'Desplázate hacia el final para ver el historial de revisiones y las notas adicionales.'
+                        : hasRegistroEdiciones
+                          ? 'Desplázate hacia el final para ver el historial de revisiones.'
+                          : 'Desplázate hacia el final para ver las notas adicionales.'}
                     </span>
                   </div>
                 </div>
@@ -1047,7 +1152,19 @@ const DetalleRevision = memo(() => {
                     {registroEdiciones.map((edicion, index) => {
                       const datoAnterior = parseEditData(edicion.Dato_anterior || '');
                       const datoNuevo = parseEditData(edicion.Dato_nuevo || '');
-                      
+
+                      const fieldKey = (datoAnterior.fieldName || datoNuevo.fieldName || '').toLowerCase();
+                      const isEvidencia = fieldKey.startsWith('evidencia');
+                      const prevHas = !!(datoAnterior.value && datoAnterior.value.trim());
+                      const newHas = !!(datoNuevo.value && datoNuevo.value.trim());
+                      let evidenciaChangeMsg = '';
+                      if (isEvidencia) {
+                        if (prevHas && newHas) evidenciaChangeMsg = 'Se cambió la evidencia';
+                        else if (!prevHas && newHas) evidenciaChangeMsg = 'Se agregó una nueva evidencia';
+                        else if (prevHas && !newHas) evidenciaChangeMsg = 'Se eliminó la evidencia';
+                        else evidenciaChangeMsg = 'Sin cambios de evidencia';
+                      }
+
                       return (
                         <FadeIn key={edicion.id || index} delay={1000 + (index * 100)}>
                           <div className="bg-[#2a3441]/30 p-4 rounded-lg border border-[#3d4659]/20">
@@ -1066,7 +1183,7 @@ const DetalleRevision = memo(() => {
                                 </div>
                               </div>
                             </div>
-                            
+
                             <div className="space-y-3">
                               <div className="flex items-center gap-2 mb-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1076,7 +1193,7 @@ const DetalleRevision = memo(() => {
                                   Campo editado: {datoAnterior.displayName}
                                 </span>
                               </div>
-                              
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                                   <div className="flex items-center gap-2 mb-2">
@@ -1086,10 +1203,12 @@ const DetalleRevision = memo(() => {
                                     <span className="text-red-400 font-medium text-sm">Valor Anterior</span>
                                   </div>
                                   <p className="text-gray-300 text-sm break-words">
-                                    {datoAnterior.value || <span className="text-gray-500 italic">Sin valor</span>}
+                                    {isEvidencia
+                                      ? (prevHas ? <span>Con evidencia</span> : <span className="text-gray-500 italic">Sin evidencia</span>)
+                                      : (datoAnterior.value || <span className="text-gray-500 italic">Sin valor</span>)}
                                   </p>
                                 </div>
-                                
+
                                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                                   <div className="flex items-center gap-2 mb-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1098,7 +1217,9 @@ const DetalleRevision = memo(() => {
                                     <span className="text-green-400 font-medium text-sm">Valor Nuevo</span>
                                   </div>
                                   <p className="text-gray-300 text-sm break-words">
-                                    {datoNuevo.value || <span className="text-gray-500 italic">Sin valor</span>}
+                                    {isEvidencia
+                                      ? (newHas ? <span>{evidenciaChangeMsg}</span> : <span className="text-gray-500 italic">Sin evidencia</span>)
+                                      : (datoNuevo.value || <span className="text-gray-500 italic">Sin valor</span>)}
                                   </p>
                                 </div>
                               </div>
@@ -1111,7 +1232,6 @@ const DetalleRevision = memo(() => {
                 )}
               </div>
             ) : (
-              // Mostrar botón para cargar cuando hay datos pero no están cargados
               <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg text-center">
                 <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1120,11 +1240,7 @@ const DetalleRevision = memo(() => {
                 </div>
                 <h3 className="text-lg font-bold text-orange-400 mb-2">Historial de Ediciones Disponible</h3>
                 <p className="text-gray-400 mb-4">Esta revisión tiene un historial de cambios</p>
-                <LoadingButton
-                  onClick={loadSecondaryData}
-                  loading={secondaryLoading}
-                  variant="primary"
-                >
+                <LoadingButton onClick={loadSecondaryData} loading={secondaryLoading} variant="primary">
                   Ver Historial
                 </LoadingButton>
               </div>

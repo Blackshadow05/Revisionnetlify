@@ -29,8 +29,8 @@ Responde SOLO con el texto del menú que ves en la imagen, incluyendo:
 
 No agregues explicaciones adicionales, solo el contenido del menú tal como aparece en la imagen.`;
 
-    // Enviar la imagen a la API de Google Gemini
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+    // Enviar la imagen a la API de Google Gemini (modelo flash)
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

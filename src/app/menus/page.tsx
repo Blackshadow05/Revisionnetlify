@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { formatearFecha } from '@/lib/dateUtils';
+import BackButton from '@/components/ui/BackButton';
 
 interface Menu {
   id: string;
@@ -90,9 +91,12 @@ export default function MenusPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">
-            Menús Recientes
-          </h1>
+          <div className="flex items-center gap-2">
+            <BackButton href="/" iconOnly ariaLabel="Volver al inicio" />
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">
+              Menús Recientes
+            </h1>
+          </div>
           <Link 
             href="/escanear-menu" 
             className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-green-500/30 flex items-center gap-2"

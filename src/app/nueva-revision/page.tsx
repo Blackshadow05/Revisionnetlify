@@ -55,12 +55,12 @@ const initialFormData: RevisionData = {
   accesorios_secadora: '',
   steamer: '',
   bolsa_vapor: '',
+  cola_caballo: '',
   plancha_cabello: '',
   bulto: '',
   sombrero: '',
   bolso_yute: '',
   camas_ordenadas: '',
-  cola_caballo: '',
   evidencia_01: '',
       evidencia_02: '',
     evidencia_03: '',
@@ -77,8 +77,8 @@ const requiredFields: (keyof RevisionData)[] = [
   'casita', 'quien_revisa', 'caja_fuerte', 'puertas_ventanas',
   'chromecast', 'binoculares', 'trapo_binoculares', 'speaker',
   'usb_speaker', 'controles_tv', 'secadora', 'accesorios_secadora',
-  'steamer', 'bolsa_vapor', 'plancha_cabello', 'bulto',
-  'sombrero', 'bolso_yute', 'camas_ordenadas', 'cola_caballo'
+  'steamer', 'bolsa_vapor', 'cola_caballo', 'plancha_cabello', 'bulto',
+  'sombrero', 'bolso_yute', 'camas_ordenadas'
 ];
 
 // 🔍 NUEVO: Mapeo de nombres técnicos a nombres amigables
@@ -97,12 +97,12 @@ const fieldLabels: Record<string, string> = {
   'accesorios_secadora': 'Accesorios Secadora',
   'steamer': 'Steamer',
   'bolsa_vapor': 'Bolsa Vapor',
+  'cola_caballo': 'Cola Caballo',
   'plancha_cabello': 'Plancha Cabello',
   'bulto': 'Bulto',
   'sombrero': 'Sombrero',
   'bolso_yute': 'Bolso Yute',
-  'camas_ordenadas': 'Camas Ordenadas',
-  'cola_caballo': 'Cola Caballo'
+  'camas_ordenadas': 'Camas Ordenadas'
 };
 
 // Interfaz para los logs de compresión
@@ -822,13 +822,13 @@ export default function NuevaRevision() {
         secadora: submitData.secadora,
         accesorios_secadora: submitData.accesorios_secadora,
         steamer: submitData.steamer,
-        bolsa_vapor: submitData.bolsa_vapor,
+        // bolsa_vapor duplicado eliminado
+        cola_caballo: submitData.cola_caballo,
         plancha_cabello: submitData.plancha_cabello,
         bulto: submitData.bulto,
         sombrero: submitData.sombrero,
         bolso_yute: submitData.bolso_yute,
         camas_ordenadas: submitData.camas_ordenadas,
-        cola_caballo: submitData.cola_caballo,
         evidencia_01: submitData.evidencia_01,
         evidencia_02: submitData.evidencia_02,
         evidencia_03: submitData.evidencia_03,
@@ -1190,12 +1190,12 @@ export default function NuevaRevision() {
                 {[
                   { field: 'steamer', label: 'Steamer', options: ['0', '01', '02', '03'] },
                   { field: 'bolsa_vapor', label: 'Bolsa Vapor', options: ['Si', 'No'] },
-                  { field: 'plancha_cabello', label: 'Plancha Cabello', options: ['0', '01', '02'] },
+                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] },
+  { field: 'plancha_cabello', label: 'Plancha Cabello', options: ['0', '01', '02'] },
                   { field: 'bulto', label: 'Bulto', options: ['Si', 'No'] },
                   { field: 'sombrero', label: 'Sombrero', options: ['Si', 'No'] },
                   { field: 'bolso_yute', label: 'Bolso Yute', options: ['0', '01', '02', '03'] },
                   { field: 'camas_ordenadas', label: 'Camas Ordenadas', options: ['Si', 'No'] },
-                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] }
                 ].map(({ field, label, options }) => (
                   <div key={field} ref={fieldRefs.current[field]}>
                     <ButtonGroup 

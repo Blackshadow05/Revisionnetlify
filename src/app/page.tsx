@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase, checkSupabaseConnection } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 import Link from 'next/link';
@@ -58,6 +58,28 @@ interface RevisionData {
 export default function Home() {
   const router = useRouter();
   const { isLoggedIn, userRole, login, logout, user } = useAuth();
+  const pathname = usePathname();
+  
+  useEffect(() => {
+    // Asegura ancla y foco en montaje
+    let anchor = document.getElementById('page-top');
+    if (!anchor) {
+      anchor = document.createElement('div');
+      anchor.id = 'page-top';
+      anchor.setAttribute('tabindex', '-1');
+      document.body.insertBefore(anchor, document.body.firstChild);
+    }
+    anchor?.focus();
+  }, []);
+  
+  useEffect(() => {
+    // En cambios de ruta
+    if (!pathname) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    const anchor = document.getElementById('page-top');
+    anchor?.focus();
+  }, [pathname]);
+  
   const [data, setData] = useState<RevisionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

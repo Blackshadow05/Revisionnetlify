@@ -807,6 +807,9 @@ export default function NuevaRevision() {
       console.log(`📅 Fecha y hora local generada: ${fechaLocal}`);
       console.log(`🕐 Hora actual del dispositivo: ${now.toLocaleString()}`);
 
+      // Calcular notas_count basado en el contenido de notas
+      const notasCount = submitData.notas && submitData.notas.trim() !== '' ? submitData.notas.trim().length : 0;
+      
       // Preparar datos finales
       const finalData = {
         casita: submitData.casita,
@@ -822,7 +825,8 @@ export default function NuevaRevision() {
         secadora: submitData.secadora,
         accesorios_secadora: submitData.accesorios_secadora,
         steamer: submitData.steamer,
-        // bolsa_vapor duplicado eliminado
+        bolsa_vapor: submitData.bolsa_vapor,
+        bolsa_vapor: submitData.bolsa_vapor,
         cola_caballo: submitData.cola_caballo,
         plancha_cabello: submitData.plancha_cabello,
         bulto: submitData.bulto,
@@ -833,6 +837,7 @@ export default function NuevaRevision() {
         evidencia_02: submitData.evidencia_02,
         evidencia_03: submitData.evidencia_03,
         notas: submitData.notas,
+        notas_count: notasCount,
         created_at: fechaLocal,
       };
 
@@ -1190,12 +1195,12 @@ export default function NuevaRevision() {
                 {[
                   { field: 'steamer', label: 'Steamer', options: ['0', '01', '02', '03'] },
                   { field: 'bolsa_vapor', label: 'Bolsa Vapor', options: ['Si', 'No'] },
-                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] },
-  { field: 'plancha_cabello', label: 'Plancha Cabello', options: ['0', '01', '02'] },
+                  { field: 'plancha_cabello', label: 'Plancha Cabello', options: ['0', '01', '02'] },
                   { field: 'bulto', label: 'Bulto', options: ['Si', 'No'] },
                   { field: 'sombrero', label: 'Sombrero', options: ['Si', 'No'] },
                   { field: 'bolso_yute', label: 'Bolso Yute', options: ['0', '01', '02', '03'] },
                   { field: 'camas_ordenadas', label: 'Camas Ordenadas', options: ['Si', 'No'] },
+                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] }
                 ].map(({ field, label, options }) => (
                   <div key={field} ref={fieldRefs.current[field]}>
                     <ButtonGroup 

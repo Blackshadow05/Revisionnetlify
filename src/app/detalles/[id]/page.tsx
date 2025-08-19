@@ -434,16 +434,39 @@ const DetalleRevision = memo(() => {
             Casita: revision?.casita || '',
             Usuario: nuevaNota.Usuario || 'Usuario',
             nota: nuevaNota.nota,
-            Evidencia: evidenciaUrl
+            Evidencia: evidenciaUrl,
+            // Asociar la nota con la revisión: usar revision.id cuando esté disponible,
+            // y fallback a params.id (ambos convertidos a string).
+            revision_id: String(revision?.id ?? params.id)
           }
         ]);
-
+ 
       if (error) throw error;
-
+ 
+      // Después de insertar, actualizar el conteo de notas en revisiones_casitas
+      try {
+        const { count, error: countError } = await supabase
+          .from('Notas')
+          .select('id', { count: 'exact', head: true })
+          .eq('revision_id', String(revision?.id ?? params.id));
+ 
+        if (!countError) {
+          // notas_count en la tabla es VARCHAR según el esquema; guardamos como string
+          await supabase
+            .from('revisiones_casitas')
+            .update({ notas_count: String(count ?? 0) })
+            .eq('id', revision?.id ?? params.id);
+        } else {
+          console.warn('No se pudo obtener el conteo de notas:', countError);
+        }
+      } catch (err) {
+        console.warn('Error actualizando notas_count:', err);
+      }
+ 
       showSuccess('Nota guardada correctamente');
       setNuevaNota({ Usuario: '', nota: '', evidencia: null });
       setShowNotaForm(false);
-
+ 
       // Actualizar lista de notas/historial
       await refetchSecondaryData();
     } catch (err: any) {
@@ -509,7 +532,7 @@ const DetalleRevision = memo(() => {
     if (!shouldShowField(key, value)) return null;
     
     const label = fieldLabels[key] || key;
-    const nonEditableFields = ['id', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03'];
+    const nonEditableFields = ['id', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas_count'];
     
     // Campos principales con estilo especial
     if (key === 'casita') {
@@ -909,7 +932,7 @@ const DetalleRevision = memo(() => {
       {/* Grid de elementos de revisión */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
         {Object.entries(revision)
-          .filter(([key]) => !['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas'].includes(key))
+          .filter(([key]) => !['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas', 'notas_count'].includes(key))
           .filter(([key, value]) => shouldShowField(key as keyof Revision, value))
           .map(([key, value]) => renderField(key as keyof Revision, value))}
       </div>

@@ -85,12 +85,24 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-      {data.map((revision, index) => (
-        <div
-          key={revision.id || index}
-          onClick={() => revision.id && onCardClick(revision.id)}
-          className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10"
-        >
+      {data.map((revision, index) => {
+        // Check if revision has notes or notes_count
+        const hasNotes = (revision.notas_count && revision.notas_count > 0) || 
+                        (revision.notas && revision.notas.trim() !== '');
+        
+        return (
+          <div
+            key={revision.id || index}
+            onClick={() => revision.id && onCardClick(revision.id)}
+            className={`${
+              hasNotes
+                ? 'backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10'
+                : 'bg-gradient-to-b from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10'
+            }`}
+            style={hasNotes ? {
+              backgroundImage: 'radial-gradient(circle farthest-corner at 50.3% 47.3%, rgba(113,42,92,1) 0.1%, rgba(40,25,46,1) 90%)'
+            } : undefined}
+          >
           {/* Header con Casita y Estado */}
           <div className="flex justify-between items-start mb-3">
             <h3 className={`text-base font-bold truncate ${
@@ -214,7 +226,8 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

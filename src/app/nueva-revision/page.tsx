@@ -826,7 +826,6 @@ export default function NuevaRevision() {
         accesorios_secadora: submitData.accesorios_secadora,
         steamer: submitData.steamer,
         bolsa_vapor: submitData.bolsa_vapor,
-        bolsa_vapor: submitData.bolsa_vapor,
         cola_caballo: submitData.cola_caballo,
         plancha_cabello: submitData.plancha_cabello,
         bulto: submitData.bulto,

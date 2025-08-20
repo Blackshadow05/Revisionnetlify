@@ -113,6 +113,32 @@ export default function Home() {
     setCurrentPage(1);
   };
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+  // Persistir el término de búsqueda en localStorage para que se mantenga al navegar a detalles y volver
+  // Cargar el valor guardado al montar el componente (evita problemas de hydration al ejecutarse en cliente)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('revisionSearchTerm');
+      if (typeof saved === 'string' && saved.length > 0) {
+        setSearchTerm(saved);
+      }
+    } catch (err) {
+      console.log('Error al cargar revisionSearchTerm desde localStorage:', err);
+    }
+  }, []);
+
+  // Guardar el término de búsqueda cada vez que cambie. Si se limpia, se elimina de localStorage.
+  useEffect(() => {
+    try {
+      if (searchTerm && searchTerm.length > 0) {
+        localStorage.setItem('revisionSearchTerm', searchTerm);
+      } else {
+        localStorage.removeItem('revisionSearchTerm');
+      }
+    } catch (err) {
+      console.log('Error al guardar revisionSearchTerm en localStorage:', err);
+    }
+  }, [searchTerm]);
   
   // 🍽️ Estados para menú del día
   const [menuDelDia, setMenuDelDia] = useState<any>(null);

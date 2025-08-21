@@ -1,4 +1,5 @@
-export interface RevisionData {
+export interface Revision {
+  id: number;
   casita: string;
   quien_revisa: string;
   caja_fuerte: string;
@@ -19,34 +20,9 @@ export interface RevisionData {
   bolso_yute: string;
   camas_ordenadas: string;
   cola_caballo: string;
-  evidencia_01: File | string;
-  evidencia_02: File | string;
-  evidencia_03: File | string;
+  evidencia_01: string;
+  evidencia_02: string;
+  evidencia_03: string;
   notas: string;
+  created_at: string;
 }
-
-export interface FileData {
-  evidencia_01: File | null;
-  evidencia_02: File | null;
-  evidencia_03: File | null;
-}
-
-export interface CompressionStatus {
-  status: 'idle' | 'compressing' | 'completed' | 'error';
-  progress: number;
-  stage: string;
-  error?: string;
-}
-
-export interface FileSizes {
-  original: number;
-  compressed: number;
-}
-
-export interface UploadProgress {
-  status: 'idle' | 'uploading' | 'completed' | 'error';
-  progress: number;
-  stage: string;
-}
-
-export type EvidenceField = 'evidencia_01' | 'evidencia_02' | 'evidencia_03'; 

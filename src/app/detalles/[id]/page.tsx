@@ -18,35 +18,16 @@ import ClickableImage from '@/components/ui/ClickableImage';
 const ImageModal = lazy(() => import('@/components/revision/ImageModal'));
 const InfoCard = lazy(() => import('@/components/ui/InfoCard'));
 
+// 🚀 LAZY LOADING: Componentes de tarjetas individuales
+const CasitaCard = lazy(() => import('@/components/revision/cards/CasitaCard'));
+const FechaCard = lazy(() => import('@/components/revision/cards/FechaCard'));
+const RevisorCard = lazy(() => import('@/components/revision/cards/RevisorCard'));
+const RevisionItemCard = lazy(() => import('@/components/revision/cards/RevisionItemCard'));
 
-interface Revision {
-  id: number;
-  casita: string;
-  quien_revisa: string;
-  caja_fuerte: string;
-  puertas_ventanas: string;
-  chromecast: string;
-  binoculares: string;
-  trapo_binoculares: string;
-  speaker: string;
-  usb_speaker: string;
-  controles_tv: string;
-  secadora: string;
-  accesorios_secadora: string;
-  steamer: string;
-  bolsa_vapor: string;
-  plancha_cabello: string;
-  bulto: string;
-  sombrero: string;
-  bolso_yute: string;
-  camas_ordenadas: string;
-  cola_caballo: string;
-  evidencia_01: string;
-  evidencia_02: string;
-  evidencia_03: string;
-  notas: string;
-  created_at: string;
-}
+
+
+
+import { Revision } from '@/types/revision';
 
 const DetalleRevision = memo(() => {
   const params = useParams();
@@ -922,19 +903,51 @@ const DetalleRevision = memo(() => {
         </div>
       )}
 
-      {/* Información principal */}
+      {/* Información principal con lazy loading */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {renderField('casita', revision.casita)}
-        {renderField('created_at', revision.created_at)}
-        {renderField('quien_revisa', revision.quien_revisa)}
+        <Suspense fallback={<div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 animate-pulse h-32"></div>}>
+          <CasitaCard
+            value={revision.casita}
+            isEditing={isEditing}
+            editedData={editedData}
+            onInputChange={(value) => handleInputChange('casita', value)}
+            onSaveEdit={handleSaveEdit}
+            isSubmitting={isSubmitting}
+            user={user}
+          />
+        </Suspense>
+        <Suspense fallback={<div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 animate-pulse h-32"></div>}>
+          <FechaCard
+            value={revision.created_at}
+            formatearFechaParaMostrar={formatearFechaParaMostrar}
+          />
+        </Suspense>
+        <Suspense fallback={<div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 animate-pulse h-32"></div>}>
+          <RevisorCard
+            value={revision.quien_revisa}
+          />
+        </Suspense>
       </div>
 
-      {/* Grid de elementos de revisión */}
+      {/* Grid de elementos de revisión con lazy loading */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
         {Object.entries(revision)
           .filter(([key]) => !['id', 'casita', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas', 'notas_count'].includes(key))
           .filter(([key, value]) => shouldShowField(key as keyof Revision, value))
-          .map(([key, value]) => renderField(key as keyof Revision, value))}
+          .map(([key, value], index) => (
+            <Suspense key={key} fallback={<div className="bg-gray-800/60 p-4 rounded-lg border border-gray-600/50 animate-pulse h-24"></div>}>
+              <RevisionItemCard
+                fieldKey={key as keyof Revision}
+                value={value}
+                label={fieldLabels[key as keyof Revision] || key}
+                delay={400 + (index * 100)}
+                isEditing={isEditing}
+                editedData={editedData}
+                onInputChange={handleInputChange}
+                nonEditableFields={['id', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas_count']}
+              />
+            </Suspense>
+          ))}
       </div>
 
       {/* Evidencias */}

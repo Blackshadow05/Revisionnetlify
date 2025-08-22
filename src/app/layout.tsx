@@ -273,6 +273,65 @@ export default function RootLayout({
                 throw error;
               });
             };
+
+
+            // 🔄 Función para recarga automática después de inactividad
+            function setupAutoReloadOnInactivity() {
+              const INACTIVITY_THRESHOLD = 5 * 60 * 1000; // 5 minutos en milisegundos
+              const STORAGE_KEY = 'pwa_last_active_time';
+              
+              // Guardar timestamp cuando la app pasa a segundo plano
+              function saveLastActiveTime() {
+                const now = Date.now();
+                localStorage.setItem(STORAGE_KEY, now.toString());
+                console.log('Timestamp guardado:', new Date(now).toLocaleTimeString());
+              }
+              
+              // Verificar si debe recargar al volver a primer plano
+              function checkForReload() {
+                const lastActiveTime = localStorage.getItem(STORAGE_KEY);
+                if (!lastActiveTime) return;
+                
+                const now = Date.now();
+                const elapsed = now - parseInt(lastActiveTime);
+                
+                console.log('Tiempo transcurrido: ' + Math.round(elapsed / 1000) + ' segundos');
+                
+                if (elapsed > INACTIVITY_THRESHOLD) {
+                  console.log('Recargando página después de inactividad prolongada...');
+                  localStorage.removeItem(STORAGE_KEY); // Limpiar para evitar recargas múltiples
+                  window.location.reload();
+                }
+              }
+              
+              // Eventos para detectar cambios de visibilidad
+              document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                  // App pasa a segundo plano - guardar timestamp
+                  saveLastActiveTime();
+                } else {
+                  // App vuelve a primer plano - verificar si debe recargar
+                  checkForReload();
+                }
+              });
+              
+              // También verificar al hacer focus (para navegadores que no soportan visibilitychange completamente)
+              window.addEventListener('focus', () => {
+                checkForReload();
+              });
+              
+              // Inicializar con el tiempo actual
+              saveLastActiveTime();
+              
+              console.log('Sistema de recarga por inactividad configurado (5 minutos)');
+            }
+            
+            // Configurar recarga automática después de cargar la página
+            window.addEventListener('load', () => {
+              setTimeout(() => {
+                setupAutoReloadOnInactivity();
+              }, 1000);
+            });
           `
         }} />
       </head>

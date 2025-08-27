@@ -876,7 +876,7 @@ export default function Home() {
         <div className="relative text-center mb-12 pl-16 sm:pl-0">
           {/* Botón del menú lateral dentro del hero */}
           <button
-            className="absolute left-0 z-20 w-11 h-11 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-all duration-200 group top-4 md:top-2"
+            className="absolute left-0 z-20 w-11 h-11 neu-sidebar-button flex items-center justify-center group top-4 md:top-2"
             onClick={handleMenuToggle}
             type="button"
             aria-label="Abrir menú lateral"
@@ -911,12 +911,12 @@ export default function Home() {
         />
 
         {/* Barra de Acciones Mejorada */}
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-6 border border-[#3d4659]/50 mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6">
             {/* Info del Usuario */}
-            <div className="flex items-center gap-4">
+            <div className="neumorphic-user-container w-full md:w-auto">
               {user && (
-                <div className="flex items-center gap-3">
+                <div className="neumorphic-user-card">
                   <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -944,7 +944,7 @@ export default function Home() {
               {!isLoggedIn && (
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="metallic-button metallic-button-gold px-4 py-2.5 text-white rounded-xl hover:shadow-lg hover:shadow-[#c9a45c]/40 transition-all duration-300 transform hover:scale-[1.02] flex items-center gap-2 font-medium"
+                  className="neumorphic-login-button"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -969,7 +969,7 @@ export default function Home() {
 
         {/* 🍽️ Menú del Día */}
         {!loadingMenu && menuDelDia && (
-          <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 backdrop-blur-md rounded-xl p-6 border border-green-500/30 mb-8">
+          <div className="neumorphic-menu-container mb-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
@@ -1018,7 +1018,7 @@ export default function Home() {
                 );
 
                 return (
-                  <div className="bg-gray-900/30 rounded-lg p-4 border border-green-500/20">
+                  <div className="neumorphic-menu-content">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-green-400 font-semibold">{menuContent.dia_semana}</span>
                     </div>
@@ -1034,7 +1034,7 @@ export default function Home() {
                 );
               } else {
                 return (
-                  <div className="bg-gray-900/30 rounded-lg p-4 border border-green-500/20">
+                  <div className="neumorphic-menu-content">
                     <p className="text-gray-300 text-sm whitespace-pre-wrap">{menuDelDia.contenido_menu}</p>
                   </div>
                 );
@@ -1045,7 +1045,7 @@ export default function Home() {
         )}
 
         {/* Barra de Búsqueda y Filtros Mejorada */}
-        <div className="bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-6 border border-[#3d4659]/50 mb-8">
+        <div className="neumorphic-search-container mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Búsqueda Principal */}
             <div className="flex-1 relative order-2 lg:order-1">
@@ -1060,7 +1060,7 @@ export default function Home() {
                 placeholder="Buscar por casita, revisor o estado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30"
+                className="neumorphic-input w-full pl-12 pr-4 py-3 text-white placeholder-gray-400"
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
               />
@@ -1081,7 +1081,7 @@ export default function Home() {
               <select
                 value={cajaFuerteFilter}
                 onChange={(e) => setCajaFuerteFilter(e.target.value)}
-                className="w-full lg:w-48 px-4 py-3 bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30 appearance-none cursor-pointer"
+                className="neumorphic-select w-full lg:w-48 px-4 py-3 text-white appearance-none cursor-pointer"
               >
                 <option value="">Todas las cajas</option>
                 {cajaFuerteOptions.map(option => (
@@ -1114,7 +1114,7 @@ export default function Home() {
 
         {/* Toggle de Vista y Filtros - Solo visible si el usuario está logueado */}
         {isLoggedIn && (
-          <div className="flex justify-center items-center gap-4 mb-6">
+          <div className="flex justify-center items-center gap-4 mb-8 mt-4">
             <ViewToggle
               currentView={viewMode}
               onViewChange={handleViewModeChange}
@@ -1122,10 +1122,10 @@ export default function Home() {
             <div className="relative filter-dropdown-container">
               <button
                 type="button"
-                className={`p-2 bg-gradient-to-br from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
                   activeFilter !== 'all'
-                    ? 'border-[#c9a45c]/80 text-[#c9a45c] filter-active'
-                    : 'border-[#3d4659]/50 text-[#c9a45c] hover:text-[#f0c987] hover:border-[#c9a45c]/50'
+                    ? 'border-red-400/40 bg-red-500/20'
+                    : ''
                 }`}
                 title="Filtros"
                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
@@ -1753,11 +1753,11 @@ export default function Home() {
 
       </div>
 
-      {/* Botón flotante para móvil - Nueva Revisión con verde difuminado */}
+      {/* Botón flotante para móvil - Nueva Revisión con estilo neumórfico */}
       <div className="md:hidden fixed bottom-24 right-6 z-50">
         <button
           onClick={() => router.push('/nueva-revision?new=true')}
-          className="w-14 h-14 bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 rounded-full shadow-lg hover:shadow-xl hover:shadow-green-500/50 transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center group hover:from-green-400 hover:via-green-500 hover:to-emerald-500"
+          className="w-14 h-14 neu-floating-button flex items-center justify-center"
           aria-label="Nueva Revisión"
         >
           <svg

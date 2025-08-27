@@ -5,6 +5,9 @@
 /* Importar estilos de animaciones para tarjetas */
 @import '../styles/card-animations.css';
 
+/* Importar estilos neumórficos */
+@import '../styles/neumorphic.css';
+
 /* 🚀 OPTIMIZACIÓN DE FUENTES: Font-display swap para evitar FOIT */
 @layer base {
   @font-face {
@@ -415,6 +418,149 @@ button, [role="button"] {
   border: 1px solid rgba(61, 70, 89, 0.3);
 }
 
+/* Estilos neumórficos para tarjetas */
+.neu-card {
+  background: linear-gradient(145deg, #2a3347, #1e2538);
+  border-radius: 16px;
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.2),
+    -8px -8px 16px rgba(255, 255, 255, 0.05),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.1),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(61, 70, 89, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neu-card-hover {
+  transition: all 0.3s ease;
+}
+
+.neu-card-hover:hover {
+  box-shadow:
+    12px 12px 24px rgba(0, 0, 0, 0.25),
+    -12px -12px 24px rgba(255, 255, 255, 0.08),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.12),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.neu-card-pressed {
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.15),
+    -4px -4px 8px rgba(255, 255, 255, 0.03),
+    inset 4px 4px 8px rgba(0, 0, 0, 0.2),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
+}
+
+/* Variante neumórfica para tarjetas con notas */
+.neu-card-notes {
+  background: radial-gradient(circle farthest-corner at 50.3% 47.3%, rgba(113,42,92,1) 0.1%, rgba(40,25,46,1) 90%);
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.3),
+    -8px -8px 16px rgba(255, 255, 255, 0.05),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.1),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(201, 164, 92, 0.3);
+}
+
+.neu-card-notes:hover {
+  box-shadow:
+    12px 12px 24px rgba(0, 0, 0, 0.35),
+    -12px -12px 24px rgba(255, 255, 255, 0.08),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.15),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Botones neumórficos pequeños */
+.neu-button {
+  background: linear-gradient(145deg, #2a3347, #1e2538);
+  border-radius: 8px;
+  box-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.2),
+    -2px -2px 4px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(61, 70, 89, 0.3);
+  transition: all 0.2s ease;
+}
+
+.neu-button:hover {
+  box-shadow:
+    3px 3px 6px rgba(0, 0, 0, 0.25),
+    -3px -3px 6px rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.neu-button:active {
+  box-shadow:
+    1px 1px 2px rgba(0, 0, 0, 0.15),
+    -1px -1px 2px rgba(255, 255, 255, 0.03),
+    inset 1px 1px 2px rgba(0, 0, 0, 0.2),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
+}
+
+/* Botón neumórfico para sidebar */
+.neu-sidebar-button {
+  background: linear-gradient(145deg, #c9a45c, #f0c987);
+  border-radius: 12px;
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.2),
+    -4px -4px 8px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(201, 164, 92, 0.4);
+  transition: all 0.3s ease;
+}
+
+.neu-sidebar-button:hover {
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.25),
+    -6px -6px 12px rgba(255, 255, 255, 0.15),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.25),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.neu-sidebar-button:active {
+  box-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.15),
+    -2px -2px 4px rgba(255, 255, 255, 0.05),
+    inset 4px 4px 8px rgba(0, 0, 0, 0.2),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
+}
+
+/* Botón flotante neumórfico */
+.neu-floating-button {
+  background: linear-gradient(145deg, #10b981, #059669);
+  border-radius: 50%;
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.3),
+    -6px -6px 12px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  transition: all 0.3s ease;
+}
+
+.neu-floating-button:hover {
+  box-shadow:
+    8px 8px 16px rgba(0, 0, 0, 0.35),
+    -8px -8px 16px rgba(255, 255, 255, 0.15),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.4),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px) scale(1.1);
+}
+
+.neu-floating-button:active {
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.2),
+    -4px -4px 8px rgba(255, 255, 255, 0.05),
+    inset 4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px) scale(0.95);
+}
+
 /* Estilos para tablas en móvil */
 @media (max-width: 768px) {
   .table-container {
@@ -754,4 +900,220 @@ button, [role="button"] {
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out forwards;
+}
+
+/* Estilo Neumorfismo para tarjeta de usuario */
+.neumorphic-user-card {
+  background: linear-gradient(145deg, #1a1f35, #2a3347);
+  border-radius: 16px;
+  box-shadow:
+    8px 8px 16px #0d101a,
+    -8px -8px 16px #37415d;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.neumorphic-user-card:hover {
+  box-shadow:
+    6px 6px 12px #0d101a,
+    -6px -6px 12px #37415d;
+  transform: translateY(2px);
+}
+
+.neumorphic-user-card:active {
+  box-shadow:
+    2px 2px 4px #0d101a,
+    -2px -2px 4px #37415d;
+  transform: translateY(4px);
+}
+
+.neumorphic-user-card p {
+  margin: 0;
+}
+
+/* Estilo Neumorfismo para botón de inicio de sesión */
+.neumorphic-login-button {
+  background: linear-gradient(145deg, #1a1f35, #2a3347);
+  border-radius: 12px;
+  box-shadow:
+    6px 6px 12px #0d101a,
+    -6px -6px 12px #37415d;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 500;
+}
+
+.neumorphic-login-button:hover {
+  box-shadow:
+    4px 4px 8px #0d101a,
+    -4px -4px 8px #37415d;
+  transform: translateY(2px);
+}
+
+.neumorphic-login-button:active {
+  box-shadow:
+    2px 2px 4px #0d101a,
+    -2px -2px 4px #37415d;
+  transform: translateY(4px);
+}
+
+
+/* Estilo Neumorfismo para el contenido del menú del día en verde musgo */
+.neumorphic-menu-content {
+  background: linear-gradient(145deg, #2d3a2d, #3a4a3a);
+  border-radius: 12px;
+  box-shadow:
+    6px 6px 12px #1e271e,
+    -6px -6px 12px #495d49;
+  padding: 16px;
+  border: 1px solid rgba(74, 122, 74, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neumorphic-menu-content:hover {
+  box-shadow:
+    4px 4px 8px #1e271e,
+    -4px -4px 8px #495d49;
+  transform: translateY(2px);
+}
+
+/* Estilo Neumorfismo sutil para el contenedor principal del menú del día */
+.neumorphic-menu-container {
+  background: linear-gradient(145deg, #1f2a1f, #2a3a2a);
+  border-radius: 16px;
+  box-shadow:
+    4px 4px 8px #151d15,
+    -4px -4px 8px #334733;
+  padding: 24px;
+  border: 1px solid rgba(50, 80, 50, 0.2);
+  transition: all 0.3s ease;
+}
+
+.neumorphic-menu-container:hover {
+  box-shadow:
+    3px 3px 6px #151d15,
+    -3px -3px 6px #334733;
+  transform: translateY(1px);
+}
+
+/* Estilo Neumorfismo sutil para el contenedor del usuario logueado */
+.neumorphic-user-container {
+  background: linear-gradient(145deg, #1f2a3a, #2a3a4a);
+  border-radius: 16px;
+  box-shadow:
+    4px 4px 8px #151d2a,
+    -4px -4px 8px #33475d;
+  padding: 16px;
+  border: 1px solid rgba(50, 70, 90, 0.2);
+  transition: all 0.3s ease;
+}
+
+.neumorphic-user-container:hover {
+  box-shadow:
+    3px 3px 6px #151d2a,
+    -3px -3px 6px #33475d;
+  transform: translateY(1px);
+}
+
+/* Estilo Neumorfismo para inputs y selects */
+.neumorphic-input, .neumorphic-select {
+  background: linear-gradient(145deg, #1a1f35, #2a3347);
+  border-radius: 12px;
+  box-shadow:
+    inset 3px 3px 6px #0d101a,
+    inset -3px -3px 6px #37415d;
+  padding: 12px 16px;
+  border: 1px solid rgba(61, 70, 89, 0.3);
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.neumorphic-input:focus, .neumorphic-select:focus {
+  box-shadow:
+    inset 2px 2px 4px #0d101a,
+    inset -2px -2px 4px #37415d,
+    0 0 0 2px rgba(201, 164, 92, 0.5);
+  outline: none;
+}
+
+/* Estilo Neumorfismo para botones de toggle */
+.neumorphic-toggle-button {
+  background: linear-gradient(145deg, #1a1f35, #2a3347);
+  border-radius: 12px;
+  box-shadow:
+    4px 4px 8px #0d101a,
+    -4px -4px 8px #37415d;
+  padding: 8px 12px;
+  border: 1px solid rgba(61, 70, 89, 0.3);
+  transition: all 0.3s ease;
+  color: #c9a45c;
+}
+
+.neumorphic-toggle-button:hover {
+  box-shadow:
+    3px 3px 6px #0d101a,
+    -3px -3px 6px #37415d;
+  transform: translateY(1px);
+}
+
+.neumorphic-toggle-button.active {
+  box-shadow:
+    inset 3px 3px 6px #0d101a,
+    inset -3px -3px 6px #37415d;
+  color: #f0c987;
+}
+
+/* Estilo Neumorfismo para el botón de filtro */
+.neumorphic-filter-button {
+  background: linear-gradient(145deg, #1a1f35, #2a3347);
+  border-radius: 12px;
+  box-shadow:
+    4px 4px 8px #0d101a,
+    -4px -4px 8px #37415d;
+  padding: 8px;
+  border: 1px solid rgba(61, 70, 89, 0.3);
+  transition: all 0.3s ease;
+  color: #c9a45c;
+}
+
+.neumorphic-filter-button:hover {
+  box-shadow:
+    3px 3px 6px #0d101a,
+    -3px -3px 6px #37415d;
+  transform: translateY(1px);
+}
+
+.neumorphic-filter-button.active {
+  box-shadow:
+    inset 3px 3px 6px #0d101a,
+    inset -3px -3px 6px #37415d;
+  color: #ff3b30;
+}
+
+/* Estilo Neumorfismo sutil para el contenedor de búsqueda y filtros */
+.neumorphic-search-container {
+  background: linear-gradient(145deg, #1f2a3a, #2a3a4a);
+  border-radius: 12px;
+  box-shadow:
+    3px 3px 6px #151d2a,
+    -3px -3px 6px #33475d;
+  padding: 16px;
+  border: 1px solid rgba(50, 70, 90, 0.2);
+  transition: all 0.3s ease;
+}
+
+.neumorphic-search-container:hover {
+  box-shadow:
+    2px 2px 4px #151d2a,
+    -2px -2px 4px #33475d;
+  transform: translateY(1px);
 }

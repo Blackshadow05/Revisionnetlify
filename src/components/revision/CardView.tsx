@@ -94,14 +94,9 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
           <div
             key={revision.id || index}
             onClick={() => revision.id && onCardClick(revision.id)}
-            className={`${
-              hasNotes
-                ? 'backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10'
-                : 'bg-gradient-to-b from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-lg border border-[#3d4659]/50 p-4 hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-[#c9a45c]/10'
+            className={`neu-card neu-card-hover cursor-pointer p-4 ${
+              hasNotes ? 'neu-card-notes' : ''
             }`}
-            style={hasNotes ? {
-              backgroundImage: 'radial-gradient(circle farthest-corner at 50.3% 47.3%, rgba(113,42,92,1) 0.1%, rgba(40,25,46,1) 90%)'
-            } : undefined}
           >
           {/* Header con Casita y Estado */}
           <div className="flex justify-between items-start mb-3">
@@ -168,7 +163,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
           )}
 
           {/* Footer con Evidencias y WhatsApp */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#3d4659]/50">
+          <div className="flex items-center justify-between pt-2 border-t border-[#3d4659]/30">
             {/* Botón de WhatsApp - Solo si hay imágenes */}
             {(revision.evidencia_01 || revision.evidencia_02 || revision.evidencia_03) && onShareClick && (
               <button
@@ -176,7 +171,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                   e.stopPropagation();
                   onShareClick(revision);
                 }}
-                className="w-5 h-5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 rounded transition-all duration-200 hover:scale-110 flex items-center justify-center"
+                className="neu-button w-5 h-5 text-green-400 hover:scale-110 flex items-center justify-center"
                 title="Compartir en WhatsApp"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -193,7 +188,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                     e.stopPropagation();
                     onImageClick(revision.evidencia_01);
                   }}
-                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
+                  className="neu-button w-4 h-4 text-[#c9a45c] text-[10px] hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 1"
                 >
                   1
@@ -205,7 +200,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                     e.stopPropagation();
                     onImageClick(revision.evidencia_02);
                   }}
-                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
+                  className="neu-button w-4 h-4 text-[#c9a45c] text-[10px] hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 2"
                 >
                   2
@@ -217,7 +212,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                     e.stopPropagation();
                     onImageClick(revision.evidencia_03);
                   }}
-                  className="w-4 h-4 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded text-[10px] transition-all duration-200 hover:scale-110 flex items-center justify-center font-medium"
+                  className="neu-button w-4 h-4 text-[#c9a45c] text-[10px] hover:scale-110 flex items-center justify-center font-medium"
                   title="Ver evidencia 3"
                 >
                   3

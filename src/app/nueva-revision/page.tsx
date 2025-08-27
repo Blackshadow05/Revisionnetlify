@@ -1057,6 +1057,7 @@ export default function NuevaRevision() {
                   onSelect={(value) => handleInputChange('caja_fuerte', value)}
                   required
                   highlight={highlightedField === 'caja_fuerte'}
+                  persistSelection={true}
                 />
               </div>
             </fieldset>
@@ -1098,13 +1099,14 @@ export default function NuevaRevision() {
               <legend className="sr-only">Elementos a revisar</legend>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 <div ref={fieldRefs.current['chromecast']}>
-                  <ButtonGroup 
-                    label="Chromecast" 
-                    options={['0', '01', '02', '03', '04']} 
-                    selectedValue={formData.chromecast} 
-                    onSelect={v => handleInputChange('chromecast', v)} 
-                    required 
+                  <ButtonGroup
+                    label="Chromecast"
+                    options={['0', '01', '02', '03', '04']}
+                    selectedValue={formData.chromecast}
+                    onSelect={v => handleInputChange('chromecast', v)}
+                    required
                     highlight={highlightedField === 'chromecast'}
+                    persistSelection={true}
                   />
                 </div>
                 <div ref={fieldRefs.current['binoculares']}>
@@ -1202,13 +1204,14 @@ export default function NuevaRevision() {
                   { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] }
                 ].map(({ field, label, options }) => (
                   <div key={field} ref={fieldRefs.current[field]}>
-                    <ButtonGroup 
+                    <ButtonGroup
                       label={label}
                       options={options}
                       selectedValue={formData[field as keyof RevisionData] as string}
                       onSelect={v => handleInputChange(field as keyof RevisionData, v)}
                       required
                       highlight={highlightedField === field}
+                      persistSelection={true}
                     />
                   </div>
                 ))}
@@ -1217,7 +1220,7 @@ export default function NuevaRevision() {
 
             {/* Evidencia fotográfica */}
             {showEvidenceFields && (
-              <fieldset data-section="evidencia-fotografica">
+              <fieldset data-section="evidencia-fotografica" className="neu-evidence-section">
                 <legend className="sr-only">Evidencia fotográfica</legend>
                 <div className="space-y-6">
                   <h3 className="text-xl font-semibold text-[#ff8c42] flex items-center gap-2">

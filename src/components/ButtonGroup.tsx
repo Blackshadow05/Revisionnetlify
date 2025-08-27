@@ -12,6 +12,7 @@ interface ButtonGroupProps {
   required?: boolean;
   highlight?: boolean;
   iconType?: 'emoji' | 'custom'; // Opcional - si no se especifica, usa la configuración global
+  persistSelection?: boolean; // Mantiene el estado seleccionado hasta reset
 }
 
 // Función para obtener el emoji apropiado según el label
@@ -88,14 +89,15 @@ const getEmojiForLabel = (label: string) => {
   return <span className="text-lg">✅</span>; // Check verde
 };
 
-export default function ButtonGroup({ 
-  label, 
-  options, 
-  selectedValue, 
-  onSelect, 
-  required = false, 
+export default function ButtonGroup({
+  label,
+  options,
+  selectedValue,
+  onSelect,
+  required = false,
   highlight = false,
-  iconType // Ya no tiene valor por defecto
+  iconType, // Ya no tiene valor por defecto
+  persistSelection = false // Mantiene el estado seleccionado
 }: ButtonGroupProps) {
   
   // Función para obtener el icono según el tipo seleccionado
@@ -110,44 +112,37 @@ export default function ButtonGroup({
   };
 
   return (
-    <div className="space-y-3">
-      <label className="flex items-center gap-2 text-base font-semibold bg-black/40 text-white px-3 py-1 rounded-lg shadow-sm">
+    <div className="space-y-4">
+      <label className="neu-button-group-label">
         {getIcon()}
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="neu-button-group-label-required ml-1">*</span>}
       </label>
       {/* Contenedor de botones: wrap para ajustarse a pantallas pequeñas */}
       <div
-        className={`flex flex-wrap gap-2 ${
-          highlight ?
-            'border-2 border-[#00ff00] shadow-green-500/50 shadow-lg p-2 rounded-xl backdrop-blur-sm' : ''
+        className={`neu-button-group-container flex flex-wrap gap-3 p-4 ${
+          highlight ? 'neu-button-group-container-highlight' : ''
         }`}
       >
-        {options.map(option => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onSelect(option)}
-            className={`
-              px-5 py-3 rounded-xl text-sm font-bold border-2 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] min-w-[72px]
-              ${selectedValue === option
-                ? 'bg-gradient-to-br from-[#c9a45c] to-[#f0c987] text-[#1a1f35] border-[#c9a45c]/60 shadow-lg'
-                : 'bg-[#1e2538]/70 text-white border-[#3d4659]/40 hover:bg-[#2a3347]/80 hover:border-[#3d4659]/60 hover:text-gray-100'
-              }
-            `}
-            aria-pressed={selectedValue === option}
-          >
-            <span className="flex items-center justify-center gap-1.5">
-              {/* Icono de check para opción seleccionada */}
-              {selectedValue === option && (
-                <svg className="w-3.5 h-3.5 text-[#1a1f35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {option}
-            </span>
-          </button>
-        ))}
+        {options.map(option => {
+          const isSelected = selectedValue === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onSelect(option)}
+              className={`
+                neu-button-group-button px-4 py-2 text-base font-semibold min-w-[60px] transition-all duration-300
+                ${isSelected ? 'neu-button-group-button-selected' : ''}
+              `}
+              aria-pressed={isSelected}
+            >
+              <span className="flex items-center justify-center gap-2">
+                {option}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

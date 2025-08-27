@@ -212,16 +212,16 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
           {/* Contenido del sidebar */}
           <div className="relative h-full flex flex-col">
             {/* Header */}
-            <div className="p-6 border-b border-[#c9a45c]/20">
+            <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-xl flex items-center justify-center shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
+                  <div className="w-10 h-10 bg-[#3a4357] rounded-xl flex items-center justify-center shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-[#c9a45c]">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold bg-gradient-to-r from-[#c9a45c] to-[#f0c987] bg-clip-text text-transparent">
+                    <h2 className="text-lg font-bold text-white">
                       Menú
                     </h2>
                     <p className="text-xs text-gray-400">Herramientas y opciones</p>
@@ -231,9 +231,9 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                 {/* Botón cerrar */}
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105 group"
+                  className="w-8 h-8 bg-[#3a4357] rounded-lg flex items-center justify-center shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)] transition-all duration-200 hover:scale-105 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -242,10 +242,10 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
 
             {/* Información del usuario */}
             {user && (
-              <div className="p-6 border-b border-[#c9a45c]/20">
+              <div className="p-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-[#1a1f35]">
+                  <div className="w-12 h-12 bg-[#3a4357] rounded-full flex items-center justify-center shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-[#c9a45c]">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                   </div>
@@ -264,11 +264,11 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                   {/* Título de sección */}
                   <div className="px-6 mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#c9a45c]/30 to-transparent" />
+                      <div className="h-px flex-1 bg-[#3a4357]" />
                       <h3 className="text-xs font-bold text-[#c9a45c] uppercase tracking-wider">
                         {section.title}
                       </h3>
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#c9a45c]/30 to-transparent" />
+                      <div className="h-px flex-1 bg-[#3a4357]" />
                     </div>
                   </div>
 
@@ -281,30 +281,24 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
                           {'href' in item ? (
                             <button
                               onClick={() => handleLinkClick(item.href)}
-                              className="w-full flex items-center gap-3 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
+                              className="w-full flex items-center gap-3 px-3 py-3 text-white rounded-xl transition-all duration-300 hover:bg-[#4a5367] group relative overflow-hidden shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]"
                             >
-                              {/* Efecto de hover brillante */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-                              
                               <div className={`${item.color} group-hover:scale-110 transition-transform duration-200 relative z-10`}>
                                 {item.icon}
                               </div>
-                              <span className="font-medium relative z-10 group-hover:translate-x-1 transition-transform duration-200">
+                              <span className="font-medium relative z-10">
                                 {item.name}
                               </span>
                             </button>
                           ) : (
                             <button
                               onClick={item.onClick}
-                              className="w-full flex items-center gap-3 px-3 py-3 text-white hover:text-[#c9a45c] rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#c9a45c]/10 hover:to-[#f0c987]/5 group relative overflow-hidden"
+                              className="w-full flex items-center gap-3 px-3 py-3 text-white rounded-xl transition-all duration-300 hover:bg-[#4a5367] group relative overflow-hidden shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]"
                             >
-                              {/* Efecto de hover brillante */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-                              
                               <div className={`${item.color} group-hover:scale-110 transition-transform duration-200 relative z-10`}>
                                 {item.icon}
                               </div>
-                              <span className="font-medium relative z-10 group-hover:translate-x-1 transition-transform duration-200">
+                              <span className="font-medium relative z-10">
                                 {item.name}
                               </span>
                             </button>
@@ -318,22 +312,20 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
 
             {/* Footer con botón de logout */}
             {isLoggedIn && (
-              <div className="p-6 border-t border-[#c9a45c]/20">
+              <div className="p-6">
                 <button
                   onClick={() => {
                     logout();
                     onClose();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-3 text-red-300 hover:text-red-200 rounded-xl transition-all duration-300 hover:bg-red-500/10 group relative overflow-hidden"
+                  className="w-full flex items-center gap-3 px-3 py-3 text-red-300 rounded-xl transition-all duration-300 hover:bg-[#4a5367] group relative overflow-hidden shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-                  
                   <div className="text-red-400 group-hover:scale-110 transition-transform duration-200 relative z-10">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                     </svg>
                   </div>
-                  <span className="font-medium relative z-10 group-hover:translate-x-1 transition-transform duration-200">
+                  <span className="font-medium relative z-10">
                     Cerrar Sesión
                   </span>
                 </button>

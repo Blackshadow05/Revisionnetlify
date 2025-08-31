@@ -530,7 +530,7 @@ export default function NuevaRevision() {
         targetSizeKB,      // iPhone: 600KB, Android: 300KB
         maxResolution: 1100,    // Resolución máxima 1100px para ambos dispositivos
         maxQuality: 0.75,       // Calidad máxima 0.75 para ambos dispositivos
-        minQuality: 0.35,       // Calidad mínima
+        minQuality: 0.50,       // Calidad mínima 0.50
         maxAttempts: 10,        // Más intentos para mejor resultado
         timeout: 30000,         // 30 segundos timeout
         format
@@ -771,6 +771,9 @@ export default function NuevaRevision() {
 
       // 📸 VALIDACIÓN CONDICIONAL: Evidencia 1 obligatoria para Check in y Upsell
       const requiresEvidencia01 = ['Check in', 'Upsell'].includes(formData.caja_fuerte);
+      
+      // 📸 VALIDACIÓN CONDICIONAL: Evidencia 2 obligatoria para Check out
+      const requiresEvidencia02 = ['Check out'].includes(formData.caja_fuerte);
       if (requiresEvidencia01 && !compressedFiles.evidencia_01) {
         // Destacar el campo de evidencia_01 y mostrarlo en pantalla
         const evidenciaSection = document.querySelector('[data-section="evidencia-fotografica"]');
@@ -778,6 +781,16 @@ export default function NuevaRevision() {
           evidenciaSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         throw new Error(`Evidencia 1 es obligatoria cuando el estado de la caja fuerte es "${formData.caja_fuerte}"`);
+      }
+      
+      // 📸 VALIDACIÓN CONDICIONAL: Evidencia 2 obligatoria para Check out
+      if (requiresEvidencia02 && !compressedFiles.evidencia_02) {
+        // Destacar el campo de evidencia_02 y mostrarlo en pantalla
+        const evidenciaSection = document.querySelector('[data-section="evidencia-fotografica"]');
+        if (evidenciaSection) {
+          evidenciaSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        throw new Error(`Evidencia 2 es obligatoria cuando el estado de la caja fuerte es "${formData.caja_fuerte}"`);
       }
 
       // Preparar datos para envío
@@ -899,7 +912,7 @@ export default function NuevaRevision() {
     }
   };
 
-  const showEvidenceFields = ['Check in', 'Upsell', 'Back to Back'].includes(formData.caja_fuerte);
+  const showEvidenceFields = ['Check in', 'Upsell', 'Back to Back', 'Check out'].includes(formData.caja_fuerte);
 
   // Evitar problemas de hidratación - no renderizar hasta que esté hidratado
   if (!isHydrated) {
@@ -1249,7 +1262,14 @@ export default function NuevaRevision() {
                         onFileSelect={handleFileChange}
                         onClearFile={clearFile}
                         onImageClick={openModal}
-                        required={field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)}
+                        required={
+                          (field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)) ||
+                          (field === 'evidencia_02' && ['Check out'].includes(formData.caja_fuerte))
+                        }
+                        disabled={
+                          (field === 'evidencia_01' && ['Check out'].includes(formData.caja_fuerte)) ||
+                          (field === 'evidencia_03' && ['Check out'].includes(formData.caja_fuerte))
+                        }
                         compressionProgress={compressionProgress[field]}
                         isCompressing={isCompressing[field]}
                       />

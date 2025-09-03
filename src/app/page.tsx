@@ -1403,10 +1403,10 @@ export default function Home() {
                               <td className="fixed-column-1 w-[320px] md:w-[200px]">
                                 <div className="flex flex-col whitespace-nowrap">
                                   <span className="text-[13px] md:text-xs text-[#c9a45c]">
-                                    {row.created_at.split('+')[0].split('T')[0]}
+                                    {row.created_at ? row.created_at.split('+')[0].split('T')[0] : 'N/A'}
                                   </span>
                                   <span className="text-[13px] md:text-xs text-[#c9a45c]">
-                                    {row.created_at.split('+')[0].split('T')[1].split(':').slice(0, 2).join(':')}
+                                    {row.created_at ? row.created_at.split('+')[0].split('T')[1].split(':').slice(0, 2).join(':') : '--:--'}
                                   </span>
                                 </div>
                               </td>

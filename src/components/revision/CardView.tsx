@@ -141,10 +141,10 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
               </svg>
               <div className="flex items-center gap-1">
                 <span className="text-xs">
-                  {revision.created_at.split('+')[0].split('T')[0]}
+                  {revision.created_at ? revision.created_at.split('+')[0].split('T')[0] : 'N/A'}
                 </span>
                 <span className="text-xs">
-                  {revision.created_at.split('+')[0].split('T')[1].split(':').slice(0,2).join(':')}
+                  {revision.created_at ? revision.created_at.split('+')[0].split('T')[1].split(':').slice(0,2).join(':') : '--:--'}
                 </span>
               </div>
             </div>

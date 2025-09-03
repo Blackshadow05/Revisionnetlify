@@ -1112,193 +1112,191 @@ export default function Home() {
           )}
         </div>
 
-        {/* Toggle de Vista y Filtros - Solo visible si el usuario está logueado */}
-        {isLoggedIn && (
-          <div className="flex justify-center items-center gap-4 mb-8 mt-4">
-            <ViewToggle
-              currentView={viewMode}
-              onViewChange={handleViewModeChange}
-            />
-            <div className="relative filter-dropdown-container">
-              <button
-                type="button"
-                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
-                  activeFilter !== 'all'
-                    ? 'border-red-400/40 bg-red-500/20'
-                    : ''
-                }`}
-                title="Filtros"
-                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+        {/* Toggle de Vista y Filtros - Visible para todos los usuarios */}
+        <div className="flex justify-center items-center gap-4 mb-8 mt-4">
+          <ViewToggle
+            currentView={viewMode}
+            onViewChange={handleViewModeChange}
+          />
+          <div className="relative filter-dropdown-container">
+            <button
+              type="button"
+              className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
+                activeFilter !== 'all'
+                  ? 'border-red-400/40 bg-red-500/20'
+                  : ''
+              }`}
+              title="Filtros"
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            >
+              <style jsx>{`
+                @keyframes pulse {
+                  0% { transform: scale(1); }
+                  50% { transform: scale(1.15); }
+                  100% { transform: scale(1); }
+                }
+                @keyframes glow {
+                  0% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
+                  50% { box-shadow: 0 0 15px rgba(255, 59, 48, 0.8); }
+                  100% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
+                }
+                .filter-pulse {
+                  animation: pulse 1.5s infinite;
+                  color: #ff3b30;
+                }
+                .filter-active {
+                  border-color: #ff3b30 !important;
+                  animation: glow 2s infinite;
+                }
+                .filter-badge {
+                  position: absolute;
+                  top: -6px;
+                  right: -6px;
+                  background-color: #ff3b30;
+                  color: white;
+                  border-radius: 50%;
+                  width: 16px;
+                  height: 16px;
+                  font-size: 10px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: bold;
+                }
+              `}</style>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className={`w-5 h-5 ${activeFilter !== 'all' ? 'filter-pulse' : ''}`}
               >
-                <style jsx>{`
-                  @keyframes pulse {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.15); }
-                    100% { transform: scale(1); }
-                  }
-                  @keyframes glow {
-                    0% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
-                    50% { box-shadow: 0 0 15px rgba(255, 59, 48, 0.8); }
-                    100% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
-                  }
-                  .filter-pulse {
-                    animation: pulse 1.5s infinite;
-                    color: #ff3b30;
-                  }
-                  .filter-active {
-                    border-color: #ff3b30 !important;
-                    animation: glow 2s infinite;
-                  }
-                  .filter-badge {
-                    position: absolute;
-                    top: -6px;
-                    right: -6px;
-                    background-color: #ff3b30;
-                    color: white;
-                    border-radius: 50%;
-                    width: 16px;
-                    height: 16px;
-                    font-size: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: bold;
-                  }
-                `}</style>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  strokeWidth={1.5} 
-                  stroke="currentColor" 
-                  className={`w-5 h-5 ${activeFilter !== 'all' ? 'filter-pulse' : ''}`}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-                </svg>
-                {activeFilter !== 'all' && (
-                  <span className="filter-badge">!</span>
-                )}
-              </button>
-              
-              {showFilterDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-[#1e2538] border border-[#3d4659] rounded-xl shadow-xl z-50">
-                  <div className="py-1">
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'all'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('all')}
-                    >
-                      Todas las revisiones
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'today'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('today')}
-                    >
-                      Revisiones de Hoy
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'latest'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('latest')}
-                    >
-                      Última Revisión
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'no-yute'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('no-yute')}
-                    >
-                      No hay yute
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'has-yute-1'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('has-yute-1')}
-                    >
-                      Hay un yute
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'has-yute-2'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('has-yute-2')}
-                    >
-                      Hay 2 Yutes
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'no-trapo-binocular'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('no-trapo-binocular')}
-                    >
-                      No hay trapo binocular
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'no-sombrero'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('no-sombrero')}
-                    >
-                      No hay sombrero
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'no-bulto'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('no-bulto')}
-                    >
-                      No hay Bulto
-                    </button>
-                    <button
-                      type="button"
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                        activeFilter === 'no-cola-caballo'
-                          ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                          : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                      }`}
-                      onClick={() => handleFilterChange('no-cola-caballo')}
-                    >
-                      No hay Cola de Caballo
-                    </button>
-                  </div>
-                </div>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+              </svg>
+              {activeFilter !== 'all' && (
+                <span className="filter-badge">!</span>
               )}
-            </div>
+            </button>
+            
+            {showFilterDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#1e2538] border border-[#3d4659] rounded-xl shadow-xl z-50">
+                <div className="py-1">
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'all'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('all')}
+                  >
+                    Todas las revisiones
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'today'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('today')}
+                  >
+                    Revisiones de Hoy
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'latest'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('latest')}
+                  >
+                    Última Revisión
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'no-yute'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('no-yute')}
+                  >
+                    No hay yute
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'has-yute-1'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('has-yute-1')}
+                  >
+                    Hay un yute
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'has-yute-2'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('has-yute-2')}
+                  >
+                    Hay 2 Yutes
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'no-trapo-binocular'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('no-trapo-binocular')}
+                  >
+                    No hay trapo binocular
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'no-sombrero'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('no-sombrero')}
+                  >
+                    No hay sombrero
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'no-bulto'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('no-bulto')}
+                  >
+                    No hay Bulto
+                  </button>
+                  <button
+                    type="button"
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
+                      activeFilter === 'no-cola-caballo'
+                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
+                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
+                    }`}
+                    onClick={() => handleFilterChange('no-cola-caballo')}
+                  >
+                    No hay Cola de Caballo
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Vista de datos - Solo visible si el usuario está logueado */}
         {isLoggedIn ? (

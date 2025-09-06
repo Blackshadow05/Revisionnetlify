@@ -82,6 +82,7 @@ export default function EstadisticasPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [totalRevisionesCount, setTotalRevisionesCount] = useState<number>(0);
 
   const currentYear = new Date().getFullYear();
 
@@ -97,6 +98,25 @@ export default function EstadisticasPage() {
     }
   }, [authLoading, isLoggedIn, router]);
 
+  // 🎯 Función para obtener el total de registros en toda la tabla
+  const getTotalRevisiones = useCallback(async () => {
+    try {
+      const { count, error: countError } = await supabase
+        .from('revisiones_casitas')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('❌ Error al contar total de revisiones:', countError);
+        return 0;
+      }
+
+      return count || 0;
+    } catch (err) {
+      console.error('❌ Error en getTotalRevisiones:', err);
+      return 0;
+    }
+  }, []);
+
   // 🚀 Función de carga de datos optimizada con debounce
   const loadData = useCallback(async (isRefresh = false) => {
     try {
@@ -107,18 +127,24 @@ export default function EstadisticasPage() {
       }
       setError(null);
       
+      // Obtener todos los registros para el gráfico y filtrado
       const { data, error: supabaseError } = await supabase
         .from('revisiones_casitas')
         .select('id, quien_revisa, caja_fuerte, casita, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000); // Aumentamos el límite para obtener más registros
 
       if (supabaseError) {
         console.error('❌ Error fetching data:', supabaseError);
         throw supabaseError;
       }
 
+      // Obtener el total de registros en toda la tabla
+      const total = await getTotalRevisiones();
+      setTotalRevisionesCount(total);
+
       setRevisioinesData(data as RevisionCasita[] || []);
-      console.log(`✅ Cargados ${data?.length || 0} registros`);
+      console.log(`✅ Cargados ${data?.length || 0} registros, total: ${total}`);
       
     } catch (err) {
       const errorMessage = 'Error al cargar estadísticas. Verifica tu conexión.';
@@ -128,7 +154,7 @@ export default function EstadisticasPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [getTotalRevisiones]);
 
   // 🎯 Debounced refresh para evitar múltiples llamadas
   const debouncedRefresh = useMemo(
@@ -180,7 +206,8 @@ export default function EstadisticasPage() {
   const processedStats: ProcessedStats = useMemo(() => {
     const today = new Date();
     
-    const totalRevisiones = dataFilteredByCurrentYear.length;
+    // Usar el total de registros de toda la tabla para el contador principal
+    const totalRevisiones = totalRevisionesCount;
     
     const revisionesHoy = dataFilteredByCurrentYear.filter(item => {
       if (!item.created_at) return false;

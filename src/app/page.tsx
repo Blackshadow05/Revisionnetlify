@@ -354,7 +354,8 @@ export default function Home() {
       const { data, error } = await supabase
         .from('revisiones_casitas')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000); // Aumentamos el límite para obtener más registros
 
       if (error) {
         console.error('Error fetching data:', error);

@@ -47,7 +47,7 @@ export const supabase = createClient(
 // Función de utilidad para verificar la conexión
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('revisiones_casitas').select('id').limit(1);
+    const { data, error } = await supabase.from('revisiones_casitas').select('id').limit(10000);
     if (error) {
       console.error('Error al conectar con Supabase:', error);
       return false;

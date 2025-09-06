@@ -514,21 +514,21 @@ export default function NuevaRevision() {
 
     try {
       // 🎯 Configuración personalizada por dispositivo
-      let targetSizeKB = 300; // Android por defecto
-      let format: 'webp' | 'jpeg' = 'webp';
+      let targetSizeKB = 600; // Por defecto igual para iOS y Android
+      let format: 'webp' | 'jpeg' = 'jpeg';
       
       if (isIOS || isSafari) {
         targetSizeKB = 600; // iPhone: 600 KB
         format = 'jpeg';
         addCompressionLog(`[LOG_COMPRESION][${logId}] iPhone/iOS detectado: usando JPEG y 600KB como objetivo`);
       } else if (isAndroid) {
-        targetSizeKB = 300; // Android: 300 KB
-        format = 'webp';
-        addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado: usando WebP y 300KB como objetivo`);
+        targetSizeKB = 600; // Android: ahora también 600 KB
+        format = 'jpeg'; // Android: ahora también JPEG
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado: usando JPEG y 600KB como objetivo (misma configuración que iOS)`);
       }
       const compressionConfig = {
-        targetSizeKB,      // iPhone: 600KB, Android: 300KB
-        maxResolution: 1100,    // Resolución máxima 1100px para ambos dispositivos
+        targetSizeKB,      // iPhone: 600KB, Android: 600KB
+        maxResolution: 1000,    // Resolución máxima 1000px para ambos dispositivos
         maxQuality: 0.75,       // Calidad máxima 0.75 para ambos dispositivos
         minQuality: 0.50,       // Calidad mínima 0.50
         maxAttempts: 10,        // Más intentos para mejor resultado
@@ -772,8 +772,8 @@ export default function NuevaRevision() {
       // 📸 VALIDACIÓN CONDICIONAL: Evidencia 1 obligatoria para Check in y Upsell
       const requiresEvidencia01 = ['Check in', 'Upsell'].includes(formData.caja_fuerte);
       
-      // 📸 VALIDACIÓN CONDICIONAL: Evidencia 2 obligatoria para Check out
-      const requiresEvidencia02 = ['Check out'].includes(formData.caja_fuerte);
+      // 📸 VALIDACIÓN CONDICIONAL: Evidencia 2 obligatoria para Check out y Guardar Upsell
+      const requiresEvidencia02 = ['Check out', 'Guardar Upsell'].includes(formData.caja_fuerte);
       if (requiresEvidencia01 && !compressedFiles.evidencia_01) {
         // Destacar el campo de evidencia_01 y mostrarlo en pantalla
         const evidenciaSection = document.querySelector('[data-section="evidencia-fotografica"]');
@@ -856,9 +856,6 @@ export default function NuevaRevision() {
       // Enviar datos directamente a Supabase
       await submitRevisionOnline(finalData);
 
-      // 🎉 ENVÍO EXITOSO: Preparar para compartir
-      showSuccess('Revisión guardada exitosamente');
-
       // 📸 Preparar imágenes para compartir
       const evidenceImages: File[] = [];
       const shareEvidenceFields: EvidenceField[] = ['evidencia_01', 'evidencia_02', 'evidencia_03'];
@@ -882,10 +879,13 @@ export default function NuevaRevision() {
         setShareImages(evidenceImages);
         setShareMessage(`${finalData.caja_fuerte} ${finalData.casita}`);
         setShowShareModal(true);
-      } else if (shouldShare && evidenceImages.length === 0) {
-        showSuccess(`${finalData.caja_fuerte} ${finalData.casita} guardado exitosamente (sin imágenes para compartir)`);
       } else {
-        showSuccess('Revisión guardada exitosamente');
+        // Mostrar mensaje único de éxito según el caso
+        if (shouldShare && evidenceImages.length === 0) {
+          showSuccess(`${finalData.caja_fuerte} ${finalData.casita} guardado exitosamente (sin imágenes para compartir)`);
+        } else {
+          showSuccess('Revisión guardada exitosamente');
+        }
       }
 
       // 🧹 Limpiar formulario después de guardar
@@ -912,7 +912,7 @@ export default function NuevaRevision() {
     }
   };
 
-  const showEvidenceFields = ['Check in', 'Upsell', 'Back to Back', 'Check out'].includes(formData.caja_fuerte);
+  const showEvidenceFields = ['Check in', 'Upsell', 'Back to Back', 'Check out', 'Guardar Upsell'].includes(formData.caja_fuerte);
 
   // Evitar problemas de hidratación - no renderizar hasta que esté hidratado
   if (!isHydrated) {
@@ -1264,11 +1264,11 @@ export default function NuevaRevision() {
                         onImageClick={openModal}
                         required={
                           (field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)) ||
-                          (field === 'evidencia_02' && ['Check out'].includes(formData.caja_fuerte))
+                          (field === 'evidencia_02' && ['Check out', 'Guardar Upsell'].includes(formData.caja_fuerte))
                         }
                         disabled={
-                          (field === 'evidencia_01' && ['Check out'].includes(formData.caja_fuerte)) ||
-                          (field === 'evidencia_03' && ['Check out'].includes(formData.caja_fuerte))
+                          (field === 'evidencia_01' && ['Check out', 'Guardar Upsell'].includes(formData.caja_fuerte)) ||
+                          (field === 'evidencia_03' && ['Check out', 'Guardar Upsell'].includes(formData.caja_fuerte))
                         }
                         compressionProgress={compressionProgress[field]}
                         isCompressing={isCompressing[field]}

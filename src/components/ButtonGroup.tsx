@@ -112,18 +112,17 @@ export default function ButtonGroup({
   };
 
   return (
-    <div className="space-y-4">
-      <label className="neu-button-group-label">
+    <div className="space-y-3">
+      <label className="block text-sm font-bold text-[#ff8c42]">
         {getIcon()}
         {label}
-        {required && <span className="neu-button-group-label-required ml-1">*</span>}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      {/* Contenedor de botones: wrap para ajustarse a pantallas pequeñas */}
-      <div
-        className={`neu-button-group-container flex flex-wrap gap-3 p-4 ${
-          highlight ? 'neu-button-group-container-highlight' : ''
-        }`}
-      >
+      <div className="flex flex-wrap gap-3 p-4 rounded-xl" style={{
+        background: 'linear-gradient(to left, #334d50, #2a3347)',
+        border: '1px solid rgba(201, 164, 92, 0.2)',
+        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)'
+      }}>
         {options.map(option => {
           const isSelected = selectedValue === option;
           return (
@@ -132,8 +131,14 @@ export default function ButtonGroup({
               type="button"
               onClick={() => onSelect(option)}
               className={`
-                neu-button-group-button px-4 py-2 text-base font-semibold min-w-[60px] transition-all duration-300
-                ${isSelected ? 'neu-button-group-button-selected' : ''}
+                px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300
+                transform hover:scale-105 active:scale-95
+                ${
+                  isSelected 
+                    ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg' 
+                    : 'bg-[#2a3347]/50 text-white/90 hover:bg-[#334d50]/70 border border-[#c9a45c]/20'
+                }
+                min-w-[60px] focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50
               `}
               aria-pressed={isSelected}
             >
@@ -146,4 +151,4 @@ export default function ButtonGroup({
       </div>
     </div>
   );
-} 
+}

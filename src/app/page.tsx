@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase, checkSupabaseConnection } from '@/lib/supabase';
@@ -83,6 +83,14 @@ export default function Home() {
   const [data, setData] = useState<RevisionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados para estadísticas principales
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [topRevisor, setTopRevisor] = useState<{name: string, count: number} | null>(null);
+  const [topCheckOut, setTopCheckOut] = useState<{name: string, count: number} | null>(null);
+  const [topCasita, setTopCasita] = useState<{name: string, count: number} | null>(null);
+  const [checkInCount, setCheckInCount] = useState(0);
+  const [topCheckInCasita, setTopCheckInCasita] = useState<{name: string, count: number} | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [cajaFuerteFilter, setCajaFuerteFilter] = useState('');
@@ -374,6 +382,83 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Función para calcular estadísticas principales
+  const calcularEstadisticas = useCallback(() => {
+    if (!data || data.length === 0) return;
+
+    // Calcular quién ha revisado más
+    const revisorCounts = data.reduce((acc, item) => {
+      const name = item.quien_revisa || 'Desconocido';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topRevisorEntry = Object.entries(revisorCounts)
+      .sort((a, b) => b[1] - a[1])[0];
+
+    setTopRevisor({
+      name: topRevisorEntry[0],
+      count: topRevisorEntry[1]
+    });
+
+    // Calcular quién ha realizado más check-out
+    const checkOutCounts = data
+      .filter(item => item.caja_fuerte === 'Check out')
+      .reduce((acc, item) => {
+        const name = item.quien_revisa || 'Desconocido';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    const topCheckOutEntry = Object.entries(checkOutCounts)
+      .sort((a, b) => b[1] - a[1])[0];
+
+    setTopCheckOut(topCheckOutEntry ? {
+      name: topCheckOutEntry[0],
+      count: topCheckOutEntry[1]
+    } : null);
+
+    // Calcular qué casita tiene más registros
+    const casitaCounts = data.reduce((acc, item) => {
+      const name = item.casita || 'Desconocida';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topCasitaEntry = Object.entries(casitaCounts)
+      .sort((a, b) => b[1] - a[1])[0];
+
+    setTopCasita({
+      name: topCasitaEntry[0],
+      count: topCasitaEntry[1]
+    });
+    setCheckInCount(data.filter(item => item.caja_fuerte === 'Check in').length);
+
+    // Calcular qué casita tiene más "Check in"
+    const checkInCasitaCounts = data
+      .filter(item => item.caja_fuerte === 'Check in')
+      .reduce((acc, item) => {
+        const name = item.casita || 'Desconocida';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    const topCheckInCasitaEntry = Object.entries(checkInCasitaCounts).sort((a, b) => b[1] - a[1])[0];
+
+    setTopCheckInCasita(topCheckInCasitaEntry ? {
+      name: topCheckInCasitaEntry[0],
+      count: topCheckInCasitaEntry[1]
+    } : null);
+  }, [data]);
+
+  // Calcular estadísticas cuando los datos cambian
+  useEffect(() => {
+    if (data.length > 0) {
+      setStatsLoading(false);
+      calcularEstadisticas();
+    }
+  }, [data, calcularEstadisticas]);
 
   const filteredData = data.filter(row => {
     const searchLower = searchTerm.toLowerCase();
@@ -904,68 +989,29 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Sidebar */}
-        <Sidebar
-          isOpen={showSidebar}
-          onClose={() => setShowSidebar(false)}
-          onShowReportModal={() => setShowReportModal(true)}
-        />
-
-        {/* Barra de Acciones Mejorada */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6">
-            {/* Info del Usuario */}
-            <div className="neumorphic-user-container w-full md:w-auto">
-              {user && (
-                <div className="neumorphic-user-card">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <p className="text-white font-medium">{user}</p>
-                      <p className="text-[#c9a45c] text-sm">{userRole}</p>
-                    </div>
-                    {supabaseAwake && (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="text-green-400 text-xs font-medium">awake</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Botones de Acción */}
-            <div className="flex flex-wrap gap-3">
-              {/* Solo mostrar botón de login si no está logueado */}
-              {!isLoggedIn && (
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="neumorphic-login-button"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                  Iniciar Sesión
-                </button>
-              )}
-
-              {/* Botón Nueva Revisión - Oculto en móvil */}
-              <button
-                onClick={() => router.push('/nueva-revision?new=true')}
-                className="hidden md:flex nueva-revision-button px-8 py-3 text-white rounded-xl hover:shadow-lg hover:shadow-[#098042]/40 transition-all duration-300 transform hover:scale-[1.02] items-center gap-3 font-medium text-lg min-w-[200px] justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        {/* Información del Usuario */}
+        <div className="neumorphic-user-container mb-6 max-w-3xl mx-auto">
+          {user && (
+            <div className="neumorphic-user-card">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
-                Nueva Revisión
-              </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <div>
+                  <p className="text-white font-medium">{user}</p>
+                  <p className="text-[#c9a45c] text-sm">{userRole}</p>
+                </div>
+                {supabaseAwake && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-green-400 text-xs font-medium">awake</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 🍽️ Menú del Día */}
@@ -986,8 +1032,6 @@ export default function Home() {
             {(() => {
               const menuContent = parseMenuContent(menuDelDia.contenido_menu);
 
-              // Helper: agrupa tokens hasta encontrar uno que comienza en mayúscula,
-              // que se interpreta como inicio de un nuevo ítem del menú.
               const splitOnCapitalizedWords = (text: string) => {
                 if (!text) return [];
                 const tokens = text.split(/\s+/);
@@ -1013,7 +1057,6 @@ export default function Home() {
               };
 
               if (menuContent && menuContent.comidas) {
-                // Convertir cada entrada en uno o varios ítems según las mayúsculas internas
                 const allItems = menuContent.comidas.flatMap((comida: string) =>
                   splitOnCapitalizedWords(String(comida))
                 );
@@ -1042,6 +1085,80 @@ export default function Home() {
               }
             })()
             }
+          </div>
+        )}
+
+        {/* Sidebar */}
+        <Sidebar
+          isOpen={showSidebar}
+          onClose={() => setShowSidebar(false)}
+          onShowReportModal={() => setShowReportModal(true)}
+        />
+
+        {/* Barra de Acciones */}
+        <div className="mb-8">
+          <div className="flex justify-center">
+            <div className="flex flex-wrap gap-3">
+              {/* Solo mostrar botón de login si no está logueado */}
+              {!isLoggedIn && (
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="neumorphic-login-button"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  Iniciar Sesión
+                </button>
+              )}
+
+              {/* Botón Nueva Revisión - Oculto en móvil */}
+              <button
+                onClick={() => router.push('/nueva-revision?new=true')}
+                className="hidden md:flex nueva-revision-button px-8 py-3 text-white rounded-xl hover:shadow-lg hover:shadow-[#098042]/40 transition-all duration-300 transform hover:scale-[1.02] items-center gap-3 font-medium text-lg min-w-[200px] justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nueva Revisión
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Estadísticas Principales */}
+        {!statsLoading && (
+          <div className="neumorphic-menu-container mb-6">
+            <h3 className="sr-only">📊 Estadísticas</h3>
+            
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-blue-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+                <span className="text-[11px] text-gray-300/80">Revisor</span>
+                <span className="text-[11px] font-semibold text-blue-300 truncate max-w-[120px]">{topRevisor?.name || 'N/A'}</span>
+                <span className="text-[10px] text-gray-400">({topRevisor?.count || 0})</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-green-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-[11px] text-gray-300/80">Check-outs</span>
+                <span className="text-[11px] font-semibold text-green-300 truncate max-w-[120px]">{topCheckOut?.name || 'N/A'}</span>
+                <span className="text-[10px] text-gray-400">({topCheckOut?.count || 0})</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-amber-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
+                <span className="text-[11px] text-gray-300/80">Más Check in</span>
+                <span className="text-[11px] font-semibold text-amber-300 truncate max-w-[80px]">{topCheckInCasita?.name || 'N/A'}</span>
+                <span className="text-[10px] text-gray-400">({topCheckInCasita?.count || 0})</span>
+              </div>
+            </div>
           </div>
         )}
 

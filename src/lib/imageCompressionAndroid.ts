@@ -66,7 +66,7 @@ const compressWithAdaptiveQuality = async (
   // Ajustar calidad inicial según complejidad
   let quality = imageComplexity > 0.7 ? 0.85 : 0.75;
   
-  for (let attempt = 1; attempt <= 10; attempt++) {
+  for (let attempt = 1; attempt <= 15; attempt++) {
     const blob = await new Promise<Blob | null>((resolve) => 
       canvas.toBlob(resolve, mimeType, quality)
     );
@@ -172,11 +172,13 @@ const resizeWithLanczos = (sourceCanvas: HTMLCanvasElement, targetWidth: number,
   return finalCanvas;
 };
 
-// 🎯 Selección inteligente de formato
+// 🎯 Selección inteligente de formato - Prioridad WebP para todos los tipos
 const selectOptimalFormat = async (canvas: HTMLCanvasElement, targetSizeKB: number): Promise<{ blob: Blob; format: string; size: number }> => {
   const formats = [
-    { type: 'image/webp', quality: 0.8 },
-    { type: 'image/jpeg', quality: 0.8 }
+    { type: 'image/webp', quality: 0.85 }, // Aumentada calidad inicial WebP
+    { type: 'image/webp', quality: 0.75 }, // Segundo intento WebP
+    { type: 'image/webp', quality: 0.65 }, // Tercer intento WebP
+    { type: 'image/jpeg', quality: 0.8 }   // Fallback JPEG solo si WebP falla
   ];
   
   let bestResult: { blob: Blob; format: string; size: number } | null = null;
@@ -228,7 +230,7 @@ const getImageTypeConfig = (file: File): ImageTypeConfig => {
   if (filename.includes('screenshot') || filename.includes('captura')) {
     return {
       preprocessOptions: { denoise: false, enhanceContrast: false },
-      preferredFormat: 'image/jpeg',
+      preferredFormat: 'image/webp', // Cambiado de JPEG a WebP
       qualityStart: 0.9
     };
   }
@@ -236,7 +238,7 @@ const getImageTypeConfig = (file: File): ImageTypeConfig => {
   if (filename.includes('photo') || filename.includes('img_')) {
     return {
       preprocessOptions: { denoise: true, enhanceContrast: true },
-      preferredFormat: 'image/jpeg',
+      preferredFormat: 'image/webp', // Cambiado de JPEG a WebP
       qualityStart: 0.85
     };
   }
@@ -292,7 +294,7 @@ export const compressImageAdvancedAndroid = async (
   options: AndroidCompressionOptions = {}
 ): Promise<File> => {
   const {
-    maxSizeKB = 600,
+    maxSizeKB = 800,
     maxWidth = 1000,
     maxHeight = 1000,
     preprocessOptions,

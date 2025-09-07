@@ -55,12 +55,12 @@ export default function PruebasCompresionAndroid() {
       const startTime = Date.now();
       
       const compressed = await compressImageAdvancedAndroid(selectedFile, {
-        maxSizeKB: 600,
+        maxSizeKB: 800,
         maxWidth: 1000,
         maxHeight: 1000,
-        preprocessOptions: { 
-          denoise: true, 
-          enhanceContrast: true 
+        preprocessOptions: {
+          denoise: true,
+          enhanceContrast: true
         },
         onProgress: (prog) => {
           setProgress(prog);
@@ -110,6 +110,17 @@ export default function PruebasCompresionAndroid() {
 
     try {
       const testResult = await testAndroidCompression(selectedFile);
+      
+      // Actualizar el resultado para mostrar el nuevo límite de 800KB
+      setCompressionResult({
+        originalSize: testResult.original.size,
+        compressedSize: testResult.compressed.size,
+        reduction: testResult.compressed.reduction,
+        compressionTime: 0, // No tenemos este dato en testAndroidCompression
+        format: testResult.details.format,
+        name: testResult.compressed.name,
+        targetSize: 800 // Indicar el nuevo objetivo
+      });
       
       addLog('📋 Resultados del análisis:');
       addLog(`   - Tamaño original: ${(testResult.original.size / 1024).toFixed(1)}KB`);

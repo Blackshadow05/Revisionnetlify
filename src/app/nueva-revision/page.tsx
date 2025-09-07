@@ -77,7 +77,7 @@ const requiredFields: (keyof RevisionData)[] = [
   'casita', 'quien_revisa', 'caja_fuerte', 'puertas_ventanas',
   'chromecast', 'binoculares', 'trapo_binoculares', 'speaker',
   'usb_speaker', 'controles_tv', 'secadora', 'accesorios_secadora',
-  'steamer', 'bolsa_vapor', 'cola_caballo', 'plancha_cabello', 'bulto',
+  'steamer', 'bolsa_vapor', 'plancha_cabello', 'cola_caballo', 'bulto',
   'sombrero', 'bolso_yute', 'camas_ordenadas'
 ];
 
@@ -97,8 +97,8 @@ const fieldLabels: Record<string, string> = {
   'accesorios_secadora': 'Accesorios Secadora',
   'steamer': 'Steamer',
   'bolsa_vapor': 'Bolsa Vapor',
-  'cola_caballo': 'Cola Caballo',
   'plancha_cabello': 'Plancha Cabello',
+  'cola_caballo': 'Cola Caballo',
   'bulto': 'Bulto',
   'sombrero': 'Sombrero',
   'bolso_yute': 'Bolso Yute',
@@ -1210,11 +1210,11 @@ export default function NuevaRevision() {
                   { field: 'steamer', label: 'Steamer', options: ['0', '01', '02', '03'] },
                   { field: 'bolsa_vapor', label: 'Bolsa Vapor', options: ['Si', 'No'] },
                   { field: 'plancha_cabello', label: 'Plancha Cabello', options: ['0', '01', '02'] },
+                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] },
                   { field: 'bulto', label: 'Bulto', options: ['Si', 'No'] },
                   { field: 'sombrero', label: 'Sombrero', options: ['Si', 'No'] },
                   { field: 'bolso_yute', label: 'Bolso Yute', options: ['0', '01', '02', '03'] },
-                  { field: 'camas_ordenadas', label: 'Camas Ordenadas', options: ['Si', 'No'] },
-                  { field: 'cola_caballo', label: 'Cola Caballo', options: ['Si', 'No'] }
+                  { field: 'camas_ordenadas', label: 'Camas Ordenadas', options: ['Si', 'No'] }
                 ].map(({ field, label, options }) => (
                   <div key={field} ref={fieldRefs.current[field]}>
                     <ButtonGroup

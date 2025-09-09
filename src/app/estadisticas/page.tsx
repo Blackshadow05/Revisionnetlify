@@ -78,7 +78,7 @@ export default function EstadisticasPage() {
   const { isLoggedIn, userRole, isLoading: authLoading } = useAuth();
   
   // Estados principales optimizados
-  const [revisioinesData, setRevisioinesData] = useState<RevisionCasita[]>([]);
+  const [revisionesData, setRevisionesData] = useState<RevisionCasita[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -127,24 +127,39 @@ export default function EstadisticasPage() {
       }
       setError(null);
       
-      // Obtener todos los registros para el gráfico y filtrado
-      const { data, error: supabaseError } = await supabase
-        .from('revisiones_casitas')
-        .select('id, quien_revisa, caja_fuerte, casita, created_at')
-        .order('created_at', { ascending: false })
-        .limit(10000); // Aumentamos el límite para obtener más registros
-
-      if (supabaseError) {
-        console.error('❌ Error fetching data:', supabaseError);
-        throw supabaseError;
+      // Cargar todos los registros en lotes para evitar límites
+      let allData: RevisionCasita[] = [];
+      let start = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error: supabaseError } = await supabase
+          .from('revisiones_casitas')
+          .select('id, quien_revisa, caja_fuerte, casita, created_at')
+          .order('created_at', { ascending: false })
+          .range(start, start + batchSize - 1);
+        
+        if (supabaseError) {
+          console.error('❌ Error fetching data:', supabaseError);
+          throw supabaseError;
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          start += batchSize;
+          // Si el lote tiene menos registros que el tamaño del lote, ya no hay más datos
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
       }
 
       // Obtener el total de registros en toda la tabla
       const total = await getTotalRevisiones();
       setTotalRevisionesCount(total);
-
-      setRevisioinesData(data as RevisionCasita[] || []);
-      console.log(`✅ Cargados ${data?.length || 0} registros, total: ${total}`);
+      
+      setRevisionesData(allData);
       
     } catch (err) {
       const errorMessage = 'Error al cargar estadísticas. Verifica tu conexión.';
@@ -171,12 +186,12 @@ export default function EstadisticasPage() {
   }, [authLoading, isLoggedIn, loadData]);
 
   const dataFilteredByCurrentYear = useMemo(() => {
-    return revisioinesData.filter(item => {
+    return revisionesData.filter(item => {
       if (!item.created_at) return false;
       const itemDate = new Date(item.created_at);
       return itemDate.getFullYear() === currentYear;
     });
-  }, [revisioinesData, currentYear]);
+  }, [revisionesData, currentYear]);
 
   // 🎯 Función optimizada para procesar datos de gráficos
   const processChartData = useCallback((
@@ -225,10 +240,9 @@ export default function EstadisticasPage() {
     );
 
     const revisionesPorPersona = processChartData(
-      dataFilteredByCurrentYear,
-      (item) => item.quien_revisa,
-      undefined,
-      12
+      revisionesData, // Usar todos los datos
+      (item) => item.quien_revisa
+      // Sin filtros adicionales para incluir todos los registros como en la consulta SQL
     );
 
     const checkOutsPorPersona = processChartData(

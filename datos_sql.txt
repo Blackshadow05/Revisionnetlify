@@ -1,0 +1,21 @@
+=== DIAGNÓSTICO: REVISIONES POR PERSONA ===
+C:\Users\Esteban\Desktop\b Proyectos Web\Netlify windsurf\src\app\estadisticas\page.tsx:251 Total de registros cargados: 1225
+C:\Users\Esteban\Desktop\b Proyectos Web\Netlify windsurf\src\app\estadisticas\page.tsx:254 Primeros 5 registros: (5) [{…}, {…}, {…}, {…}, {…}]
+C:\Users\Esteban\Desktop\b Proyectos Web\Netlify windsurf\src\app\estadisticas\page.tsx:269 Top 10 revisiones por persona (manual): (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]0: {name: 'Ricardo B', value: 243}1: {name: 'Esteban B', value: 153}2: {name: 'Emerson S', value: 128}3: {name: 'Adrian S', value: 105}4: {name: 'Jefferson V', value: 102}5: {name: 'Daniel V', value: 100}6: {name: 'Olman Z', value: 96}7: {name: 'Willy G', value: 93}8: {name: 'Ramiro Q', value: 88}9: {name: 'Cristhofer G', value: 59}length: 10[[Prototype]]: Array(0)at: ƒ at()concat: ƒ concat()constructor: ƒ Array()copyWithin: ƒ copyWithin()entries: ƒ entries()every: ƒ every()fill: ƒ fill()filter: ƒ filter()find: ƒ find()findIndex: ƒ findIndex()findLast: ƒ findLast()findLastIndex: ƒ findLastIndex()flat: ƒ flat()flatMap: ƒ flatMap()forEach: ƒ forEach()includes: ƒ includes()indexOf: ƒ indexOf()join: ƒ join()keys: ƒ keys()lastIndexOf: ƒ lastIndexOf()length: 0map: ƒ map()pop: ƒ pop()push: ƒ push()reduce: ƒ reduce()reduceRight: ƒ reduceRight()reverse: ƒ reverse()shift: ƒ shift()slice: ƒ slice()some: ƒ some()sort: ƒ sort()splice: ƒ splice()toLocaleString: ƒ toLocaleString()toReversed: ƒ toReversed()toSorted: ƒ toSorted()toSpliced: ƒ toSpliced()toString: ƒ toString()unshift: ƒ unshift()values: ƒ values()with: ƒ with()Symbol(Symbol.iterator): ƒ values()Symbol(Symbol.unscopables): {at: true, copyWithin: true, entries: true, fill: true, find: true, …}[[Prototype]]: Object
+C:\Users\Esteban\Desktop\b Proyectos Web\Netlify windsurf\src\app\estadisticas\page.tsx:277 Top 10 revisiones por persona (processChartData): 
+datos de supabase
+| quien_revisa | total |
+| ------------ | ----- |
+| Ricardo B    | 243   |
+| Esteban B    | 153   |
+| Emerson S    | 128   |
+| Adrian S     | 105   |
+| Jefferson V  | 102   |
+| Daniel V     | 100   |
+| Olman Z      | 96    |
+| Willy G      | 90    |
+| Ramiro Q     | 88    |
+| Cristhofer G | 59    |
+| Michael J    | 24    |
+| JosephR      | 18    |
+| Juan M       | 16    |

@@ -94,6 +94,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [cajaFuerteFilter, setCajaFuerteFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -481,17 +482,21 @@ export default function Home() {
     const searchLower = searchTerm.toLowerCase();
 
     const cajaFuerteMatch = !cajaFuerteFilter || row.caja_fuerte === cajaFuerteFilter;
+    
+    // Date filter logic
+    const dateMatch = !dateFilter || (row.created_at && row.created_at.startsWith(dateFilter));
 
-    if (!searchTerm) {
+    if (!searchTerm && !dateFilter) {
       return cajaFuerteMatch;
     }
 
-    const searchMatch =
+    const searchMatch = searchTerm ? (
       row.casita.toLowerCase() === searchLower ||
       row.quien_revisa.toLowerCase().includes(searchLower) ||
-      row.caja_fuerte.toLowerCase().includes(searchLower);
+      row.caja_fuerte.toLowerCase().includes(searchLower)
+    ) : true;
 
-    return cajaFuerteMatch && searchMatch;
+    return cajaFuerteMatch && searchMatch && dateMatch;
   });
 
   const applyAdvancedFilters = (data: RevisionData[]) => {
@@ -1230,18 +1235,13 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Búsqueda Principal */}
             <div className="flex-1 relative order-2 lg:order-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Buscar por casita, revisor o estado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="neumorphic-input w-full pl-12 pr-4 py-3 text-white placeholder-gray-400"
+                className="neumorphic-input w-full pl-4 pr-12 py-3 text-white placeholder-gray-400"
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
               />
@@ -1278,12 +1278,13 @@ export default function Home() {
           </div>
 
           {/* Resultados de búsqueda y filtros */}
-          {(mounted && (searchTerm || cajaFuerteFilter || activeFilter !== 'all')) && (
+          {(mounted && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')) && (
             <div className="mt-4 pt-4 border-t border-[#3d4659]/50">
               <p className="text-gray-400 text-sm">
                 Mostrando {finalFilteredData.length} de {data.length} revisiones
                 {searchTerm && <span> para "{searchTerm}"</span>}
                 {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
+                {dateFilter && <span> del {format(new Date(dateFilter), 'dd/MM/yyyy', { locale: es })}</span>}
                 {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
                 {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
                 {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
@@ -1299,7 +1300,50 @@ export default function Home() {
             currentView={viewMode}
             onViewChange={handleViewModeChange}
           />
-          <div className="relative filter-dropdown-container">
+          <div className="flex items-center gap-2">
+            {/* Date Filter Icon */}
+            <div className="relative">
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <button
+                type="button"
+                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
+                  dateFilter
+                    ? 'border-blue-400/40 bg-blue-500/20'
+                    : ''
+                }`}
+                title="Filtrar por fecha"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25M3 18.75l4.5-4.5m0 0l4.5 4.5m-4.5-4.5v13.5" />
+                </svg>
+              </button>
+              {dateFilter && (
+                <span 
+                  className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDateFilter('');
+                  }}
+                >
+                  ×
+                </span>
+              )}
+            </div>
+            
+            {/* Existing Filter Button */}
+            <div className="relative filter-dropdown-container">
             <button
               type="button"
               className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
@@ -1478,6 +1522,7 @@ export default function Home() {
             )}
           </div>
         </div>
+        </div>
 
         {/* Vista de datos - Solo visible si el usuario está logueado */}
         {isLoggedIn ? (
@@ -1557,11 +1602,12 @@ export default function Home() {
                                       : `Página ${currentPage} está vacía. Navega a una página anterior.`
                                     }
                                   </p>
-                                  {finalFilteredData.length === 0 && (searchTerm || cajaFuerteFilter || activeFilter !== 'all') && (
+                                  {finalFilteredData.length === 0 && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
                                     <button
                                       onClick={() => {
                                         setSearchTerm('');
                                         setCajaFuerteFilter('');
+                                        setDateFilter('');
                                         setActiveFilter('all');
                                       }}
                                       className="mt-4 px-4 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-xl transition-all duration-200 text-sm"

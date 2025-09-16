@@ -441,6 +441,54 @@ export default function NuevaRevision() {
     debouncedSave(newFormData);
   }, [formData, debouncedSave]);
 
+  // 🚀 NUEVA: Función auxiliar para compresión con reintento
+  const compressImageWithRetry = async (
+    file: File,
+    initialConfig: any,
+    onProgress: (progress: {
+      attempt: number;
+      currentSize: number;
+      targetSize: number;
+      quality: number;
+      resolution: string;
+      status: 'compressing' | 'compressed' | 'timeout' | 'error' | 'pre-processing';
+    }) => void,
+    logId: string,
+    isAndroid: boolean
+  ): Promise<File> => {
+    try {
+      // Primer intento con configuración original
+      addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando primer intento de compresión`);
+      return await compressImageAdvanced(file, initialConfig, onProgress);
+    } catch (error) {
+      // Si falla y es Android, intentar con resolución reducida
+      if (isAndroid && initialConfig.maxResolution > 1300) {
+        addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Primer intento falló. Reintentando con resolución reducida (1300px)`, {
+          error: error?.message || 'Error desconocido'
+        });
+        
+        const retryConfig = {
+          ...initialConfig,
+          maxResolution: 1300
+        };
+        
+        try {
+          addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando segundo intento con resolución 1300px`);
+          return await compressImageAdvanced(file, retryConfig, onProgress);
+        } catch (retryError) {
+          addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Segundo intento también falló`, {
+            error: retryError?.message || 'Error desconocido'
+          });
+          // Lanzar el error del segundo intento
+          throw retryError;
+        }
+      } else {
+        // Si no es Android o ya estaba en resolución baja, lanzar el error original
+        throw error;
+      }
+    }
+  };
+
   // 🚀 NUEVA: Función de manejo de archivos con compresión avanzada
   const manejarArchivoSeleccionado = async (field: EvidenceField, file: File) => {
     // --- INICIO LOG AVANZADO ---
@@ -516,19 +564,21 @@ export default function NuevaRevision() {
       // 🎯 Configuración personalizada por dispositivo
       let targetSizeKB = 600; // Por defecto igual para iOS y Android
       let format: 'webp' | 'jpeg' = 'jpeg';
+      let maxResolution = 1000; // Resolución máxima por defecto
       
       if (isIOS || isSafari) {
         targetSizeKB = 600; // iPhone: 600 KB
         format = 'jpeg';
         addCompressionLog(`[LOG_COMPRESION][${logId}] iPhone/iOS detectado: usando JPEG y 600KB como objetivo`);
       } else if (isAndroid) {
-        targetSizeKB = 600; // Android: ahora también 600 KB
-        format = 'jpeg'; // Android: ahora también JPEG
-        addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado: usando JPEG y 600KB como objetivo (misma configuración que iOS)`);
+        targetSizeKB = 600; // Android: mantener 600 KB
+        format = 'webp'; // Android: usar WebP
+        maxResolution = 1600; // Android: resolución más alta (1600px)
+        addCompressionLog(`[LOG_COMPRESION][${logId}] Android detectado: usando WebP, 600KB como objetivo y 1600px de resolución`);
       }
       const compressionConfig = {
         targetSizeKB,      // iPhone: 600KB, Android: 600KB
-        maxResolution: 1000,    // Resolución máxima 1000px para ambos dispositivos
+        maxResolution,     // iPhone: 1000px, Android: 1600px
         maxQuality: 0.75,       // Calidad máxima 0.75 para ambos dispositivos
         minQuality: 0.50,       // Calidad mínima 0.50
         maxAttempts: 10,        // Más intentos para mejor resultado
@@ -573,12 +623,14 @@ export default function NuevaRevision() {
         }
       };
 
-      // 🚀 Ejecutar compresión avanzada
+      // 🚀 Ejecutar compresión avanzada con posibilidad de reintento
       console.log(`[LOG_COMPRESION][${logId}] Iniciando compresión avanzada con config:`, compressionConfig);
       if (isIOS || isSafari) {
         addCompressionLog(`[LOG_COMPRESION][${logId}] ADVERTENCIA: En Safari/iOS la compresión puede no ser tan eficiente como en otros navegadores.`);
       }
-      const compressedFile = await compressImageAdvanced(file, compressionConfig, onProgress);
+      
+      // Usar la nueva función con reintento
+      const compressedFile = await compressImageWithRetry(file, compressionConfig, onProgress, logId, isAndroid);
 
       const logResult = {
         tamaño_original: `${(file.size / 1024).toFixed(1)}KB`,

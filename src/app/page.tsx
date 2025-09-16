@@ -118,9 +118,65 @@ export default function Home() {
   // Función auxiliar para cambiar el filtro y guardarlo en localStorage
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
-    localStorage.setItem('activeRevisionFilter', filter);
+    try {
+      if (filter !== 'all') {
+        localStorage.setItem('activeRevisionFilter', filter);
+        // Actualizar timestamp cuando se aplica un filtro
+        localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
+      } else {
+        localStorage.removeItem('activeRevisionFilter');
+      }
+    } catch (err) {
+      console.log('Error al guardar activeRevisionFilter en localStorage:', err);
+    }
     setShowFilterDropdown(false);
     setCurrentPage(1);
+  };
+  
+  // Función para limpiar el filtro de fecha
+  const clearDateFilter = () => {
+    setDateFilter('');
+    // También eliminamos del localStorage
+    try {
+      localStorage.removeItem('revisionDateFilter');
+    } catch (err) {
+      console.log('Error al eliminar revisionDateFilter de localStorage:', err);
+    }
+  };
+  
+  // Función para limpiar todos los filtros
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setCajaFuerteFilter('');
+    clearDateFilter();
+    setActiveFilter('all');
+    // Eliminar el timestamp cuando se limpian los filtros manualmente
+    try {
+      localStorage.removeItem('revisionFiltersTimestamp');
+    } catch (err) {
+      console.log('Error al eliminar revisionFiltersTimestamp de localStorage:', err);
+    }
+  };
+  
+  // Función para verificar y limpiar filtros si han pasado 20 minutos
+  const checkAndClearFiltersIfExpired = () => {
+    try {
+      const filterTimestamp = localStorage.getItem('revisionFiltersTimestamp');
+      if (filterTimestamp) {
+        const timestamp = parseInt(filterTimestamp, 10);
+        const now = Date.now();
+        const twentyMinutes = 20 * 60 * 1000; // 20 minutos en milisegundos
+        
+        // Si han pasado más de 20 minutos, limpiamos los filtros
+        if (now - timestamp > twentyMinutes) {
+          clearAllFilters();
+          localStorage.removeItem('revisionFiltersTimestamp');
+          console.log('Filtros limpiados automáticamente después de 20 minutos de inactividad');
+        }
+      }
+    } catch (err) {
+      console.log('Error al verificar expiración de filtros:', err);
+    }
   };
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
@@ -128,6 +184,9 @@ export default function Home() {
   // Cargar el valor guardado al montar el componente (evita problemas de hydration al ejecutarse en cliente)
   useEffect(() => {
     try {
+      // Verificar si los filtros deben limpiarse por inactividad
+      checkAndClearFiltersIfExpired();
+      
       const saved = localStorage.getItem('revisionSearchTerm');
       if (typeof saved === 'string' && saved.length > 0) {
         setSearchTerm(saved);
@@ -137,11 +196,22 @@ export default function Home() {
     }
   }, []);
 
+  // Verificar periódicamente si los filtros han expirado mientras el usuario está en la página
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAndClearFiltersIfExpired();
+    }, 60000); // Verificar cada minuto
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // Guardar el término de búsqueda cada vez que cambie. Si se limpia, se elimina de localStorage.
   useEffect(() => {
     try {
       if (searchTerm && searchTerm.length > 0) {
         localStorage.setItem('revisionSearchTerm', searchTerm);
+        // Actualizar timestamp cuando se aplica un filtro
+        localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
       } else {
         localStorage.removeItem('revisionSearchTerm');
       }
@@ -149,6 +219,91 @@ export default function Home() {
       console.log('Error al guardar revisionSearchTerm en localStorage:', err);
     }
   }, [searchTerm]);
+  
+  // Persistir el filtro de fecha en localStorage
+  useEffect(() => {
+    try {
+      const savedDate = localStorage.getItem('revisionDateFilter');
+      if (typeof savedDate === 'string' && savedDate.length > 0) {
+        setDateFilter(savedDate);
+      }
+    } catch (err) {
+      console.log('Error al cargar revisionDateFilter desde localStorage:', err);
+    }
+  }, []);
+
+  // Guardar el filtro de fecha cada vez que cambie. Si se limpia, se elimina de localStorage.
+  useEffect(() => {
+    try {
+      if (dateFilter && dateFilter.length > 0) {
+        localStorage.setItem('revisionDateFilter', dateFilter);
+        // Actualizar timestamp cuando se aplica un filtro
+        localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
+      } else {
+        localStorage.removeItem('revisionDateFilter');
+      }
+    } catch (err) {
+      console.log('Error al guardar revisionDateFilter en localStorage:', err);
+    }
+  }, [dateFilter]);
+  
+  // Persistir el filtro de caja fuerte en localStorage
+  useEffect(() => {
+    try {
+      const savedCajaFuerte = localStorage.getItem('revisionCajaFuerteFilter');
+      if (typeof savedCajaFuerte === 'string' && savedCajaFuerte.length > 0) {
+        setCajaFuerteFilter(savedCajaFuerte);
+      }
+    } catch (err) {
+      console.log('Error al cargar revisionCajaFuerteFilter desde localStorage:', err);
+    }
+  }, []);
+
+  // Guardar el filtro de caja fuerte cada vez que cambie. Si se limpia, se elimina de localStorage.
+  useEffect(() => {
+    try {
+      if (cajaFuerteFilter && cajaFuerteFilter.length > 0) {
+        localStorage.setItem('revisionCajaFuerteFilter', cajaFuerteFilter);
+        // Actualizar timestamp cuando se aplica un filtro
+        localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
+      } else {
+        localStorage.removeItem('revisionCajaFuerteFilter');
+      }
+    } catch (err) {
+      console.log('Error al guardar revisionCajaFuerteFilter en localStorage:', err);
+    }
+  }, [cajaFuerteFilter]);
+  
+  // Persistir el filtro activo en localStorage
+  useEffect(() => {
+    try {
+      const savedActiveFilter = localStorage.getItem('activeRevisionFilter');
+      if (typeof savedActiveFilter === 'string' && savedActiveFilter.length > 0) {
+        // Validar que el filtro sea uno de los valores permitidos
+        const validFilters: FilterType[] = ['all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 'no-trapo-binocular', 'no-sombrero', 'no-bulto', 'today', 'no-cola-caballo'];
+        if (validFilters.includes(savedActiveFilter as FilterType)) {
+          setActiveFilter(savedActiveFilter as FilterType);
+        }
+      }
+    } catch (err) {
+      console.log('Error al cargar activeRevisionFilter desde localStorage:', err);
+    }
+  }, []);
+  
+  // Guardar el filtro activo cada vez que cambie. Si se limpia, se elimina de localStorage.
+  useEffect(() => {
+    try {
+      if (activeFilter && activeFilter !== 'all') {
+        localStorage.setItem('activeRevisionFilter', activeFilter);
+        // Actualizar timestamp cuando se aplica un filtro
+        localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
+      } else {
+        localStorage.removeItem('activeRevisionFilter');
+      }
+    } catch (err) {
+      console.log('Error al guardar activeRevisionFilter en localStorage:', err);
+    }
+  }, [activeFilter]);
   
   // 🍽️ Estados para menú del día
   const [menuDelDia, setMenuDelDia] = useState<any>(null);
@@ -1280,16 +1435,31 @@ export default function Home() {
           {/* Resultados de búsqueda y filtros */}
           {(mounted && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')) && (
             <div className="mt-4 pt-4 border-t border-[#3d4659]/50">
-              <p className="text-gray-400 text-sm">
-                Mostrando {finalFilteredData.length} de {data.length} revisiones
-                {searchTerm && <span> para "{searchTerm}"</span>}
-                {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
-                {dateFilter && <span> del {format(new Date(dateFilter), 'dd/MM/yyyy', { locale: es })}</span>}
-                {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
-                {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
-                {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
-                {activeFilter === 'no-cola-caballo' && <span> (sin cola de caballo)</span>}
-              </p>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <p className="text-gray-400 text-sm">
+                  Mostrando {finalFilteredData.length} de {data.length} revisiones
+                  {searchTerm && <span> para "{searchTerm}"</span>}
+                  {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
+                  {dateFilter && <span> del {format(new Date(dateFilter), 'dd/MM/yyyy', { locale: es })}</span>}
+                  {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
+                  {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
+                  {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
+                  {activeFilter === 'no-cola-caballo' && <span> (sin cola de caballo)</span>}
+                </p>
+                {(searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setCajaFuerteFilter('');
+                      clearDateFilter();
+                      setActiveFilter('all');
+                    }}
+                    className="px-3 py-1 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-lg transition-all duration-200 text-sm whitespace-nowrap"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1311,12 +1481,12 @@ export default function Home() {
               />
               <button
                 type="button"
-                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
+                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center ${
                   dateFilter
                     ? 'border-blue-400/40 bg-blue-500/20'
                     : ''
                 }`}
-                title="Filtrar por fecha"
+                title={dateFilter ? `Filtrando por: ${dateFilter}` : "Filtrar por fecha"}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1334,7 +1504,7 @@ export default function Home() {
                   className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDateFilter('');
+                    clearDateFilter();
                   }}
                 >
                   ×

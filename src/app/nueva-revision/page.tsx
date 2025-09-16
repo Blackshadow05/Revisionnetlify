@@ -460,11 +460,11 @@ export default function NuevaRevision() {
       // Primer intento con configuración original
       addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando primer intento de compresión`);
       return await compressImageAdvanced(file, initialConfig, onProgress);
-    } catch (error) {
+    } catch (error: unknown) {
       // Si falla y es Android, intentar con resolución reducida
       if (isAndroid && initialConfig.maxResolution > 1300) {
         addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Primer intento falló. Reintentando con resolución reducida (1300px)`, {
-          error: error?.message || 'Error desconocido'
+          error: error instanceof Error ? error.message : 'Error desconocido'
         });
         
         const retryConfig = {
@@ -475,9 +475,9 @@ export default function NuevaRevision() {
         try {
           addCompressionLog(`[LOG_COMPRESION][${logId}] Iniciando segundo intento con resolución 1300px`);
           return await compressImageAdvanced(file, retryConfig, onProgress);
-        } catch (retryError) {
+        } catch (retryError: unknown) {
           addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Segundo intento también falló`, {
-            error: retryError?.message || 'Error desconocido'
+            error: retryError instanceof Error ? retryError.message : 'Error desconocido'
           });
           // Lanzar el error del segundo intento
           throw retryError;
@@ -656,9 +656,9 @@ export default function NuevaRevision() {
         [field]: { status: 'completed', progress: 100, stage: 'Compresión completada' }
       }));
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada:`, error);
-      addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada`, error?.message || error);
+      addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada`, error instanceof Error ? error.message : error);
       if (typeof window !== 'undefined') {
         console.log(`[LOG_COMPRESION][${logId}] window.navigator info:`, window.navigator);
         addCompressionLog(`[LOG_COMPRESION][${logId}] window.navigator info`, window.navigator);
@@ -679,19 +679,19 @@ export default function NuevaRevision() {
       // Estado legacy para compatibilidad
       setCompressionStatus(prev => ({
         ...prev,
-        [field]: { 
-          status: 'error', 
-          progress: 0, 
+        [field]: {
+          status: 'error',
+          progress: 0,
           stage: 'Error en compresión',
-          error: error.message || 'Error desconocido'
+          error: error instanceof Error ? error.message : 'Error desconocido'
         }
       }));
 
       // Determinar mensaje de error específico
       let errorMessage = 'Error al comprimir la imagen';
-      if (error.message?.includes('Timeout')) {
+      if (error instanceof Error && error.message?.includes('Timeout')) {
         errorMessage = 'La compresión tardó demasiado. Intenta con una imagen más pequeña.';
-      } else if (error.message?.includes('load')) {
+      } else if (error instanceof Error && error.message?.includes('load')) {
         errorMessage = 'No se pudo cargar la imagen. Verifica que sea un archivo válido.';
       }
 

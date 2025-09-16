@@ -36,12 +36,7 @@ export const supabase = createClient(
           'x-application-name': 'revision-casitas'
         }
     },
-    realtime: {
-      params: {
-        eventsPerSecond: 2
-      }
-      }
-  }
+    }
 );
 
 // Función de utilidad para verificar la conexión

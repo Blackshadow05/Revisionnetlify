@@ -1116,4 +1116,59 @@ button, [role="button"] {
     2px 2px 4px #151d2a,
     -2px -2px 4px #33475d;
   transform: translateY(1px);
+}/* Ocultar botón de Nueva Revisión cuando el modal de imagen está abierto */
+.image-modal-open .nueva-revision-button {
+  display: none !important;
+}
+
+/* Ocultar botón flotante de Nueva Revisión en móvil cuando el modal está abierto */
+.image-modal-open .neu-floating-button {
+  display: none !important;
+}
+
+/* Ocultar cualquier otro botón o elemento que pueda interferir con el modal */
+.image-modal-open .neu-sidebar-button {
+  display: none !important;
+}
+
+/* Animación especial para botón flotante de cerrar en móvil */
+.neu-close-floating-button {
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform 0.2s ease, opacity 0.2s ease !important;
+}
+
+.neu-close-floating-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shine-red 3s infinite;
+}
+
+.neu-close-floating-button:active {
+  transform: scale(0.95);
+}
+
+.neu-close-floating-button:hover {
+  transform: scale(1.05);
+}
+
+@keyframes shine-red {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
 }

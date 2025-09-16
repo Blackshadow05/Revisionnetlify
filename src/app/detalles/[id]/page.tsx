@@ -1285,7 +1285,7 @@ const DetalleRevision = memo(() => {
         </div>
       )}
 
-      {/* Modal de imagen */}
+      {/* Modal de imagen con todas las funcionalidades de zoom y pan */}
       <Suspense fallback={null}>
         <ImageModal
           isOpen={modalOpen}

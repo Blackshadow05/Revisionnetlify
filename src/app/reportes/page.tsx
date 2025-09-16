@@ -488,18 +488,6 @@ export default function ReportesPage() {
               {loading ? 'Generando...' : 'Generar Reporte CSV'}
             </LoadingButton>
             
-            {isWebShareAvailable() && (
-              <button
-                onClick={generateCSV}
-                disabled={loading || selectedFields.length === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md flex items-center justify-center"
-                title="Compartir Reporte CSV"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                </svg>
-              </button>
-            )}
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
@@ -513,18 +501,6 @@ export default function ReportesPage() {
               {loading ? 'Generando...' : 'Último Registro por Casita'}
             </LoadingButton>
             
-            {isWebShareAvailable() && (
-              <button
-                onClick={generateUltimoRegistroPorCasitaCSV}
-                disabled={loading || selectedFields.length === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md flex items-center justify-center"
-                title="Compartir Último Registro por Casita"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                </svg>
-              </button>
-            )}
           </div>
         </div>
         

@@ -6,8 +6,7 @@
   "background_color": "#2a3347",
   "theme_color": "#c9a45c",
   "description": "Sistema moderno para la gestión y control de revisiones",
-  "orientation": "portrait",
-  "lang": "es-ES",
+    "lang": "es-ES",
   "scope": "/",
   "categories": ["productivity", "business"],
   "icons": [

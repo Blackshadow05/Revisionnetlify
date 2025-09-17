@@ -1492,15 +1492,21 @@ export default function Home() {
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  strokeWidth={1.5}
+                  strokeWidth={1.6}
                   stroke="currentColor"
                   className="w-5 h-5"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25M3 18.75l4.5-4.5m0 0l4.5 4.5m-4.5-4.5v13.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v2M16 3v2M3.5 8.5h17M5 5h14a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                  <rect x="7" y="11" width="2.5" height="2.5" rx="0.5" />
+                  <rect x="11" y="11" width="2.5" height="2.5" rx="0.5" />
+                  <rect x="15" y="11" width="2.5" height="2.5" rx="0.5" />
+                  <rect x="7" y="15" width="2.5" height="2.5" rx="0.5" />
+                  <rect x="11" y="15" width="2.5" height="2.5" rx="0.5" />
+                  <rect x="15" y="15" width="2.5" height="2.5" rx="0.5" />
                 </svg>
               </button>
               {dateFilter && (
-                <span 
+                <span
                   className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();

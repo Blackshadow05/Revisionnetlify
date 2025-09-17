@@ -537,7 +537,7 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
       )}
 
       {/* Contenedor de imagen con soporte para zoom y pan */}
-      <div className="relative max-w-full max-h-full overflow-hidden" ref={containerRef} onWheel={handleWheel}>
+      <div className="relative" ref={containerRef} onWheel={handleWheel}>
         <div
           ref={imgWrapperRef}
           className={`inline-block select-none ${imageScale > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}

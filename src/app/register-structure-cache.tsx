@@ -5,7 +5,38 @@ import { useEffect } from 'react';
 export function RegisterStructureCache() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      // 1) Registrar/actualizar el SW de estructura
       registerStructureServiceWorker();
+
+      // 2) Forzar toma de control inmediata cuando haya un nuevo controlador
+      // Evita bucles de recarga con un flag por sesión
+      let hasReloadedForSWUpdate = false;
+
+      const onControllerChange = () => {
+        if (hasReloadedForSWUpdate) return;
+        hasReloadedForSWUpdate = true;
+
+        // Solo recargar si la página está visible para evitar UX brusco en background
+        if (document.visibilityState === 'visible') {
+          console.log('🔄 Nuevo Service Worker controlador activo. Recargando para aplicar actualización inmediata...');
+          location.reload();
+        } else {
+          // Si no está visible, esperar a que vuelva a estarlo
+          const onVisible = () => {
+            document.removeEventListener('visibilitychange', onVisible);
+            console.log('🔄 Página visible. Recargando para aplicar actualización de Service Worker...');
+            location.reload();
+          };
+          document.addEventListener('visibilitychange', onVisible);
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+      // Cleanup al desmontar
+      return () => {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      };
     }
   }, []);
 
@@ -17,10 +48,16 @@ async function registerStructureServiceWorker() {
     // Verificar si ya está registrado
     const existingRegistration = await navigator.serviceWorker.getRegistration();
     
-    if (existingRegistration && 
-        existingRegistration.active && 
+    if (existingRegistration &&
+        existingRegistration.active &&
         existingRegistration.active.scriptURL.includes('sw-structure.js')) {
       console.log('📦 Service Worker de estructura ya registrado');
+
+      // Si hay una waiting, forzar que tome control inmediatamente
+      if (existingRegistration.waiting) {
+        console.log('⏭️ SW en estado waiting detectado. Enviando SKIP_WAITING para activar de inmediato...');
+        existingRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
       return;
     }
 
@@ -37,6 +74,22 @@ async function registerStructureServiceWorker() {
     });
 
     console.log('📦 Service Worker de estructura registrado exitosamente');
+
+    // Si hay un nuevo SW en installing o waiting, adelantar su activación
+    if (registration.installing) {
+      registration.installing.addEventListener('statechange', () => {
+        if (registration.waiting) {
+          console.log('⏭️ Enviando SKIP_WAITING al SW (statechange->waiting)...');
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    } else if (registration.waiting) {
+      console.log('⏭️ Enviando SKIP_WAITING al SW (waiting inmediato)...');
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      // También intentar update y forzar skipWaiting en caso de que llegue a waiting luego
+      registration.update().catch(() => {});
+    }
 
     // Configurar almacenamiento persistente
     if ('storage' in navigator && 'persist' in navigator.storage) {
@@ -62,7 +115,7 @@ async function cleanupDataCache() {
       
       for (const cacheName of cacheNames) {
         // Mantener caché de estructura permanente
-        if (cacheName.includes('structure-permanent') || 
+        if (cacheName.includes('structure-permanent') ||
             cacheName.includes('static-permanent')) {
           console.log('📦 Caché de estructura conservado:', cacheName);
           continue;

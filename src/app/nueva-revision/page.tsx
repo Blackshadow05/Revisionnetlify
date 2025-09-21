@@ -32,11 +32,11 @@ import PageTitle from '@/components/ui/PageTitle';
 import ShareModal from '@/components/ShareModal';
 
 // 🚀 Función debounce custom ligera (siguiendo principio de JavaScript mínimo)
-function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
+function debounce<T extends (arg: RevisionData) => void>(func: T, delay: number): T {
   let timeoutId: NodeJS.Timeout;
-  return ((...args: any[]) => {
+  return ((arg: RevisionData) => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(null, args), delay);
+    timeoutId = setTimeout(() => func(arg), delay);
   }) as T;
 }
 
@@ -62,9 +62,13 @@ const initialFormData: RevisionData = {
   bolso_yute: '',
   camas_ordenadas: '',
   evidencia_01: '',
-      evidencia_02: '',
-    evidencia_03: '',
-    notas: '',
+  evidencia_02: '',
+  evidencia_03: '',
+  notas: '',
+  created_at: '',
+  fecha_edicion: '',
+  quien_edito: '',
+  notas_count: 0,
 };
 
 const initialFileData: FileData = {
@@ -105,21 +109,17 @@ const fieldLabels: Record<string, string> = {
   'camas_ordenadas': 'Camas Ordenadas'
 };
 
-// Interfaz para los logs de compresión
-interface CompressionLogEntry {
-  timestamp: number;
-  message: string;
-  data?: any;
-}
+// Importar la interfaz CompressionLog desde types
+import type { CompressionLog } from '@/types/revision';
 
 export default function NuevaRevision() {
   // Estado para almacenar los logs de compresión
-  const [compressionLogs, setCompressionLogs] = useState<CompressionLogEntry[]>([]);
+  const [compressionLogs, setCompressionLogs] = useState<CompressionLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Función para agregar un log de compresión
-  const addCompressionLog = (msg: string, data?: any) => {
+  const addCompressionLog = (msg: string, data?: Record<string, unknown>) => {
     setCompressionLogs(prev => [...prev, {
       timestamp: Date.now(),
       message: msg,
@@ -423,8 +423,11 @@ export default function NuevaRevision() {
     // 6. 🧹 Forzar garbage collection si está disponible (solo en desarrollo)
     if (typeof window !== 'undefined' && 'gc' in window && process.env.NODE_ENV === 'development') {
       try {
-        (window as any).gc();
-        console.log('🗑️ Garbage collection forzado (desarrollo)');
+        const gcFunction = (window as typeof window & { gc?: () => void }).gc;
+        if (gcFunction) {
+          gcFunction();
+          console.log('🗑️ Garbage collection forzado (desarrollo)');
+        }
       } catch {
         // Silenciar error si gc no está disponible
       }
@@ -444,7 +447,15 @@ export default function NuevaRevision() {
   // 🚀 NUEVA: Función auxiliar para compresión con reintento
   const compressImageWithRetry = async (
     file: File,
-    initialConfig: any,
+    initialConfig: {
+      targetSizeKB: number;
+      maxResolution: number;
+      maxQuality: number;
+      minQuality: number;
+      maxAttempts: number;
+      timeout: number;
+      format: 'webp' | 'jpeg';
+    },
     onProgress: (progress: {
       attempt: number;
       currentSize: number;
@@ -658,10 +669,14 @@ export default function NuevaRevision() {
 
     } catch (error: unknown) {
       console.error(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada:`, error);
-      addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada`, error instanceof Error ? error.message : error);
+      addCompressionLog(`[LOG_COMPRESION][${logId}] ❌ Error en compresión avanzada`, error instanceof Error ? { message: error.message } : { error: String(error) });
       if (typeof window !== 'undefined') {
         console.log(`[LOG_COMPRESION][${logId}] window.navigator info:`, window.navigator);
-        addCompressionLog(`[LOG_COMPRESION][${logId}] window.navigator info`, window.navigator);
+        addCompressionLog(`[LOG_COMPRESION][${logId}] window.navigator info`, {
+          userAgent: window.navigator.userAgent,
+          platform: window.navigator.platform,
+          language: window.navigator.language
+        });
       }
       // Actualizar estado de error
       setCompressionProgress(prev => ({
@@ -743,7 +758,7 @@ export default function NuevaRevision() {
           revokeImagePreview(url);
           addCompressionLog(`[${logId}] URL de imagen revocada correctamente`);
         } catch (error) {
-          addCompressionLog(`[${logId}] Error al revocar URL de imagen`, error);
+          addCompressionLog(`[${logId}] Error al revocar URL de imagen`, { error: String(error) });
         }
       }
       

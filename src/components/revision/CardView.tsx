@@ -28,8 +28,8 @@ interface RevisionData {
   evidencia_03: string;
   fecha_edicion: string;
   quien_edito: string;
-  datos_anteriores: any;
-  datos_actuales: any;
+  datos_anteriores?: Record<string, unknown>;
+  datos_actuales?: Record<string, unknown>;
   camas_ordenadas: string;
   cola_caballo: string;
   notas: string;

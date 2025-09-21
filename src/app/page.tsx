@@ -18,6 +18,7 @@ import CardView from '@/components/revision/CardView';
 import ShareModal from '@/components/ShareModal';
 import { PuestoService } from '@/lib/puesto-service';
 import { formatearFecha } from '@/lib/dateUtils';
+import { MenuData } from '@/types/revision';
 
 interface RevisionData {
   id?: string;
@@ -46,8 +47,8 @@ interface RevisionData {
   evidencia_03: string;
   fecha_edicion: string;
   quien_edito: string;
-  datos_anteriores: any;
-  datos_actuales: any;
+  datos_anteriores?: Record<string, unknown>;
+  datos_actuales?: Record<string, unknown>;
 
   camas_ordenadas: string;
   cola_caballo: string;
@@ -306,7 +307,7 @@ export default function Home() {
   }, [activeFilter]);
   
   // 🍽️ Estados para menú del día
-  const [menuDelDia, setMenuDelDia] = useState<any>(null);
+  const [menuDelDia, setMenuDelDia] = useState<MenuData | null>(null);
   const [loadingMenu, setLoadingMenu] = useState(true);
 
   // 🚀 Estados para paginado
@@ -548,9 +549,9 @@ export default function Home() {
       }
 
       setData(allData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in fetchData:', error);
-      setError(error.message || 'Error al cargar los datos');
+      setError(error instanceof Error ? error.message : 'Error al cargar los datos');
     } finally {
       setLoading(false);
     }
@@ -851,7 +852,7 @@ export default function Home() {
       await login(loginData.usuario, loginData.password);
       setShowLoginModal(false);
       setLoginData({ usuario: '', password: '' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al iniciar sesión:', error);
       setLoginError('Error al iniciar sesión');
     }
@@ -873,9 +874,9 @@ export default function Home() {
 
       if (error) throw error;
       fetchRevisiones();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al eliminar la revisión:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
 
@@ -1094,10 +1095,12 @@ export default function Home() {
       setReportDateFrom('');
       setReportDateTo('');
       alert(`Reporte exportado exitosamente como CSV`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al exportar:', error);
-      const isPermissionError = error.name === 'NotAllowedError' ||
-        (error.message && error.message.toLowerCase().includes('permission'));
+      const isPermissionError = error instanceof Error && (
+        error.name === 'NotAllowedError' ||
+        error.message.toLowerCase().includes('permission')
+      );
  
       if (isPermissionError) {
         // Regenerar el blob y filename para el fallback
@@ -1123,7 +1126,7 @@ export default function Home() {
         URL.revokeObjectURL(fallbackUrl);
         alert('No se pudo compartir el reporte (permiso denegado). Se descargó automáticamente.');
       } else {
-        alert(`Error al exportar reporte: ${error.message || 'Error desconocido'}`);
+        alert(`Error al exportar reporte: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     }
   };

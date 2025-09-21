@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoggedIn(true);
       setUserRole(userData.Rol);
       setUser(userData.Usuario);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al iniciar sesión:', error);
       throw error;
     }

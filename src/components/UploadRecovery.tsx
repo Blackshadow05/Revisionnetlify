@@ -5,9 +5,16 @@ import { UploadPersistence } from '@/utils/uploadPersistence';
 import { useToast } from '@/context/ToastContext';
 import { useUpload } from '@/context/UploadContext';
 
+// Interface para las subidas pendientes
+interface PendingUpload {
+  id: string;
+  fileName: string;
+  [key: string]: unknown; // Para propiedades adicionales que puedan existir
+}
+
 export default function UploadRecovery() {
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState<any[]>([]);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const { showInfo, showSuccess } = useToast();
   const { isServiceWorkerReady } = useUpload();
 

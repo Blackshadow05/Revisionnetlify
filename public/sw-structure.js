@@ -7,7 +7,13 @@ const DATA_CACHE = 'revision-data-temp-v1';
 const PERMANENT_STRUCTURE_URLS = [
   '/offline',
   '/manifest.json',
-  '/favicon.ico'
+  '/favicon.ico',
+  '/estadisticas',  // Cache permanente para página de estadísticas
+  '/estadisticas/offline',  // Cache permanente para página offline de estadísticas
+  '/unir-imagenes',  // Cache permanente para página de unir imágenes
+  '/unir-imagenes/offline',  // Cache permanente para página offline de unir imágenes
+  '/detalles',  // Cache permanente para página de detalles (ruta base)
+  '/detalles/offline'  // Cache permanente para página offline de detalles
 ];
 
 // Cache PERMANENTE - nunca se limpia
@@ -94,6 +100,17 @@ self.addEventListener('fetch', (event) => {
   
   // Cache para HTML de páginas (estructura)
   if (request.mode === 'navigate' || request.destination === 'document') {
+    // Estrategias especiales para páginas específicas
+    if (url.pathname === '/estadisticas') {
+      event.respondWith(statisticsCacheStrategy(request));
+      return;
+    } else if (url.pathname === '/unir-imagenes') {
+      event.respondWith(imageJoinCacheStrategy(request));
+      return;
+    } else if (url.pathname.startsWith('/detalles/')) {
+      event.respondWith(revisionDetailsCacheStrategy(request));
+      return;
+    }
     event.respondWith(structureCacheStrategy(request));
     return;
   }
@@ -167,7 +184,18 @@ async function structureCacheStrategy(request) {
     
     return response;
   } catch (error) {
-    // Página offline personalizada
+    // Páginas offline específicas para cada ruta
+    if (request.url.includes('/estadisticas')) {
+      const offlineResponse = await cache.match('/estadisticas/offline');
+      return offlineResponse || new Response('Sin conexión', { status: 503 });
+    } else if (request.url.includes('/unir-imagenes')) {
+      const offlineResponse = await cache.match('/unir-imagenes/offline');
+      return offlineResponse || new Response('Sin conexión', { status: 503 });
+    } else if (request.url.includes('/detalles')) {
+      const offlineResponse = await cache.match('/detalles/offline');
+      return offlineResponse || new Response('Sin conexión', { status: 503 });
+    }
+    // Página offline genérica para otras páginas
     const offlineResponse = await cache.match('/offline');
     return offlineResponse || new Response('Sin conexión', { status: 503 });
   }
@@ -183,17 +211,82 @@ async function networkOnly(request) {
   }
 }
 
+// Estrategia especial para página de estadísticas
+async function statisticsCacheStrategy(request) {
+  const cache = await caches.open(STRUCTURE_CACHE);
+  const cached = await cache.match(request);
+
+  // Si hay caché de estructura, usarlo como base
+  if (cached) {
+    try {
+      // Intentar obtener datos frescos en background
+      fetch(request).then(response => {
+        if (response.status === 200) {
+          // Actualizar caché de estructura con datos frescos
+          response.text().then(html => {
+            const structureOnly = html
+              .replace(/<div[^>]*id="statistics-data"[^>]*>.*?<\/div>/gs, '<div id="statistics-data"></div>')
+              .replace(/<script[^>]*data-dynamic[^>]*>.*?<\/script>/gs, '');
+
+            const structureResponse = new Response(structureOnly, {
+              headers: {
+                'Content-Type': 'text/html',
+                'Cache-Control': 'public, max-age=300' // 5 minutos
+              }
+            });
+
+            cache.put(request, structureResponse);
+          });
+        }
+      }).catch(() => {}); // Ignorar errores de background fetch
+
+      return cached;
+    } catch (error) {
+      return cached;
+    }
+  }
+
+  // Si no hay caché, descargar y cachear estructura base
+  try {
+    const response = await fetch(request);
+
+    if (response.status === 200) {
+      const html = await response.text();
+
+      // Preparar HTML para cache (eliminar datos dinámicos)
+      const structureOnly = html
+        .replace(/<div[^>]*id="statistics-data"[^>]*>.*?<\/div>/gs, '<div id="statistics-data"></div>')
+        .replace(/<script[^>]*data-dynamic[^>]*>.*?<\/script>/gs, '');
+
+      const structureResponse = new Response(structureOnly, {
+        headers: {
+          'Content-Type': 'text/html',
+          'Cache-Control': 'public, max-age=300'
+        }
+      });
+
+      cache.put(request, structureResponse);
+    }
+
+    return response;
+  } catch (error) {
+    // Página offline personalizada
+    const offlineResponse = await cache.match('/offline');
+    return offlineResponse || new Response('Sin conexión', { status: 503 });
+  }
+}
+
 // Network first con caché fallback temporal
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    
+
     // Cachear en caché temporal de datos
     if (response.status === 200) {
       const cache = await caches.open(DATA_CACHE);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     // Fallback a caché temporal
@@ -228,6 +321,121 @@ self.addEventListener('message', (event) => {
       break;
   }
 });
+
+// Estrategia para página de unir imágenes
+async function imageJoinCacheStrategy(request) {
+  const cache = await caches.open(STRUCTURE_CACHE);
+  const cached = await cache.match(request);
+
+  // Siempre usar caché si existe (página estática)
+  if (cached) {
+    return cached;
+  }
+
+  // Si no hay caché, descargar y cachear
+  try {
+    const response = await fetch(request);
+
+    if (response.status === 200) {
+      const html = await response.text();
+
+      // Preparar HTML para cache (mantener funcionalidad de unión de imágenes)
+      const structureOnly = html
+        .replace(/<div[^>]*id="image-join-data"[^>]*>.*?<\/div>/gs, '<div id="image-join-data"></div>')
+        .replace(/<script[^>]*data-dynamic[^>]*>.*?<\/script>/gs, '');
+
+      const structureResponse = new Response(structureOnly, {
+        headers: {
+          'Content-Type': 'text/html',
+          'Cache-Control': 'public, max-age=600' // 10 minutos
+        }
+      });
+
+      cache.put(request, structureResponse);
+    }
+
+    return response;
+  } catch (error) {
+    // Página offline personalizada para unir imágenes
+    if (request.url.includes('/unir-imagenes')) {
+      const offlineResponse = await cache.match('/unir-imagenes/offline');
+      return offlineResponse || new Response('Sin conexión', { status: 503 });
+    }
+    // Página offline genérica para otras páginas
+    const offlineResponse = await cache.match('/offline');
+    return offlineResponse || new Response('Sin conexión', { status: 503 });
+  }
+}
+
+// Estrategia para página de detalles de revisiones (dinámica)
+async function revisionDetailsCacheStrategy(request) {
+  const cache = await caches.open(STRUCTURE_CACHE);
+  const cached = await cache.match(request);
+
+  // Si hay caché de estructura, usarlo como base
+  if (cached) {
+    try {
+      // Intentar obtener datos frescos en background para páginas dinámicas
+      fetch(request).then(response => {
+        if (response.status === 200) {
+          // Actualizar caché de estructura con datos frescos
+          response.text().then(html => {
+            const structureOnly = html
+              .replace(/<div[^>]*id="revision-details-data"[^>]*>.*?<\/div>/gs, '<div id="revision-details-data"></div>')
+              .replace(/<script[^>]*data-dynamic[^>]*>.*?<\/script>/gs, '');
+
+            const structureResponse = new Response(structureOnly, {
+              headers: {
+                'Content-Type': 'text/html',
+                'Cache-Control': 'public, max-age=300' // 5 minutos
+              }
+            });
+
+            cache.put(request, structureResponse);
+          });
+        }
+      }).catch(() => {}); // Ignorar errores de background fetch
+
+      return cached;
+    } catch (error) {
+      return cached;
+    }
+  }
+
+  // Si no hay caché, descargar y cachear estructura base
+  try {
+    const response = await fetch(request);
+
+    if (response.status === 200) {
+      const html = await response.text();
+
+      // Preparar HTML para cache (eliminar datos dinámicos específicos)
+      const structureOnly = html
+        .replace(/<div[^>]*id="revision-details-data"[^>]*>.*?<\/div>/gs, '<div id="revision-details-data"></div>')
+        .replace(/<script[^>]*data-dynamic[^>]*>.*?<\/script>/gs, '');
+
+      const structureResponse = new Response(structureOnly, {
+        headers: {
+          'Content-Type': 'text/html',
+          'Cache-Control': 'public, max-age=300'
+        }
+      });
+
+      cache.put(request, structureResponse);
+    }
+
+    return response;
+  } catch (error) {
+    // Página offline personalizada para detalles
+    if (request.url.includes('/detalles')) {
+      const offlineResponse = await cache.match('/detalles/offline');
+      return offlineResponse || new Response('Sin conexión', { status: 503 });
+    }
+    // Página offline genérica para otras páginas
+    const offlineResponse = await cache.match('/offline');
+    return offlineResponse || new Response('Sin conexión', { status: 503 });
+  }
+}
 
 // Mantener Service Worker activo para estructura permanente
 self.addEventListener('install', () => {

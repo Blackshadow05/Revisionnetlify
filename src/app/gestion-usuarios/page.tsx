@@ -90,9 +90,9 @@ export default function GestionUsuarios() {
 
       console.log('Usuarios obtenidos:', data?.length);
       setUsuarios(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al cargar usuarios:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }
@@ -146,9 +146,9 @@ export default function GestionUsuarios() {
       setEditingId(null);
       setError(null);
       await fetchUsuarios();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al procesar usuario:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setIsSubmitting(false);
     }
@@ -191,9 +191,9 @@ export default function GestionUsuarios() {
       await fetchUsuarios();
       setShowDeleteModal(false);
       setUsuarioToDelete(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al eliminar usuario:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
 

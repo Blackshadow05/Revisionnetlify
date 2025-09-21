@@ -184,9 +184,9 @@ export default function NuevaNota() {
       setTimeout(() => {
         router.push('/');
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar la nota:', error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setLoading(false);
     }

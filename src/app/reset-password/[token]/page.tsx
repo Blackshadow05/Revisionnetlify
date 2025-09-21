@@ -56,7 +56,7 @@ export default function ResetPassword() {
 
       setUsuario(data);
       setLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error validating token:', error);
       setError('Error al validar el enlace');
       setLoading(false);
@@ -109,7 +109,7 @@ export default function ResetPassword() {
         router.push('/');
       }, 3000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating password:', error);
       setError('Error al actualizar la contraseña');
     } finally {

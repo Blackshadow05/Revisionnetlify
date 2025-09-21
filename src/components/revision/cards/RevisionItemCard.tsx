@@ -6,11 +6,11 @@ import { Revision } from '@/types/revision';
 
 interface RevisionItemCardProps {
   fieldKey: keyof Revision;
-  value: any;
+  value: string | number | boolean | null | undefined;
   label: string;
   delay: number;
   isEditing?: boolean;
-  editedData?: any;
+  editedData?: Partial<Revision>;
   onInputChange?: (field: keyof Revision, value: string) => void;
   nonEditableFields?: string[];
 }

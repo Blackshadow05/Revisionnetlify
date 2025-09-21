@@ -14,7 +14,18 @@ interface BarChartComponentProps {
   yAxisLabel?: string;
 }
 
-const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name?: string;
+    color?: string;
+    [key: string]: unknown;
+  }>;
+  label?: string;
+}
+
+const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-800 bg-opacity-95 p-3 border border-gray-600 rounded-lg shadow-xl max-w-xs">

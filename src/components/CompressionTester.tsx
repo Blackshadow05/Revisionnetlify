@@ -6,7 +6,7 @@ import { compressImageAdvanced } from '@/lib/imageUtils';
 interface CompressionLog {
   timestamp: number;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 interface CompressionResult {
@@ -37,7 +37,7 @@ export default function CompressionTester() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const addLog = (message: string, data?: any) => {
+  const addLog = (message: string, data?: Record<string, unknown>) => {
     setLogs(prev => [...prev, {
       timestamp: Date.now(),
       message,
@@ -154,7 +154,7 @@ export default function CompressionTester() {
     addLog('💾 Archivo comprimido descargado');
   };
 
-  const handleConfigChange = (key: string, value: any) => {
+  const handleConfigChange = (key: string, value: string | number) => {
     setConfig(prev => ({ ...prev, [key]: value }));
     addLog('⚙️ Configuración actualizada', { [key]: value });
   };

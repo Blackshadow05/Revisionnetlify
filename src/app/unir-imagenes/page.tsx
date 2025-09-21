@@ -47,7 +47,9 @@ export default function UnirImagenes() {
   const [memoryInfo, setMemoryInfo] = useState<string>('');
   
   const fileInputRef1 = useRef<HTMLInputElement>(null);
+  const fileInputRefGallery1 = useRef<HTMLInputElement>(null);
   const fileInputRef2 = useRef<HTMLInputElement>(null);
+  const fileInputRefGallery2 = useRef<HTMLInputElement>(null);
   
   // Función para obtener información de memoria
   const getMemoryInfo = () => {
@@ -224,7 +226,6 @@ export default function UnirImagenes() {
         if (!ctx) {
           img1.src = '';
           img2.src = '';
-          canvas = null as any;
           return;
         }
 
@@ -384,15 +385,15 @@ export default function UnirImagenes() {
 
       // Si el navegador soporta canShare, verificar compatibilidad
       const canShareWithFile = shareFile && (typeof navigator.canShare === 'function'
-        ? navigator.canShare({ files: [shareFile] } as any)
+        ? navigator.canShare({ files: [shareFile] } as ShareData)
         : true);
 
       if (shareFile && canShareWithFile) {
         await navigator.share({
           title: 'Imagen Unida',
           text: 'Imagen creada con la aplicación de unión de imágenes',
-          files: [shareFile] as any
-        });
+          files: [shareFile]
+        } as ShareData);
       } else {
         // Fall back a descarga
         descargar(imagenUnida, 'imagen-unida.jpg');
@@ -600,12 +601,20 @@ export default function UnirImagenes() {
                 <div className="space-y-3">
                   <div className="text-3xl">📸</div>
                   <p className="text-gray-300 text-sm">Selecciona una imagen</p>
-                  <button
-                    onClick={() => fileInputRef1.current?.click()}
-                    className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium"
-                  >
-                    Seleccionar
-                  </button>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => fileInputRef1.current?.click()}
+                      className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium flex items-center gap-1"
+                    >
+                      📷 Tomar Foto
+                    </button>
+                    <button
+                      onClick={() => fileInputRefGallery1.current?.click()}
+                      className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#6b7280] to-[#9ca3af] text-white rounded-lg hover:from-[#4b5563] hover:to-[#6b7280] transition-all shadow-md font-medium flex items-center gap-1"
+                    >
+                      🖼️ Galería
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -615,6 +624,13 @@ export default function UnirImagenes() {
               type="file"
               accept="image/*"
               capture="environment"
+              onChange={(e) => manejarSeleccionArchivo(e, 'img1')}
+              className="hidden"
+            />
+            <input
+              ref={fileInputRefGallery1}
+              type="file"
+              accept="image/*"
               onChange={(e) => manejarSeleccionArchivo(e, 'img1')}
               className="hidden"
             />
@@ -648,12 +664,20 @@ export default function UnirImagenes() {
                 <div className="space-y-3">
                   <div className="text-3xl">📸</div>
                   <p className="text-gray-300 text-sm">Selecciona una imagen</p>
-                  <button
-                    onClick={() => fileInputRef2.current?.click()}
-                    className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium"
-                  >
-                    Seleccionar
-                  </button>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => fileInputRef2.current?.click()}
+                      className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] rounded-lg hover:from-[#d4b06a] hover:to-[#f5d399] transition-all shadow-md font-medium flex items-center gap-1"
+                    >
+                      📷 Tomar Foto
+                    </button>
+                    <button
+                      onClick={() => fileInputRefGallery2.current?.click()}
+                      className="px-3 py-1.5 text-sm bg-gradient-to-r from-[#6b7280] to-[#9ca3af] text-white rounded-lg hover:from-[#4b5563] hover:to-[#6b7280] transition-all shadow-md font-medium flex items-center gap-1"
+                    >
+                      🖼️ Galería
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -663,6 +687,13 @@ export default function UnirImagenes() {
               type="file"
               accept="image/*"
               capture="environment"
+              onChange={(e) => manejarSeleccionArchivo(e, 'img2')}
+              className="hidden"
+            />
+            <input
+              ref={fileInputRefGallery2}
+              type="file"
+              accept="image/*"
               onChange={(e) => manejarSeleccionArchivo(e, 'img2')}
               className="hidden"
             />

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import dynamic from 'next/dynamic';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useRevisionStatistics, clearRevisionStatisticsCache } from '@/hooks/useStatisticsCache';
 
 
 // 🚀 Importación dinámica optimizada con mejor loading glassmorphism
@@ -76,13 +77,19 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T
 export default function EstadisticasPage() {
   const router = useRouter();
   const { isLoggedIn, userRole, isLoading: authLoading } = useAuth();
-  
-  // Estados principales optimizados
-  const [revisionesData, setRevisionesData] = useState<RevisionCasita[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Hook de cache para estadísticas
+  const {
+    data: statisticsData,
+    loading: cacheLoading,
+    error: cacheError,
+    isFromCache,
+    lastUpdated,
+    refresh: refreshCache
+  } = useRevisionStatistics();
+
+  // Estados adicionales para UI
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [totalRevisionesCount, setTotalRevisionesCount] = useState<number>(0);
 
   const currentYear = new Date().getFullYear();
 
@@ -98,100 +105,29 @@ export default function EstadisticasPage() {
     }
   }, [authLoading, isLoggedIn, router]);
 
-  // 🎯 Función para obtener el total de registros en toda la tabla
-  const getTotalRevisiones = useCallback(async () => {
+  // Función de refresh optimizada
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
     try {
-      const { count, error: countError } = await supabase
-        .from('revisiones_casitas')
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        console.error('❌ Error al contar total de revisiones:', countError);
-        return 0;
-      }
-
-      return count || 0;
-    } catch (err) {
-      console.error('❌ Error en getTotalRevisiones:', err);
-      return 0;
-    }
-  }, []);
-
-  // 🚀 Función de carga de datos optimizada con debounce
-  const loadData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      
-      // Cargar todos los registros en lotes para evitar límites
-      let allData: RevisionCasita[] = [];
-      let start = 0;
-      const batchSize = 1000;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const { data, error: supabaseError } = await supabase
-          .from('revisiones_casitas')
-          .select('id, quien_revisa, caja_fuerte, casita, created_at')
-          .order('created_at', { ascending: false })
-          .range(start, start + batchSize - 1);
-        
-        if (supabaseError) {
-          console.error('❌ Error fetching data:', supabaseError);
-          throw supabaseError;
-        }
-        
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          start += batchSize;
-          // Si el lote tiene menos registros que el tamaño del lote, ya no hay más datos
-          hasMore = data.length === batchSize;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      // Obtener el total de registros en toda la tabla
-      const total = await getTotalRevisiones();
-      setTotalRevisionesCount(total);
-      
-      setRevisionesData(allData);
-      
-    } catch (err) {
-      const errorMessage = 'Error al cargar estadísticas. Verifica tu conexión.';
-      setError(errorMessage);
-      console.error('❌ Error en loadData:', err);
+      await refreshCache();
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [getTotalRevisiones]);
+  }, [refreshCache]);
 
   // 🎯 Debounced refresh para evitar múltiples llamadas
   const debouncedRefresh = useMemo(
-    () => debounce(() => loadData(true), 300),
-    [loadData]
+    () => debounce(handleRefresh, 300),
+    [handleRefresh]
   );
 
-  // Efecto inicial de carga - esperar verificación de auth
-  useEffect(() => {
-    if (!authLoading && isLoggedIn) {
-      console.log('✅ Usuario autenticado, cargando datos...');
-      loadData();
-    }
-  }, [authLoading, isLoggedIn, loadData]);
-
+  // Datos derivados del cache
   const dataFilteredByCurrentYear = useMemo(() => {
-    return revisionesData.filter(item => {
-      if (!item.created_at) return false;
-      const itemDate = new Date(item.created_at);
-      return itemDate.getFullYear() === currentYear;
-    });
-  }, [revisionesData, currentYear]);
+    return statisticsData?.yearData || [];
+  }, [statisticsData?.yearData]);
+
+  const totalRevisionesCount = statisticsData?.totalRevisiones || 0;
+  const revisionesHoy = statisticsData?.revisionesHoy || 0;
 
   // 🎯 Función optimizada para procesar datos de gráficos
   const processChartData = useCallback((
@@ -217,20 +153,10 @@ export default function EstadisticasPage() {
     return limit ? sortedData.slice(0, limit) : sortedData;
   }, []);
 
-  // 🎯 Estadísticas procesadas (todas memoizadas para rendimiento máximo)
+  // 🎯 Estadísticas procesadas (usando datos del cache)
   const processedStats: ProcessedStats = useMemo(() => {
-    const today = new Date();
-    
-    // Usar el total de registros de toda la tabla para el contador principal
+    // Usar los datos que vienen del cache
     const totalRevisiones = totalRevisionesCount;
-    
-    const revisionesHoy = dataFilteredByCurrentYear.filter(item => {
-      if (!item.created_at) return false;
-      const itemDate = new Date(item.created_at);
-      return itemDate.getFullYear() === today.getFullYear() &&
-             itemDate.getMonth() === today.getMonth() &&
-             itemDate.getDate() === today.getDate();
-    }).length;
 
     const casitasCheckIn = processChartData(
       dataFilteredByCurrentYear,
@@ -240,7 +166,7 @@ export default function EstadisticasPage() {
     );
 
     const revisionesPorPersona = processChartData(
-      revisionesData, // Usar todos los datos
+      dataFilteredByCurrentYear, // Usar datos del año actual
       (item) => item.quien_revisa
       // Sin filtros adicionales para incluir todos los registros como en la consulta SQL
     );
@@ -254,12 +180,12 @@ export default function EstadisticasPage() {
 
     return {
       totalRevisiones,
-      revisionesHoy,
+      revisionesHoy, // Usar el valor que viene del cache
       casitasCheckIn,
       revisionesPorPersona,
       checkOutsPorPersona
     };
-  }, [dataFilteredByCurrentYear, processChartData]);
+  }, [dataFilteredByCurrentYear, processChartData, totalRevisionesCount, revisionesHoy]);
 
   // 🎯 Datos procesados para el gráfico de líneas de Check In por mes
   const checkInByMonth = useMemo(() => {
@@ -320,30 +246,37 @@ export default function EstadisticasPage() {
     return null;
   }
 
-  if (loading) {
+  if (cacheLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-8 shadow-2xl">
           <LoadingSpinner />
-          <p className="text-[#c9a45c] text-center mt-4 font-medium">Cargando estadísticas...</p>
+          <p className="text-[#c9a45c] text-center mt-4 font-medium">
+            {isFromCache ? 'Cargando datos frescos...' : 'Cargando estadísticas...'}
+          </p>
+          {isFromCache && (
+            <p className="text-gray-400 text-center mt-2 text-sm">
+              Mostrando datos en cache mientras se actualizan
+            </p>
+          )}
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (cacheError) {
     return (
-              <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-          <div className="bg-[#2a3347] rounded-2xl border border-red-500/30 p-8 shadow-2xl text-center max-w-md">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-[#2a3347] rounded-2xl border border-red-500/30 p-8 shadow-2xl text-center max-w-md">
           <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Error al cargar datos</h2>
-          <p className="text-gray-300 mb-4">{error}</p>
+          <p className="text-gray-300 mb-4">{cacheError}</p>
           <button
-            onClick={() => loadData()}
+            onClick={handleRefresh}
             className="px-4 py-2 bg-[#c9a45c] text-white rounded-lg hover:bg-[#f0c987] transition-colors duration-200 font-medium"
           >
             Reintentar
@@ -371,9 +304,25 @@ export default function EstadisticasPage() {
                   Estadísticas de Revisiones
                 </h1>
                 <p className="text-gray-300 mt-2">Panel de control y análisis de datos</p>
+
               </div>
               
               <div className="flex items-center gap-3">
+                {/* Botón de limpiar cache */}
+                <button
+                  onClick={() => {
+                    clearRevisionStatisticsCache();
+                    window.location.reload();
+                  }}
+                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 rounded-xl transition-all duration-200 flex items-center gap-2"
+                  title="Limpiar cache y recargar datos"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Limpiar Cache
+                </button>
+
                 {/* Botón de refresh */}
                 <button
                   onClick={debouncedRefresh}
@@ -385,7 +334,7 @@ export default function EstadisticasPage() {
                   </svg>
                   {refreshing ? 'Actualizando...' : 'Actualizar'}
                 </button>
-                
+
                 {/* Botón volver */}
                 <button
                   onClick={() => router.push('/')}

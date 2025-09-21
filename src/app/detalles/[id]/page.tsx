@@ -909,7 +909,7 @@ const DetalleRevision = memo(() => {
           <CasitaCard
             value={revision.casita}
             isEditing={isEditing}
-            editedData={editedData}
+            editedData={editedData || undefined}
             onInputChange={(value) => handleInputChange('casita', value)}
             onSaveEdit={handleSaveEdit}
             isSubmitting={isSubmitting}
@@ -942,7 +942,7 @@ const DetalleRevision = memo(() => {
                 label={fieldLabels[key as keyof Revision] || key}
                 delay={400 + (index * 100)}
                 isEditing={isEditing}
-                editedData={editedData}
+                editedData={editedData ?? undefined}
                 onInputChange={handleInputChange}
                 nonEditableFields={['id', 'quien_revisa', 'created_at', 'evidencia_01', 'evidencia_02', 'evidencia_03', 'notas_count']}
               />

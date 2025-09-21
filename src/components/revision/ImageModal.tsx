@@ -197,7 +197,8 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
   // Robustecer detección de pinch: usar scale del TouchEvent cuando exista (iOS)
   const handleTouchStart = (e: React.TouchEvent) => {
     // Si el navegador reporta gesture scale (Safari iOS), utilizarlo como pista de pinch
-    const isPinchGesture = (e as any).scale && (e as any).scale !== 1;
+    const touchEvent = e as React.TouchEvent & { scale?: number };
+    const isPinchGesture = touchEvent.scale && touchEvent.scale !== 1;
 
     if (e.touches.length === 2 || isPinchGesture) {
       // Zoom con dos dedos
@@ -238,7 +239,8 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     // usar también e.scale si está disponible (Safari iOS)
-    const hasGestureScale = (e as any).scale && (e as any).scale !== 1;
+    const touchEvent = e as React.TouchEvent & { scale?: number };
+    const hasGestureScale = touchEvent.scale && touchEvent.scale !== 1;
 
     if ((e.touches.length === 2 || hasGestureScale) && isDragging) {
       // Zoom con dos dedos
@@ -256,7 +258,7 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
       // Si el navegador provee scale, combínalo con la métrica de distancia para mayor sensibilidad
       let ratio = currentDistance / Math.max(1, dragStart.distance);
       if (hasGestureScale) {
-        const gestureScale = Number((e as any).scale);
+        const gestureScale = Number(touchEvent.scale);
         // suavizar: media ponderada
         ratio = (ratio * 0.6) + (gestureScale * 0.4);
       }

@@ -25,9 +25,13 @@ export interface Revision {
   evidencia_03: string;
   notas: string;
   created_at: string;
+  datos_anteriores?: Record<string, unknown>;
+  datos_actuales?: Record<string, unknown>;
 }
 
 export interface RevisionData {
+  id?: string;
+  created_at: string;
   casita: string;
   quien_revisa: string;
   caja_fuerte: string;
@@ -51,7 +55,12 @@ export interface RevisionData {
   evidencia_01: string;
   evidencia_02: string;
   evidencia_03: string;
+  fecha_edicion: string;
+  quien_edito: string;
+  datos_anteriores?: Record<string, unknown>;
+  datos_actuales?: Record<string, unknown>;
   notas: string;
+  notas_count: number;
 }
 
 export interface FileData {
@@ -80,3 +89,25 @@ export interface UploadProgress {
 }
 
 export type EvidenceField = 'evidencia_01' | 'evidencia_02' | 'evidencia_03';
+
+// Interface para el menú del día
+export interface MenuData {
+  id?: string;
+  fecha_menu: string;
+  dia_semana: string;
+  contenido_menu: string;
+  activo?: boolean;
+}
+
+// Interface para datos de compresión
+export interface CompressionLog {
+  timestamp: number;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+// Interface para errores
+export interface AppError extends Error {
+  code?: string;
+  details?: Record<string, unknown>;
+}

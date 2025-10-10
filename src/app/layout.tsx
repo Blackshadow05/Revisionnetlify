@@ -7,6 +7,7 @@ import { ToastProvider } from '@/context/ToastContext'
 import UploadIndicator from '@/components/UploadIndicator'
 import UploadRecovery from '@/components/UploadRecovery'
 import InstallPrompter from '@/components/InstallPrompter'
+import UpdateNotifier from '@/components/UpdateNotifier'
 
 // 🚀 OPTIMIZADO: Solo las variantes esenciales con font-display swap
 const roboto = Roboto({ 
@@ -81,6 +82,7 @@ export default function RootLayout({
               <UploadIndicator />
               <UploadRecovery />
               <InstallPrompter />
+              <UpdateNotifier />
             </UploadProvider>
           </ToastProvider>
         </AuthProvider>

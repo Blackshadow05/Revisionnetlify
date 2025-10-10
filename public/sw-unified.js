@@ -1,7 +1,7 @@
 // ===== SERVICE WORKER UNIFICADO =====
 const STRUCTURE_CACHE = 'revision-structure-permanent-v1';
 const DATA_CACHE = 'revision-data-temp-v1';
-const SW_VERSION = '2024.10.10.001';
+const SW_VERSION = '2024.10.10.002'; // Incrementar versión
 
 // URLs críticas para el funcionamiento offline
 const PERMANENT_URLS = [
@@ -25,7 +25,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activación - limpieza de caches obsoletos
+// Activación - limpieza de caches obsoletos y notificación de actualización
 self.addEventListener('activate', (event) => {
   console.log(`🚀 Service Worker unificado activando versión ${SW_VERSION}`);
   
@@ -37,7 +37,26 @@ self.addEventListener('activate', (event) => {
           .map(name => caches.delete(name))
       );
     }).then(() => self.clients.claim())
+    .then(() => {
+      // Notificar a los clientes sobre la nueva versión
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SW_UPDATED',
+            version: SW_VERSION,
+            message: '¡Nueva versión disponible! Recarga para actualizar.'
+          });
+        });
+      });
+    })
   );
+});
+
+// Escuchar mensajes para forzar actualización
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Estrategia de fetch unificada

@@ -54,18 +54,23 @@ async function registerStructureServiceWorker() {
       console.log('🗑️ Service Worker anterior desregistrado');
     }
 
-    // Registrar nuevo service worker unificado
-    const registration = await navigator.serviceWorker.register('/sw-unified.js', {
+    // Registrar nuevo service worker unificado con parámetro de versión
+    const version = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 12);
+    const swUrl = `/sw-unified.js?v=${version}`;
+    localStorage.setItem('sw_version', version);
+    
+    const registration = await navigator.serviceWorker.register(swUrl, {
       scope: '/',
       updateViaCache: 'none'
     });
 
-    console.log('📦 Service Worker unificado registrado exitosamente');
+    console.log(`📦 Service Worker unificado (v${version}) registrado exitosamente`);
 
     // Forzar activación inmediata del nuevo service worker
     if (registration.waiting) {
       console.log('⏭️ SW en estado waiting detectado. Enviando SKIP_WAITING...');
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      localStorage.setItem('sw_version', version);
     }
 
     // Configurar almacenamiento persistente

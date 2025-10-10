@@ -20,11 +20,11 @@ export default function UpdateNotifier() {
           const versionMatch = reg.waiting.scriptURL.match(/v=([^&]+)/);
           const newVersion = versionMatch ? versionMatch[1] : 'nueva';
           
-          if (window.confirm(`¡Hay una nueva versión disponible (${newVersion})!\n\n¿Actualizar ahora?`)) {
-            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-            // Actualizar versión en localStorage
-            localStorage.setItem('sw_version', newVersion);
-          }
+          // Auto-actualización sin mensaje de confirmación
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          // Actualizar versión en localStorage
+          localStorage.setItem('sw_version', newVersion);
+          showToast('Actualizando a nueva versión...', 'info');
         }
         
         // Escuchar futuras actualizaciones
@@ -39,10 +39,10 @@ export default function UpdateNotifier() {
                 
                 // Solo mostrar si es una versión nueva
                 if (newVersion !== localStorage.getItem('sw_version')) {
-                  if (window.confirm(`¡Hay una nueva versión disponible (${newVersion})!\n\n¿Actualizar ahora?`)) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    localStorage.setItem('sw_version', newVersion);
-                  }
+                  // Auto-actualización sin mensaje de confirmación
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  localStorage.setItem('sw_version', newVersion);
+                  showToast('Actualizando a nueva versión...', 'info');
                 }
               }
             });

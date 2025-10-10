@@ -19,12 +19,14 @@ export function RegisterStructureCache() {
         // Solo recargar si la página está visible para evitar UX brusco en background
         if (document.visibilityState === 'visible') {
           console.log('🔄 Nuevo Service Worker controlador activo. Recargando para aplicar actualización inmediata...');
+          // Recargar sin mensaje de confirmación
           location.reload();
         } else {
           // Si no está visible, esperar a que vuelva a estarlo
           const onVisible = () => {
             document.removeEventListener('visibilitychange', onVisible);
             console.log('🔄 Página visible. Recargando para aplicar actualización de Service Worker...');
+            // Recargar sin mensaje de confirmación
             location.reload();
           };
           document.addEventListener('visibilitychange', onVisible);

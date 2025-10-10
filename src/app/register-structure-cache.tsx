@@ -45,50 +45,27 @@ export function RegisterStructureCache() {
 
 async function registerStructureServiceWorker() {
   try {
-    // Verificar si ya está registrado
+    // Obtener registración existente
     const existingRegistration = await navigator.serviceWorker.getRegistration();
     
-    if (existingRegistration &&
-        existingRegistration.active &&
-        existingRegistration.active.scriptURL.includes('sw-structure.js')) {
-      console.log('📦 Service Worker de estructura ya registrado');
-
-      // Si hay una waiting, forzar que tome control inmediatamente
-      if (existingRegistration.waiting) {
-        console.log('⏭️ SW en estado waiting detectado. Enviando SKIP_WAITING para activar de inmediato...');
-        existingRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-      return;
-    }
-
     // Desregistrar service worker anterior si existe
     if (existingRegistration) {
       await existingRegistration.unregister();
       console.log('🗑️ Service Worker anterior desregistrado');
     }
 
-    // Registrar nuevo service worker para caché permanente
-    const registration = await navigator.serviceWorker.register('/sw-structure.js', {
+    // Registrar nuevo service worker unificado
+    const registration = await navigator.serviceWorker.register('/sw-unified.js', {
       scope: '/',
       updateViaCache: 'none'
     });
 
-    console.log('📦 Service Worker de estructura registrado exitosamente');
+    console.log('📦 Service Worker unificado registrado exitosamente');
 
-    // Si hay un nuevo SW en installing o waiting, adelantar su activación
-    if (registration.installing) {
-      registration.installing.addEventListener('statechange', () => {
-        if (registration.waiting) {
-          console.log('⏭️ Enviando SKIP_WAITING al SW (statechange->waiting)...');
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
-    } else if (registration.waiting) {
-      console.log('⏭️ Enviando SKIP_WAITING al SW (waiting inmediato)...');
+    // Forzar activación inmediata del nuevo service worker
+    if (registration.waiting) {
+      console.log('⏭️ SW en estado waiting detectado. Enviando SKIP_WAITING...');
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    } else {
-      // También intentar update y forzar skipWaiting en caso de que llegue a waiting luego
-      registration.update().catch(() => {});
     }
 
     // Configurar almacenamiento persistente

@@ -639,8 +639,15 @@ export default function Home() {
 
     const cajaFuerteMatch = !cajaFuerteFilter || row.caja_fuerte === cajaFuerteFilter;
     
-    // Date filter logic
-    const dateMatch = !dateFilter || (row.created_at && row.created_at.startsWith(dateFilter));
+    // Date filter logic - Use local date comparison without timezone conversion
+    const dateMatch = !dateFilter || (row.created_at && (() => {
+      if (dateFilter) {
+        // Extract date portion from created_at (YYYY-MM-DD) for comparison
+        const createdAtDate = row.created_at.split('T')[0];
+        return createdAtDate === dateFilter;
+      }
+      return true;
+    })());
 
     if (!searchTerm && !dateFilter) {
       return cajaFuerteMatch;
@@ -1443,7 +1450,11 @@ export default function Home() {
                   Mostrando {finalFilteredData.length} de {data.length} revisiones
                   {searchTerm && <span> para "{searchTerm}"</span>}
                   {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
-                  {dateFilter && <span> del {format(new Date(dateFilter), 'dd/MM/yyyy', { locale: es })}</span>}
+                  {dateFilter && (() => {
+                    // Formatear la fecha manualmente sin conversión de zona horaria
+                    const [year, month, day] = dateFilter.split('-');
+                    return <span> del {day}/{month}/{year}</span>;
+                  })()}
                   {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
                   {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
                   {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
@@ -1775,7 +1786,7 @@ export default function Home() {
                                   </h3>
                                   <p className="text-gray-500 text-sm max-w-md mx-auto">
                                     {finalFilteredData.length === 0
-                                      ? (searchTerm || cajaFuerteFilter || activeFilter !== 'all')
+                                      ? (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')
                                         ? 'Intenta ajustar los filtros de búsqueda para encontrar revisiones.'
                                         : 'Aún no se han registrado revisiones en el sistema.'
                                       : `Página ${currentPage} está vacía. Navega a una página anterior.`

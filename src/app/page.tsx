@@ -130,7 +130,7 @@ export default function Home() {
         localStorage.removeItem('activeRevisionFilter');
       }
     } catch (err) {
-      console.log('Error al guardar activeRevisionFilter en localStorage:', err);
+      
     }
     setShowFilterDropdown(false);
     setCurrentPage(1);
@@ -143,7 +143,7 @@ export default function Home() {
     try {
       localStorage.removeItem('revisionDateFilter');
     } catch (err) {
-      console.log('Error al eliminar revisionDateFilter de localStorage:', err);
+      
     }
   };
   
@@ -157,7 +157,7 @@ export default function Home() {
     try {
       localStorage.removeItem('revisionFiltersTimestamp');
     } catch (err) {
-      console.log('Error al eliminar revisionFiltersTimestamp de localStorage:', err);
+      
     }
   };
   
@@ -174,11 +174,11 @@ export default function Home() {
         if (now - timestamp > twentyMinutes) {
           clearAllFilters();
           localStorage.removeItem('revisionFiltersTimestamp');
-          console.log('Filtros limpiados automáticamente después de 20 minutos de inactividad');
+          
         }
       }
     } catch (err) {
-      console.log('Error al verificar expiración de filtros:', err);
+      
     }
   };
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -195,7 +195,7 @@ export default function Home() {
         setSearchTerm(saved);
       }
     } catch (err) {
-      console.log('Error al cargar revisionSearchTerm desde localStorage:', err);
+      
     }
   }, []);
 
@@ -219,7 +219,7 @@ export default function Home() {
         localStorage.removeItem('revisionSearchTerm');
       }
     } catch (err) {
-      console.log('Error al guardar revisionSearchTerm en localStorage:', err);
+      
     }
   }, [searchTerm]);
   
@@ -231,7 +231,7 @@ export default function Home() {
         setDateFilter(savedDate);
       }
     } catch (err) {
-      console.log('Error al cargar revisionDateFilter desde localStorage:', err);
+      
     }
   }, []);
 
@@ -246,7 +246,7 @@ export default function Home() {
         localStorage.removeItem('revisionDateFilter');
       }
     } catch (err) {
-      console.log('Error al guardar revisionDateFilter en localStorage:', err);
+      
     }
   }, [dateFilter]);
   
@@ -258,7 +258,7 @@ export default function Home() {
         setCajaFuerteFilter(savedCajaFuerte);
       }
     } catch (err) {
-      console.log('Error al cargar revisionCajaFuerteFilter desde localStorage:', err);
+      
     }
   }, []);
 
@@ -273,7 +273,7 @@ export default function Home() {
         localStorage.removeItem('revisionCajaFuerteFilter');
       }
     } catch (err) {
-      console.log('Error al guardar revisionCajaFuerteFilter en localStorage:', err);
+      
     }
   }, [cajaFuerteFilter]);
   
@@ -289,7 +289,7 @@ export default function Home() {
         }
       }
     } catch (err) {
-      console.log('Error al cargar activeRevisionFilter desde localStorage:', err);
+      
     }
   }, []);
   
@@ -304,7 +304,7 @@ export default function Home() {
         localStorage.removeItem('activeRevisionFilter');
       }
     } catch (err) {
-      console.log('Error al guardar activeRevisionFilter en localStorage:', err);
+      
     }
   }, [activeFilter]);
   
@@ -353,7 +353,7 @@ export default function Home() {
       const day = String(today.getDate()).padStart(2, '0');
       const todayLocal = `${year}-${month}-${day}`; // Formato YYYY-MM-DD
       
-      console.log('Buscando menú para la fecha:', todayLocal);
+      
       
       const { data, error } = await supabase
         .from('menus')
@@ -362,13 +362,13 @@ export default function Home() {
         .single();
       
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error al cargar menú del día:', error);
+        
         setMenuDelDia(null);
       } else {
         setMenuDelDia(data);
       }
     } catch (err) {
-      console.error('Error al cargar menú del día:', err);
+      
       setMenuDelDia(null);
     } finally {
       setLoadingMenu(false);
@@ -380,7 +380,7 @@ export default function Home() {
     try {
       return JSON.parse(contenidoMenu);
     } catch (err) {
-      console.error('Error al parsear contenido del menú:', err);
+      
       return null;
     }
   };
@@ -393,7 +393,7 @@ export default function Home() {
   // 🔄 Efecto para despertar el servidor de Supabase con un ping silencioso
   useEffect(() => {
     const wakeupSupabase = async () => {
-      console.log('🚀 Despertando Supabase con consulta real...');
+      
       try {
         // Consulta específica para despertar la tabla revisiones_casitas
         const startTime = performance.now();
@@ -407,15 +407,15 @@ export default function Home() {
         const responseTime = Math.round(endTime - startTime);
         
         if (error) {
-          console.error('❌ Error al consultar Supabase:', error.message);
-          console.log('📊 Supabase respondió pero con error - servidor activo');
+          
+          
         } else {
-          console.log(`✅ Supabase despertado exitosamente (${responseTime}ms)`);
-          console.log('📋 Datos recuperados (no mostrados en UI):', data ? 'Registro encontrado' : 'Registro no encontrado');
+          
+          
           setSupabaseAwake(true);
         }
       } catch (err) {
-        console.error('❌ Error al despertar Supabase:', err);
+        
       }
     };
     
@@ -432,7 +432,7 @@ export default function Home() {
         return;
       }
     } catch (error) {
-      console.log('Error al cargar preferencia de vista:', error);
+      
     }
     // Si no hay preferencia guardada, detectar ancho en cliente (solo en cliente)
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -452,7 +452,7 @@ export default function Home() {
     try {
       sessionStorage.setItem('revisionViewMode', newMode);
     } catch (error) {
-      console.log('Error al guardar preferencia de vista:', error);
+      
     }
   };
 
@@ -474,9 +474,9 @@ export default function Home() {
         // Prefetch de la ruta dinámica de detalles
         // Next.js automáticamente manejará el caché
         await router.prefetch('/detalles/[id]');
-        console.log('✅ Página de detalles precargada en caché');
+        
       } catch (error) {
-        console.log('⚠️ Error al precargar página de detalles:', error);
+        
         // Silencioso - no afecta la funcionalidad principal
       }
     };
@@ -532,7 +532,7 @@ export default function Home() {
           .range(start, start + batchSize - 1);
         
         if (error) {
-          console.error('Error fetching data:', error);
+          
           throw new Error('Error al cargar los datos: ' + error.message);
         }
         
@@ -552,7 +552,7 @@ export default function Home() {
 
       setData(allData);
     } catch (error: unknown) {
-      console.error('Error in fetchData:', error);
+      
       setError(error instanceof Error ? error.message : 'Error al cargar los datos');
     } finally {
       setLoading(false);
@@ -740,7 +740,7 @@ export default function Home() {
       const day = String(today.getDate()).padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
       
-      console.log('Filtrando por fecha local de hoy:', todayStr);
+      
       
       // Filtrar revisiones de hoy y ordenar por casita ascendente
       const todayRevisions = data.filter(row => {
@@ -756,13 +756,13 @@ export default function Home() {
         const isToday = rowDateStr === todayStr;
         
         if (isToday) {
-          console.log('Revisión de hoy encontrada:', row.casita, rowDateStr, 'original:', row.created_at);
+          
         }
         
         return isToday;
       });
       
-      console.log(`Se encontraron ${todayRevisions.length} revisiones de hoy (fecha local: ${todayStr})`);
+      
       
       // Ordenar por casita ascendente
       return todayRevisions.sort((a, b) => {
@@ -814,13 +814,18 @@ export default function Home() {
     const openModal = (imgUrl: string, revision?: RevisionData) => {
       setModalImg(imgUrl);
       const images = revision ? getAllImagesFromRevision(revision) : [imgUrl];
+
       setModalImages(images);
       setModalCasita(revision?.casita || null);
       setModalOpen(true);
     };
   const closeModal = () => {
+    // Eliminada la limpieza de caché para evitar problemas al reabrir imágenes
+    // El caché del navegador debe mantenerse para permitir recargas rápidas
     setModalOpen(false);
     setModalImg(null);
+    setModalImages([]);
+    setModalCasita(null);
   };
 
   // Modal functions simplified - using ImageModal component
@@ -874,7 +879,7 @@ export default function Home() {
       setShowLoginModal(false);
       setLoginData({ usuario: '', password: '' });
     } catch (error: unknown) {
-      console.error('Error al iniciar sesión:', error);
+      
       setLoginError('Error al iniciar sesión');
     }
   };
@@ -896,7 +901,7 @@ export default function Home() {
       if (error) throw error;
       fetchRevisiones();
     } catch (error: unknown) {
-      console.error('Error al eliminar la revisión:', error);
+      
       setError(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
@@ -930,7 +935,7 @@ export default function Home() {
           const file = new File([blob], `evidencia_${i + 1}.jpg`, { type: 'image/jpeg' });
           imageFiles.push(file);
         } catch (error) {
-          console.error(`Error al cargar imagen ${i + 1}:`, error);
+          
         }
       }
       
@@ -970,7 +975,7 @@ export default function Home() {
       setShareImages([]);
       
     } catch (error) {
-      console.error('Error al compartir:', error);
+      
       alert('Error al compartir. Inténtalo de nuevo.');
     } finally {
       setIsSharing(false);
@@ -1117,7 +1122,7 @@ export default function Home() {
       setReportDateTo('');
       alert(`Reporte exportado exitosamente como CSV`);
     } catch (error: unknown) {
-      console.error('Error al exportar:', error);
+      
       const isPermissionError = error instanceof Error && (
         error.name === 'NotAllowedError' ||
         error.message.toLowerCase().includes('permission')
@@ -1842,7 +1847,7 @@ export default function Home() {
                               <td className="fixed-column-2 bg-gradient-to-r from-[#1a1f35]/90 to-[#1c2138]/90 backdrop-blur-md px-3 py-3 md:px-4 md:py-4 border-r border-[#3d4659]/50">
                                 <button
                                   onClick={() => {
-                                    console.log('ID de la revisión:', row.id);
+                                    
                                     router.push(`/detalles/${row.id}`);
                                   }}
                                   className={

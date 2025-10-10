@@ -18,11 +18,20 @@ const FadeIn = memo(({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Verificar si el usuario prefiere reducir el movimiento
+    const shouldReduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (shouldReduceMotion) {
+      // Si prefiere reducir el movimiento, mostrar inmediatamente sin animación
       setIsVisible(true);
-    }, delay);
-
-    return () => clearTimeout(timer);
+    } else {
+      // Si no, aplicar la animación con el retraso especificado
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, delay);
+      
+      return () => clearTimeout(timer);
+    }
   }, [delay]);
 
   return (

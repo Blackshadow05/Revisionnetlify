@@ -34,10 +34,13 @@ const ClickableImage = memo(({
 
   return (
     <div className={containerClassName} onClick={onClick}>
-      <img 
-        src={src} 
-        alt={alt} 
+      <img
+        src={src}
+        alt={alt}
         loading="lazy"
+        decoding="async"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        fetchPriority="low"
         className={`${className} transform transition-transform duration-200 group-hover:scale-[1.02]`}
         onError={(e) => {
           const target = e.target as HTMLImageElement;

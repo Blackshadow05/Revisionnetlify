@@ -1,10 +1,9 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatearFecha } from '@/lib/dateUtils';
 import BackButton from '@/components/ui/BackButton';
+import { MenuSkeleton } from '@/components/ui/MenuSkeleton';
 
 interface Menu {
   id: string;
@@ -18,74 +17,57 @@ interface MenuDiario {
   comidas: string[];
 }
 
-export default function MenusPage() {
-  const [menus, setMenus] = useState<Menu[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
+// Server-side data fetching
+async function getMenusRecientes(): Promise<Menu[]> {
+  try {
+    const { data, error } = await supabase
+      .from('menus')
+      .select('id, fecha_menu, contenido_menu') // Only select required columns
+      .order('fecha_menu', { ascending: false })
+      .limit(10);
 
-  useEffect(() => {
-    cargarMenusRecientes();
-  }, []);
-
-  const cargarMenusRecientes = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const { data, error } = await supabase
-        .from('menus')
-        .select('*')
-        .order('fecha_menu', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-
-      setMenus(data || []);
-    } catch (err) {
-      console.error('Error al cargar menús:', err);
-      setError('Error al cargar los menús. Por favor intenta de nuevo.');
-    } finally {
-      setIsLoading(false);
+    if (error) {
+      console.error('Error al cargar menús:', error);
+      return [];
     }
-  };
 
-  const parseMenuContent = (contenidoMenu: string): MenuDiario | null => {
-    try {
-      console.log('Contenido del menú:', contenidoMenu);
-      const parsed = JSON.parse(contenidoMenu);
-      console.log('Menú parseado:', parsed);
-      return parsed;
-    } catch (err) {
-      console.error('Error al parsear contenido del menú:', err);
-      console.log('Contenido que falló:', contenidoMenu);
-      return null;
-    }
-  };
+    return data || [];
+  } catch (error) {
+    console.error('Error inesperado al cargar menús:', error);
+    return [];
+  }
+}
 
-  const handleVerDetalle = (menu: Menu) => {
-    setSelectedMenu(menu);
-  };
+// Pre-parse menu content on server
+function parseMenuContent(contenidoMenu: string): MenuDiario | null {
+  try {
+    const parsed = JSON.parse(contenidoMenu);
+    return parsed;
+  } catch (err) {
+    console.error('Error al parsear contenido del menú:', err);
+    return null;
+  }
+}
 
-  const handleCerrarDetalle = () => {
-    setSelectedMenu(null);
-  };
+function renderComidas(comidas: string[]) {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-semibold text-green-400 mb-2">🍽️ Comidas del día</h4>
+      <ul className="text-sm text-gray-300 space-y-1">
+        {comidas.map((item, idx) => (
+          <li key={idx} className="flex items-start">
+            <span className="text-green-500 mr-2">•</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
-  const renderComidas = (comidas: string[]) => {
-    return (
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold text-green-400 mb-2">🍽️ Comidas del día</h4>
-        <ul className="text-sm text-gray-300 space-y-1">
-          {comidas.map((item, idx) => (
-            <li key={idx} className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
+export default async function MenusPage() {
+  // Server-side data fetching
+  const menus = await getMenusRecientes();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4 md:p-8">
@@ -108,29 +90,7 @@ export default function MenusPage() {
           </Link>
         </div>
 
-
-
-        {error && (
-          <div className="bg-red-900/50 border border-red-700 rounded-2xl p-6 mb-8">
-            <div className="flex items-center">
-              <svg className="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-lg font-medium text-red-300">Error</h3>
-            </div>
-            <p className="mt-2 text-red-200">{error}</p>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <svg className="animate-spin h-12 w-12 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-            <span className="ml-3 text-lg text-gray-300">Cargando menús...</span>
-          </div>
-        ) : menus.length === 0 ? (
+        {menus.length === 0 ? (
           <div className="text-center py-12">
             <svg className="w-16 h-16 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -162,7 +122,6 @@ export default function MenusPage() {
                         {formatearFecha(menu.fecha_menu)}
                       </p>
                     </div>
-
                   </div>
 
                   {menuContent ? (
@@ -181,15 +140,12 @@ export default function MenusPage() {
                     <span className="text-xs text-gray-500">
                       Fecha: {formatearFecha(menu.fecha_menu)}
                     </span>
-
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-
       </div>
     </div>
   );

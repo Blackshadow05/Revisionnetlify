@@ -1,5 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
+// Logger no-op para silenciar toda salida en consola desde este componente
+const ImageModalLogger = {
+  log: (_action: string, _details?: any) => {},
+  error: (_action: string, _details?: any) => {}
+};
+
 interface Props {
   isOpen: boolean;
   images: string[];
@@ -8,16 +14,41 @@ interface Props {
   evidenciaNumber?: number;
   onClose: () => void;
 }
-
 type Point = { x: number; y: number };
 
 export default function ImageModal({ isOpen, images, initialIndex = 0, casita, evidenciaNumber, onClose }: Props) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const currentImageUrl = images && images.length > 0 ? images[currentIndex] || null : null;
 
+  // Logging al montar y cambiar props
+  useEffect(() => {
+    ImageModalLogger.log('ImageModal renderizado', {
+      isOpen,
+      imagesCount: images?.length || 0,
+      initialIndex,
+      currentIndex,
+      currentImageUrl: currentImageUrl ? 'URL_PRESENT' : 'URL_NULL'
+    });
+  }, [isOpen, images, initialIndex, currentIndex, currentImageUrl]);
+
+  // Logging al cambiar de imagen
+  useEffect(() => {
+    if (currentImageUrl) {
+      ImageModalLogger.log('Cambiando a imagen', {
+        currentIndex,
+        imageUrl: currentImageUrl.substring(0, 100) + '...'
+      });
+    }
+  }, [currentImageUrl, currentIndex]);
+
   // Resetear el índice actual cuando se abren nuevas imágenes
   useEffect(() => {
     if (isOpen && images && images.length > 0) {
+      ImageModalLogger.log('Modal abierto - reseteando índice', {
+        imagesCount: images.length,
+        initialIndex,
+        currentIndex
+      });
       setCurrentIndex(initialIndex);
     }
   }, [isOpen, images, initialIndex]);
@@ -67,8 +98,11 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
   const [contentSize, setContentSize] = useState({ w: 0, h: 0 });
 
-  // Detectar dispositivo móvil
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  // Detectar dispositivo móvil con más precisión
+  const isMobile = typeof window !== 'undefined' && (
+    window.innerWidth <= 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
 
   // Utils
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -149,6 +183,9 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
   // Resetear estado al cambiar de imagen
   useEffect(() => {
     if (currentImageUrl) {
+      ImageModalLogger.log('Reset estado al cambiar imagen', {
+        imageUrl: currentImageUrl.substring(0, 50) + '...'
+      });
       setIsLoading(true);
       setImageScale(1);
       setImagePosition({ x: 0, y: 0 });
@@ -236,6 +273,12 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
   // Manejo de gestos táctiles para zoom y pan
   // Robustecer detección de pinch: usar scale del TouchEvent cuando exista (iOS)
   const handleTouchStart = (e: React.TouchEvent) => {
+    ImageModalLogger.log('Touch start iniciado', {
+      touchesLength: e.touches.length,
+      imageScale,
+      isMobile
+    });
+
     // Si el navegador reporta gesture scale (Safari iOS), utilizarlo como pista de pinch
     const touchEvent = e as React.TouchEvent & { scale?: number };
     const isPinchGesture = touchEvent.scale && touchEvent.scale !== 1;
@@ -253,6 +296,8 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
       const center = e.touches.length === 2
         ? { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 }
         : { x: t1.clientX, y: t1.clientY };
+
+      
 
       setDragStart({ distance, startScale: imageScale, center });
       return;
@@ -446,7 +491,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error al descargar imagen:', error);
+      // silenciado
     }
   };
 
@@ -465,7 +510,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
         files: [file]
       });
     } catch (error) {
-      console.error('Error al compartir:', error);
+      // silenciado
     }
   };
 
@@ -476,15 +521,13 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
     try {
       if (!document.fullscreenElement) {
         // Entrar en pantalla completa
-        await modalRef.current.requestFullscreen().catch(err => {
-          console.error(`Error al entrar en pantalla completa: ${err.message}`);
-        });
+        await modalRef.current.requestFullscreen().catch(() => {});
       } else {
         // Salir de pantalla completa
         await document.exitFullscreen();
       }
     } catch (error) {
-      console.error('Error al cambiar modo pantalla completa:', error);
+      // silenciado
     }
   };
 
@@ -537,7 +580,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
               {casita && (
                 <div className="bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1">
                   <span className="text-white text-sm font-medium">
-                    {casita} - Evidencia {evidenciaNumber !== undefined ? evidenciaNumber : currentIndex + 1}
+                    C.# {casita} - Evidencia {evidenciaNumber !== undefined ? evidenciaNumber : currentIndex + 1}
                     {images && images.length > 1 && ` (${currentIndex + 1}/${images.length})`}
                   </span>
                 </div>
@@ -642,6 +685,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
           onDoubleClick={handleDoubleClick}
         >
           <img
+            key={`${currentImageUrl}-${Date.now()}`} // Key más agresiva para móviles
             src={currentImageUrl}
             alt="Imagen ampliada"
             className={`max-w-full max-h-full object-contain rounded-lg shadow-2xl select-none pointer-events-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
@@ -650,10 +694,24 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
               maxHeight: 'calc(100vh - 2rem)'
             }}
             onLoad={() => {
+              ImageModalLogger.log('Imagen cargada exitosamente', {
+                imageUrl: currentImageUrl?.substring(0, 50) + '...',
+                isMobile,
+                timestamp: Date.now()
+              });
               setIsLoading(false);
               measureSizes();
             }}
-            onError={() => setIsLoading(false)}
+            onError={(e) => {
+              ImageModalLogger.error('Error al cargar imagen', {
+                imageUrl: currentImageUrl,
+                error: e,
+                imageElement: e.currentTarget,
+                isMobile,
+                timestamp: Date.now()
+              });
+              setIsLoading(false);
+            }}
           />
         </div>
       </div>
@@ -728,3 +786,4 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
     </div>
   );
 }
+

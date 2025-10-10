@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
-import { uploadNotaToCloudinary, uploadEvidenciaToCloudinary } from '@/lib/cloudinary';
+import { uploadNotaToCloudinary, uploadEvidenciaToCloudinary, getCloudinaryThumbnailUrl } from '@/lib/cloudinary';
 
 import { useRevisionData } from '@/hooks/useRevisionData';
 import DetallesSkeleton from '@/components/ui/DetallesSkeleton';
@@ -49,15 +49,6 @@ const DetalleRevision = memo(() => {
     refetchSecondaryData
   } = useRevisionData(params.id);
 
-  // Auto-cargar historial y notas si existen sin necesidad de botón
-  const autoLoadedRef = useRef(false);
-  useEffect(() => {
-    if (autoLoadedRef.current) return;
-    if ((hasNotas || hasRegistroEdiciones) && !secondaryLoading) {
-      autoLoadedRef.current = true;
-      loadSecondaryData();
-    }
-  }, [hasNotas, hasRegistroEdiciones, secondaryLoading, loadSecondaryData]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
@@ -208,8 +199,8 @@ const DetalleRevision = memo(() => {
       const now = new Date();
       const fechaFormateada = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString();
 
-      console.log('Fecha local generada:', fechaFormateada);
-      console.log('Iniciando actualización...');
+      
+      
 
       // Si hay nuevas evidencias seleccionadas, comprimir y subir antes de guardar
       const updatedData: Revision = { ...editedData } as Revision;
@@ -222,7 +213,7 @@ const DetalleRevision = memo(() => {
             const url = await uploadEvidenciaToCloudinary(compressed);
             (updatedData as any)[key] = url;
           } catch (err) {
-            console.error(`Error al procesar ${String(key)}:`, err);
+            
             showError('Error al subir una de las evidencias');
             setIsSubmitting(false);
             return;
@@ -240,12 +231,12 @@ const DetalleRevision = memo(() => {
         .eq('id', revision.id);
 
       if (updateError) {
-        console.error('Error al actualizar revisiones_casitas:', updateError);
+        
         showError('Error al guardar los cambios');
         return;
       }
 
-      console.log('Actualización en revisiones_casitas exitosa');
+      
 
       // Guardar el registro de cambios en Registro_ediciones
       const cambios = Object.entries(updatedData).reduce((acc, [key, value]) => {
@@ -277,30 +268,30 @@ const DetalleRevision = memo(() => {
             Dato_nuevo: `[${revision.id}] ${key}: ${String(value || '')}`,
             created_at: fechaFormateada
           };
-          console.log('Registro a insertar:', registro);
+          
           acc.push(registro);
         }
         return acc;
       }, [] as any[]);
 
-      console.log('Cambios detectados:', cambios);
+      
 
       if (cambios.length > 0) {
-        console.log('Intentando insertar en Registro_ediciones...');
+        
         const { data: insertData, error: registroError } = await supabase
           .from('Registro_ediciones')
           .insert(cambios)
           .select();
 
         if (registroError) {
-          console.error('Error al guardar en Registro_ediciones:', registroError);
-          console.error('Datos que causaron el error:', cambios);
+          
+          
           // No bloquear la edición por error en el registro
         } else {
-          console.log('Inserción exitosa en Registro_ediciones:', insertData);
+          
         }
       } else {
-        console.log('No hay cambios para registrar');
+        
       }
 
       setIsEditing(false);
@@ -320,7 +311,7 @@ const DetalleRevision = memo(() => {
       await refetchSecondaryData();
       
     } catch (error: any) {
-      console.error('Error detallado:', error);
+      
       showError(`Error al guardar los cambios: ${error.message}`);
     } finally {
       setIsSubmitting(false);
@@ -347,7 +338,7 @@ const DetalleRevision = memo(() => {
 
   // 🚀 FUNCIONES PARA MANEJO DE NOTAS
   const comprimirImagenWebP = useCallback(async (file: File): Promise<File> => {
-    console.log('🚀 INICIANDO COMPRESIÓN:', file.name, file.type, `${(file.size / 1024).toFixed(1)} KB`);
+    
     
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -390,7 +381,7 @@ const DetalleRevision = memo(() => {
                   type: 'image/webp',
                   lastModified: Date.now(),
                 });
-                console.log('✅ COMPRESIÓN COMPLETADA:', `${(compressedFile.size / 1024).toFixed(1)} KB`);
+                
                 resolve(compressedFile);
               } else {
                 reject(new Error('No se pudo generar el blob de la imagen'));
@@ -487,7 +478,7 @@ const DetalleRevision = memo(() => {
       // Actualizar lista de notas/historial
       await refetchSecondaryData();
     } catch (err: any) {
-      console.error(err);
+      
       showError(err.message || 'Error al guardar la nota');
     } finally {
       setIsSubmittingNota(false);
@@ -654,7 +645,7 @@ const DetalleRevision = memo(() => {
             <div className="flex flex-col gap-3">
               {imageToShow ? (
                 <ClickableImage
-                  src={imageToShow}
+                  src={getCloudinaryThumbnailUrl(imageToShow, 400, 300)}
                   alt={label}
                   onClick={() => openModal(imageToShow, parseInt(key.replace('evidencia_', '')))}
                 />
@@ -1155,7 +1146,7 @@ const DetalleRevision = memo(() => {
                       {nota.Evidencia && (
                         <div className="mt-3">
                           <ClickableImage
-                            src={nota.Evidencia}
+                            src={getCloudinaryThumbnailUrl(nota.Evidencia, 300, 200)}
                             alt="Evidencia de nota"
                             onClick={() => openModal(nota.Evidencia, undefined)} // Nota: undefined para evidencias de notas
                             className="max-w-xs h-32 object-cover rounded-lg"

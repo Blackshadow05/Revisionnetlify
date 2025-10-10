@@ -793,6 +793,27 @@ export default function NuevaRevision() {
   };
 
   const closeModal = () => {
+    // Limpiar caché de las imágenes del navegador de forma segura
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      const clearImageCache = async () => {
+        try {
+          const cacheNames = await caches.keys();
+          for (const cacheName of cacheNames) {
+            if (cacheName.includes('image') || cacheName.includes('img')) {
+              const cache = await caches.open(cacheName);
+              if (modalImg) {
+                await cache.delete(modalImg);
+              }
+            }
+          }
+        } catch (error) {
+          // Silenciar errores de caché, no afectan la funcionalidad
+          console.log('No se pudo limpiar caché de imágenes:', error);
+        }
+      };
+      clearImageCache();
+    }
+    
     setModalOpen(false);
     setModalImg(null);
   };

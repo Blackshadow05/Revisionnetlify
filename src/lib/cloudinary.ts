@@ -113,6 +113,31 @@ export const getOriginalCloudinaryUrl = (url: string): string => {
 };
 
 /**
+ * Genera una URL de Cloudinary optimizada para miniaturas con dimensiones específicas
+ * @param url - URL original de Cloudinary
+ * @param width - Ancho deseado en píxeles
+ * @param height - Alto deseado en píxeles (opcional)
+ * @returns URL optimizada con dimensiones y compresión automática
+ */
+export const getCloudinaryThumbnailUrl = (url: string, width: number, height?: number): string => {
+  if (!url || !url.includes('cloudinary.com')) {
+    return url;
+  }
+  
+  // Si ya tiene transformaciones, no las duplicamos
+  if (url.includes('/upload/f_auto') || url.includes('/upload/q_auto')) {
+    // Extraer la parte base de la URL
+    const baseUrl = url.replace(/\/upload\/[^/]*\//, '/upload/');
+    const sizeParam = height ? `w_${width},h_${height},c_fill` : `w_${width}`;
+    return baseUrl.replace('/upload/', `/upload/${sizeParam},f_auto,q_auto/`);
+  }
+  
+  // Agregar dimensiones y optimizaciones a la URL original
+  const sizeParam = height ? `w_${width},h_${height},c_fill` : `w_${width}`;
+  return url.replace('/upload/', `/upload/${sizeParam},f_auto,q_auto/`);
+};
+
+/**
  * Migra todas las URLs de Cloudinary existentes en Supabase para agregar f_auto,q_auto
  * @returns Número de URLs actualizadas
  */

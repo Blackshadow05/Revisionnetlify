@@ -2,12 +2,21 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { FiDownload, FiX } from 'react-icons/fi';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 
 export default function InstallPrompter() {
+  const { isDesktop } = useDeviceDetection();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // No mostrar ni suscribirse a eventos en escritorio
+    if (isDesktop) return;
+
+    // Respetar preferencia del usuario de ocultar el banner
+    const hidden = typeof window !== 'undefined' && localStorage.getItem('hideInstallPrompt') === 'true';
+    if (hidden) return;
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -26,15 +35,15 @@ export default function InstallPrompter() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [isDesktop]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    
+
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`Resultado instalación: ${outcome}`);
-    
+
     setDeferredPrompt(null);
     setIsVisible(false);
   };
@@ -45,6 +54,8 @@ export default function InstallPrompter() {
     localStorage.setItem('hideInstallPrompt', 'true');
   };
 
+  // Nunca renderizar en escritorio
+  if (isDesktop) return null;
   if (!isVisible) return null;
 
   return (

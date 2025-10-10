@@ -61,6 +61,9 @@ const DetalleRevision = memo(() => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
+  const [modalEvidenciaNumber, setModalEvidenciaNumber] = useState<number | undefined>(undefined);
+  const [modalImages, setModalImages] = useState<string[]>([]);
+  const [modalInitialIndex, setModalInitialIndex] = useState<number>(0);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<Revision | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,14 +136,47 @@ const DetalleRevision = memo(() => {
   }, []);
 
   // 🚀 OPTIMIZACIÓN: Memoizar handlers de modal
-  const openModal = useCallback((imgUrl: string) => {
+  const openModal = useCallback((imgUrl: string, evidenciaNumber?: number) => {
+    // Recolectar todas las imágenes disponibles
+    const allImages: string[] = [];
+    
+    // Si es una evidencia de revisión (evidenciaNumber definido), incluir solo las evidencias de revisión
+    if (evidenciaNumber !== undefined) {
+      // Agregar evidencia_01 si existe
+      if (revision?.evidencia_01) {
+        allImages.push(revision.evidencia_01);
+      }
+      
+      // Agregar evidencia_02 si existe
+      if (revision?.evidencia_02) {
+        allImages.push(revision.evidencia_02);
+      }
+      
+      // Agregar evidencia_03 si existe
+      if (revision?.evidencia_03) {
+        allImages.push(revision.evidencia_03);
+      }
+    } else {
+      // Si es una evidencia de nota, incluir solo esa imagen
+      allImages.push(imgUrl);
+    }
+    
+    // Encontrar el índice de la imagen actual
+    const initialIndex = allImages.findIndex(img => img === imgUrl);
+    
+    setModalImages(allImages);
+    setModalInitialIndex(initialIndex >= 0 ? initialIndex : 0);
     setModalImg(imgUrl);
     setModalOpen(true);
-  }, []);
+    setModalEvidenciaNumber(evidenciaNumber);
+  }, [revision]);
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
     setModalImg(null);
+    setModalEvidenciaNumber(undefined);
+    setModalImages([]);
+    setModalInitialIndex(0);
   }, []);
 
   // 🚀 OPTIMIZACIÓN: Memoizar handlers de edición
@@ -620,7 +656,7 @@ const DetalleRevision = memo(() => {
                 <ClickableImage
                   src={imageToShow}
                   alt={label}
-                  onClick={() => openModal(imageToShow)}
+                  onClick={() => openModal(imageToShow, parseInt(key.replace('evidencia_', '')))}
                 />
               ) : (
                 <p className="text-gray-400 italic">Sin imagen</p>
@@ -1121,7 +1157,7 @@ const DetalleRevision = memo(() => {
                           <ClickableImage
                             src={nota.Evidencia}
                             alt="Evidencia de nota"
-                            onClick={() => openModal(nota.Evidencia)}
+                            onClick={() => openModal(nota.Evidencia, undefined)} // Nota: undefined para evidencias de notas
                             className="max-w-xs h-32 object-cover rounded-lg"
                             containerClassName="relative group cursor-pointer inline-block"
                           />
@@ -1289,7 +1325,10 @@ const DetalleRevision = memo(() => {
       <Suspense fallback={null}>
         <ImageModal
           isOpen={modalOpen}
-          imageUrl={modalImg}
+          images={modalImages}
+          initialIndex={modalInitialIndex}
+          casita={revision?.casita}
+          evidenciaNumber={modalEvidenciaNumber}
           onClose={closeModal}
         />
       </Suspense>

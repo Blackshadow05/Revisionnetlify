@@ -1414,7 +1414,7 @@ export default function NuevaRevision() {
       {/* Modal de imagen */}
       <ImageModal
         isOpen={modalOpen}
-        imageUrl={modalImg}
+        images={modalImg ? [modalImg] : []}
         onClose={closeModal}
       />
 

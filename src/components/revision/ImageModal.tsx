@@ -2,13 +2,53 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface Props {
   isOpen: boolean;
-  imageUrl: string | null;
+  images: string[];
+  initialIndex?: number;
+  casita?: string;
+  evidenciaNumber?: number;
   onClose: () => void;
 }
 
 type Point = { x: number; y: number };
 
-export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
+export default function ImageModal({ isOpen, images, initialIndex = 0, casita, evidenciaNumber, onClose }: Props) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const currentImageUrl = images && images.length > 0 ? images[currentIndex] || null : null;
+
+  // Resetear el índice actual cuando se abren nuevas imágenes
+  useEffect(() => {
+    if (isOpen && images && images.length > 0) {
+      setCurrentIndex(initialIndex);
+    }
+  }, [isOpen, images, initialIndex]);
+
+  // Navegar a la imagen anterior
+  const goToPrevious = () => {
+    if (!images || images.length === 0) return;
+    setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : images.length - 1));
+  };
+
+  // Navegar a la siguiente imagen
+  const goToNext = () => {
+    if (!images || images.length === 0) return;
+    setCurrentIndex((prevIndex) => (prevIndex < images.length - 1 ? prevIndex + 1 : 0));
+  };
+
+  // Manejar las teclas de flecha para navegación
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (event.key === 'ArrowLeft') {
+        goToPrevious();
+      } else if (event.key === 'ArrowRight') {
+        goToNext();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, images?.length]);
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgWrapperRef = useRef<HTMLDivElement>(null);
@@ -108,14 +148,14 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
 
   // Resetear estado al cambiar de imagen
   useEffect(() => {
-    if (imageUrl) {
+    if (currentImageUrl) {
       setIsLoading(true);
       setImageScale(1);
       setImagePosition({ x: 0, y: 0 });
       // medir tras carga
       setTimeout(measureSizes, 0);
     }
-  }, [imageUrl, measureSizes]);
+  }, [currentImageUrl, measureSizes]);
 
   // Controles siempre visibles: no auto-ocultar
   useEffect(() => {
@@ -392,10 +432,10 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
 
   // Descargar imagen
   const handleDownload = async () => {
-    if (!imageUrl) return;
+    if (!currentImageUrl) return;
 
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(currentImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -412,10 +452,10 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
 
   // Compartir imagen (Web Share API)
   const handleShare = async () => {
-    if (!imageUrl || !navigator.share) return;
+    if (!currentImageUrl || !navigator.share) return;
 
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(currentImageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'evidencia.jpg', { type: 'image/jpeg' });
 
@@ -451,7 +491,7 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
   // Verificar si estamos en pantalla completa
   const isFullscreen = typeof document !== 'undefined' && !!document.fullscreenElement;
 
-  if (!isOpen || !imageUrl) return null;
+  if (!isOpen || !currentImageUrl) return null;
 
   return (
     <div
@@ -481,16 +521,28 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
       {showControls && (
         <div className={`fixed top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${isMobile ? 'pt-12' : ''}`}>
           <div className="flex justify-between items-center">
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
-              title="Cerrar (Escape)"
-              aria-label="Cerrar modal"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+                title="Cerrar (Escape)"
+                aria-label="Cerrar modal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              
+              {/* Información de casita y evidencia */}
+              {casita && (
+                <div className="bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1">
+                  <span className="text-white text-sm font-medium">
+                    {casita} - Evidencia {evidenciaNumber !== undefined ? evidenciaNumber : currentIndex + 1}
+                    {images && images.length > 1 && ` (${currentIndex + 1}/${images.length})`}
+                  </span>
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-2">
               {/* Botón de pantalla completa */}
@@ -538,6 +590,35 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
         </div>
       )}
 
+      {/* Controles de navegación - solo mostrar si hay más de una imagen */}
+      {images && images.length > 1 && (
+        <>
+          {/* Botón anterior */}
+          <button
+            onClick={goToPrevious}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20 z-50"
+            title="Imagen anterior"
+            aria-label="Imagen anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Botón siguiente */}
+          <button
+            onClick={goToNext}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20 z-50"
+            title="Imagen siguiente"
+            aria-label="Imagen siguiente"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
       {/* Contenedor de imagen con soporte para zoom y pan */}
       <div className="relative" ref={containerRef} onWheel={handleWheel}>
         <div
@@ -561,7 +642,7 @@ export default function ImageModal({ isOpen, imageUrl, onClose }: Props) {
           onDoubleClick={handleDoubleClick}
         >
           <img
-            src={imageUrl}
+            src={currentImageUrl}
             alt="Imagen ampliada"
             className={`max-w-full max-h-full object-contain rounded-lg shadow-2xl select-none pointer-events-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             style={{

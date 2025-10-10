@@ -39,7 +39,7 @@ interface RevisionData {
 interface CardViewProps {
   data: RevisionData[];
   onCardClick: (id: string) => void;
-  onImageClick: (imageUrl: string) => void;
+  onImageClick: (imageUrl: string, revision?: RevisionData) => void;
   onShareClick?: (revision: RevisionData) => void;
   loading?: boolean;
 }
@@ -208,7 +208,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onImageClick(revision.evidencia_01);
+                              onImageClick(revision.evidencia_01, revision);
                             }}
                             className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                             title="Ver evidencia 1"
@@ -220,7 +220,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onImageClick(revision.evidencia_02);
+                              onImageClick(revision.evidencia_02, revision);
                             }}
                             className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                             title="Ver evidencia 2"
@@ -232,7 +232,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onImageClick(revision.evidencia_03);
+                              onImageClick(revision.evidencia_03, revision);
                             }}
                             className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                             title="Ver evidencia 3"
@@ -251,7 +251,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onImageClick(revision.evidencia_01);
+                            onImageClick(revision.evidencia_01, revision);
                           }}
                           className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                           title="Ver evidencia 1"
@@ -263,7 +263,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onImageClick(revision.evidencia_02);
+                            onImageClick(revision.evidencia_02, revision);
                           }}
                           className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                           title="Ver evidencia 2"
@@ -275,7 +275,7 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onImageClick(revision.evidencia_03);
+                            onImageClick(revision.evidencia_03, revision);
                           }}
                           className="neu-button w-3.5 h-3.5 text-[#c9a45c] text-[9px] hover:scale-110 flex items-center justify-center font-medium flex-shrink-0"
                           title="Ver evidencia 3"

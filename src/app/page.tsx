@@ -98,6 +98,8 @@ export default function Home() {
   const [dateFilter, setDateFilter] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
+  const [modalImages, setModalImages] = useState<string[]>([]);
+  const [modalCasita, setModalCasita] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginData, setLoginData] = useState({
     usuario: '',
@@ -799,11 +801,23 @@ export default function Home() {
     setCurrentPage(1);
   }, [searchTerm, cajaFuerteFilter]);
 
-  const openModal = (imgUrl: string) => {
-    setModalImg(imgUrl);
-    setModalOpen(true);
-  };
-
+  
+    // Función auxiliar para obtener todas las imágenes de una revisión
+    const getAllImagesFromRevision = (revision: RevisionData) => {
+      const images = [];
+      if (revision.evidencia_01) images.push(revision.evidencia_01);
+      if (revision.evidencia_02) images.push(revision.evidencia_02);
+      if (revision.evidencia_03) images.push(revision.evidencia_03);
+      return images;
+    };
+  
+    const openModal = (imgUrl: string, revision?: RevisionData) => {
+      setModalImg(imgUrl);
+      const images = revision ? getAllImagesFromRevision(revision) : [imgUrl];
+      setModalImages(images);
+      setModalCasita(revision?.casita || null);
+      setModalOpen(true);
+    };
   const closeModal = () => {
     setModalOpen(false);
     setModalImg(null);
@@ -1726,7 +1740,7 @@ export default function Home() {
               <CardView
                 data={paginatedData}
                 onCardClick={(id) => router.push(`/detalles/${id}`)}
-                onImageClick={openModal}
+                onImageClick={(imgUrl, revision) => openModal(imgUrl, revision)}
                 onShareClick={handleShareClick}
                 loading={loading}
               />
@@ -1866,7 +1880,7 @@ export default function Home() {
                                   {row.evidencia_01 && (
                                     <button
                                       type="button"
-                                      onClick={() => openModal(row.evidencia_01)}
+                                      onClick={() => openModal(row.evidencia_01, row)}
                                       className="text-[#c9a45c] hover:text-[#f0c987] underline cursor-pointer hover:scale-110 transform bg-[#1e2538]/50 px-1.5 py-0.5 rounded text-xs shadow-[0_2px_4px_rgb(0_0_0/0.2)] hover:shadow-[0_2px_4px_rgb(0_0_0/0.3)] transition-all duration-200 min-w-[20px] flex-shrink-0"
                                       title="Ver evidencia 1"
                                     >
@@ -1876,7 +1890,7 @@ export default function Home() {
                                   {row.evidencia_02 && (
                                     <button
                                       type="button"
-                                      onClick={() => openModal(row.evidencia_02)}
+                                      onClick={() => openModal(row.evidencia_02, row)}
                                       className="text-[#c9a45c] hover:text-[#f0c987] underline cursor-pointer hover:scale-110 transform bg-[#1e2538]/50 px-1.5 py-0.5 rounded text-xs shadow-[0_2px_4px_rgb(0_0_0/0.2)] hover:shadow-[0_2px_4px_rgb(0_0_0/0.3)] transition-all duration-200 min-w-[20px] flex-shrink-0"
                                       title="Ver evidencia 2"
                                     >
@@ -1886,7 +1900,7 @@ export default function Home() {
                                   {row.evidencia_03 && (
                                     <button
                                       type="button"
-                                      onClick={() => openModal(row.evidencia_03)}
+                                      onClick={() => openModal(row.evidencia_03, row)}
                                       className="text-[#c9a45c] hover:text-[#f0c987] underline cursor-pointer hover:scale-110 transform bg-[#1e2538]/50 px-1.5 py-0.5 rounded text-xs shadow-[0_2px_4px_rgb(0_0_0/0.3)] transition-all duration-200 min-w-[20px] flex-shrink-0"
                                       title="Ver evidencia 3"
                                     >
@@ -1986,7 +2000,9 @@ export default function Home() {
         {/* Modal de imagen simplificado */}
         <ImageModal
           isOpen={modalOpen}
-          imageUrl={modalImg}
+          images={modalImages.length > 0 ? modalImages : (modalImg ? [modalImg] : [])}
+          initialIndex={modalImages.length > 0 ? modalImages.indexOf(modalImg || '') : 0}
+          casita={modalCasita || undefined}
           onClose={closeModal}
         />
 

@@ -70,49 +70,17 @@ export default function InstallPrompter() {
           </div>
         </div>
 
-        {/* Contenido principal */}
+        {/* Contenido principal simplificado */}
         <div className="px-6 py-5">
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
-                <span className="text-2xl">🏠</span>
-              </div>
+          <button
+            onClick={handleInstall}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <FiDownload className="text-lg" />
+              <span>Instalar ahora</span>
             </div>
-            
-            <div className="flex-1">
-              <p className="text-gray-700 text-sm leading-relaxed mb-4">
-                Accede rápidamente a todas las funciones de la app desde tu pantalla de inicio. 
-                <span className="font-medium text-gray-900">¡Es más rápido y cómodo!</span>
-              </p>
-              
-              {/* Características */}
-              <div className="space-y-2 mb-5">
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  <span className="text-xs text-gray-600">Acceso sin conexión</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                  <span className="text-xs text-gray-600">Notificaciones push</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-gray-600">Experiencia móvil optimizada</span>
-                </div>
-              </div>
-
-              {/* Botón de instalación */}
-              <button
-                onClick={handleInstall}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-              >
-                <div className="flex items-center justify-center space-x-2">
-                  <FiDownload className="text-lg" />
-                  <span>Instalar ahora</span>
-                </div>
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
       </div>
     </div>

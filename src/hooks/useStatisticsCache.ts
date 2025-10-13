@@ -174,21 +174,21 @@ export function useRevisionStatistics() {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
 
-    const todayQuery = supabase
+    const { count: todayCount, error: todayCountError } = await supabase
       .from('revisiones_casitas')
-      .select('id, quien_revisa, caja_fuerte, casita, created_at')
+      .select('*', { count: 'exact', head: true })
       .gte('created_at', startOfDay)
-      .lt('created_at', endOfDay)
-      .order('created_at', { ascending: false });
+      .lt('created_at', endOfDay);
 
-    const todayData = await getAllRecords(todayQuery);
-    console.log(`📅 Estadísticas: Obtenidos ${todayData.length} registros de hoy`);
+    if (todayCountError) {
+      console.warn('📅 Estadísticas: error al contar registros de hoy', todayCountError);
+    }
 
     return {
       totalRevisiones: totalCount || 0,
-      revisionesHoy: todayData?.length || 0,
+      revisionesHoy: todayCount || 0,
       yearData: yearData || [],
-      todayData: todayData || []
+      todayData: []
     };
   }, []);
 

@@ -20,6 +20,7 @@ interface Props {
   onFileSelect: (field: 'evidencia_01' | 'evidencia_02' | 'evidencia_03', file: File | null) => void;
   onClearFile: (field: 'evidencia_01' | 'evidencia_02' | 'evidencia_03') => void;
   onImageClick: (imageUrl: string) => void;
+  onImageClickFile?: (file: File) => void;
   required?: boolean;
   disabled?: boolean;
   compressionProgress?: CompressionProgress | null;
@@ -35,6 +36,7 @@ export default function EvidenceUploader({
   onFileSelect,
   onClearFile,
   onImageClick,
+  onImageClickFile,
   required = false,
   disabled = false,
   compressionProgress,
@@ -173,11 +175,23 @@ export default function EvidenceUploader({
       {imageUrl && (
         <div className="relative mt-3">
           <div className="relative inline-block">
-            <img 
+            <img
               src={imageUrl}
               alt={`Preview ${getFieldLabel()}`}
               className="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border-2 border-[#3d4659] hover:border-[#c9a45c]/50 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl transform hover:scale-105"
-              onClick={() => onImageClick(imageUrl)}
+              onClick={() => {
+                // Siempre usar onImageClickFile si está disponible, priorizando el File sobre el URL
+                if (onImageClickFile) {
+                  if (compressedFile) {
+                    onImageClickFile(compressedFile);
+                  } else if (file) {
+                    onImageClickFile(file);
+                  }
+                } else if (imageUrl) {
+                  // Fallback solo si onImageClickFile no está definido
+                  onImageClick(imageUrl);
+                }
+              }}
             />
             
             {/* Badge de estado de compresión */}

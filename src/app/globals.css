@@ -1172,3 +1172,51 @@ button, [role="button"] {
     left: 200%;
   }
 }
+
+/* ==== Utilidades CSS para Estadísticas: optimizar render sin JS ==== */
+
+/* Fondo degradado para la página de estadísticas (evita inline style) */
+.bg-estadisticas-gradient {
+  background: #334d50;
+  background-image: linear-gradient(to left, #cbcaa5, #334d50);
+}
+
+/* content-visibility: auto defiere el renderizado de elementos fuera de viewport
+   Nota: no evita la carga/ejecución de JS del componente, solo pintura/layout.
+   Usar junto con importación dinámica para máximo beneficio. */
+.cv-auto-384 {
+  content-visibility: auto;
+  contain-intrinsic-size: 384px; /* altura aproximada de los contenedores h-96 */
+}
+
+.cv-auto-280 {
+  content-visibility: auto;
+  contain-intrinsic-size: 280px; /* altura aproximada del gráfico de área mensual */
+}
+
+/* Respeto de accesibilidad: si el usuario prefiere menos movimiento, apagamos spinners */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none !important;
+  }
+}
+
+/* Estilos Recharts vía CSS (evitar estilos en JS) */
+.recharts-default-legend {
+  padding-top: 15px;
+  color: #E2E8F0;
+  font-size: 12px;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #1f2937;
+  border: 1px solid #c9a45c;
+  border-radius: 8px;
+  color: #f3f4f6;
+  font-size: 12px;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: #c9a45c;
+  font-size: 12px;
+}

@@ -792,6 +792,24 @@ export default function NuevaRevision() {
     setModalOpen(true);
   };
 
+  // Abrir modal desde un File creando una DataURL estable (no revocable)
+  const openModalFromFile = (file: File) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setModalImg(result);
+        setModalOpen(true);
+      };
+      reader.onerror = () => {
+        showError('No se pudo crear la previsualización de la imagen');
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      showError('No se pudo crear la previsualización de la imagen');
+    }
+  };
+
   const closeModal = () => {
     // Limpiar caché de las imágenes del navegador de forma segura
     if (typeof window !== 'undefined' && 'caches' in window) {
@@ -1350,6 +1368,7 @@ export default function NuevaRevision() {
                         onFileSelect={handleFileChange}
                         onClearFile={clearFile}
                         onImageClick={openModal}
+                        onImageClickFile={openModalFromFile}
                         required={
                           (field === 'evidencia_01' && ['Check in', 'Upsell'].includes(formData.caja_fuerte)) ||
                           (field === 'evidencia_02' && ['Check out', 'Guardar Upsell'].includes(formData.caja_fuerte))

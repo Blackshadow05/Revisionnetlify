@@ -580,7 +580,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
               {casita && (
                 <div className="bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1">
                   <span className="text-white text-sm font-medium">
-                    C.# {casita} - Evidencia {evidenciaNumber !== undefined ? evidenciaNumber : currentIndex + 1}
+                    C.# {casita} - Evidencia {currentIndex + 1}
                     {images && images.length > 1 && ` (${currentIndex + 1}/${images.length})`}
                   </span>
                 </div>

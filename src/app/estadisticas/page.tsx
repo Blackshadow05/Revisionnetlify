@@ -3,15 +3,26 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
 import dynamic from 'next/dynamic';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import LazyInView from '@/components/ui/LazyInView';
 import { useRevisionStatistics, clearRevisionStatisticsCache } from '@/hooks/useStatisticsCache';
 
 
 // 🚀 Importación dinámica optimizada con mejor loading glassmorphism
 const BarChartComponent = dynamic(() => import('@/components/BarChartComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#2a3347] rounded-xl border border-[#c9a45c]/20 p-6 shadow-2xl h-96 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[#c9a45c] border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-[#c9a45c] font-medium">Cargando gráfico...</span>
+      </div>
+    </div>
+  )
+});
+
+const AreaCheckInChart = dynamic(() => import('@/components/AreaCheckInChart'), {
   ssr: false,
   loading: () => (
     <div className="bg-[#2a3347] rounded-xl border border-[#c9a45c]/20 p-6 shadow-2xl h-96 flex items-center justify-center">
@@ -75,8 +86,8 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T
 }
 
 export default function EstadisticasPage() {
-  const router = useRouter();
-  const { isLoggedIn, userRole, isLoading: authLoading } = useAuth();
+ const router = useRouter();
+ const { isLoggedIn, isLoading: authLoading } = useAuth();
 
   // Hook de cache para estadísticas
   const {
@@ -167,8 +178,9 @@ export default function EstadisticasPage() {
 
     const revisionesPorPersona = processChartData(
       dataFilteredByCurrentYear, // Usar datos del año actual
-      (item) => item.quien_revisa
-      // Sin filtros adicionales para incluir todos los registros como en la consulta SQL
+      (item) => item.quien_revisa,
+      undefined,
+      20
     );
 
     const checkOutsPorPersona = processChartData(
@@ -214,7 +226,7 @@ export default function EstadisticasPage() {
         </svg>
       ),
       color: 'text-[#c9a45c]',
-      description: `Año ${currentYear}`
+      description: 'Todos los registros'
     },
     {
       title: 'Revisiones Hoy',
@@ -227,7 +239,7 @@ export default function EstadisticasPage() {
       color: 'text-[#f0c987]',
       description: new Date().toLocaleDateString('es-ES')
     }
-  ], [processedStats, currentYear]);
+  ], [processedStats]);
 
   // 🛡️ Guards de renderizado
   // Mostrar loading mientras se verifica la autenticación
@@ -288,11 +300,7 @@ export default function EstadisticasPage() {
 
   return (
     <main
-      className="min-h-screen relative overflow-hidden"
-      style={{
-        background: '#334d50',
-        backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-      }}
+      className="min-h-screen relative overflow-hidden bg-estadisticas-gradient"
     >
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header con glassmorphism */}
@@ -352,12 +360,11 @@ export default function EstadisticasPage() {
 
         {/* Tarjetas de estadísticas glassmorphism */}
         <section className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stats-grid">
             {statCards.map((card, index) => (
-              <div 
+              <div
                 key={card.title}
-                className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-6 shadow-2xl group hover:border-[#c9a45c]/40 transition-all duration-300"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-6 shadow-2xl group hover:border-[#c9a45c]/40 transition-all duration-300 stat-card"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -381,106 +388,46 @@ export default function EstadisticasPage() {
         {/* Gráficos con diseño glassmorphism mejorado */}
         <section className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           <div className="xl:col-span-1">
-            <BarChartComponent
-              data={processedStats.casitasCheckIn}
-              title="Top Casitas - Check In"
-              barColor={CHART_COLORS.PRIMARY}
-              xAxisLabel="Casita"
-              yAxisLabel="Check-ins"
-            />
+            <LazyInView className="cv-auto-384">
+              <BarChartComponent
+                data={processedStats.casitasCheckIn}
+                title="Top Casitas - Check In"
+                barColor={CHART_COLORS.PRIMARY}
+                xAxisLabel="Casita"
+                yAxisLabel="Check-ins"
+              />
+            </LazyInView>
           </div>
           
           <div className="xl:col-span-1">
-            <BarChartComponent
-              data={processedStats.revisionesPorPersona}
-              title="Revisiones por Persona"
-              barColor={CHART_COLORS.SECONDARY}
-              xAxisLabel="Revisor"
-              yAxisLabel="Total Revisiones"
-            />
+            <LazyInView className="cv-auto-384">
+              <BarChartComponent
+                data={processedStats.revisionesPorPersona}
+                title="Revisiones por Persona"
+                barColor={CHART_COLORS.SECONDARY}
+                xAxisLabel="Revisor"
+                yAxisLabel="Total Revisiones"
+              />
+            </LazyInView>
           </div>
 
           <div className="xl:col-span-2 2xl:col-span-1">
-            <BarChartComponent
-              data={processedStats.checkOutsPorPersona}
-              title="Check-outs por Persona"
-              barColor={CHART_COLORS.TERTIARY}
-              xAxisLabel="Revisor"
-              yAxisLabel="Check-outs"
-            />
+            <LazyInView className="cv-auto-384">
+              <BarChartComponent
+                data={processedStats.checkOutsPorPersona}
+                title="Check-outs por Persona"
+                barColor={CHART_COLORS.TERTIARY}
+                xAxisLabel="Revisor"
+                yAxisLabel="Check-outs"
+              />
+            </LazyInView>
           </div>
 
           {/* Gráfico de área para Check In por mes */}
           <div className="xl:col-span-2">
-            <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-4 md:p-6 shadow-2xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 md:mb-6 gap-3">
-                <div>
-                  <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-[#c9a45c] to-[#ff8c42] bg-clip-text text-transparent">
-                    Check In Mensual {currentYear}
-                  </h2>
-                  <p className="text-gray-400 text-xs md:text-sm mt-1">Tendencia de registros por mes</p>
-                </div>
-                <div className="flex items-center gap-2 text-xs md:text-sm">
-                  <div className="w-3 h-3 bg-gradient-to-r from-[#ff8c42] to-[#c9a45c] rounded-full"></div>
-                  <span className="text-gray-300">Check In</span>
-                </div>
-              </div>
-              
-              <ResponsiveContainer
-                width="100%"
-                aspect={2.2}
-                className="h-48 sm:h-56 md:!h-[280px]"
-              >
-                <AreaChart data={checkInByMonth} margin={{ top: 10, right: 15, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorCheckIn" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ff8c42" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#c9a45c" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#9ca3af" 
-                    fontSize={10}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#4b5563' }}
-                    tickFormatter={(value) => value.slice(0, 3)} // Mostrar solo las primeras 3 letras en móvil
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={40}
-                  />
-                  <YAxis 
-                    stroke="#9ca3af" 
-                    fontSize={10}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#4b5563' }}
-                    width={30}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #c9a45c',
-                      borderRadius: '8px',
-                      color: '#f3f4f6',
-                      fontSize: '12px'
-                    }}
-                    labelStyle={{ color: '#c9a45c', fontSize: '12px' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#ff8c42" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorCheckIn)"
-                    dot={{ fill: '#ff8c42', r: 3 }}
-                    activeDot={{ r: 5, fill: '#c9a45c', stroke: '#fff', strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            <LazyInView>
+              <AreaCheckInChart data={checkInByMonth} currentYear={currentYear} />
+            </LazyInView>
           </div>
         </section>
         

@@ -36,7 +36,8 @@ interface RevisionCasita {
 }
 
 export default function ReportesPage() {
-  const [loading, setLoading] = useState(false);
+  const [loadingCSV, setLoadingCSV] = useState(false);
+  const [loadingUltimo, setLoadingUltimo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string>('');
@@ -196,8 +197,7 @@ export default function ReportesPage() {
   // Función para verificar si la Web Share API está disponible
   const isWebShareAvailable = () => {
     return typeof navigator !== 'undefined' &&
-           typeof navigator.share === 'function' &&
-           typeof navigator.canShare === 'function';
+           typeof navigator.share === 'function';
   };
 
   // Función para generar y descargar un archivo CSV
@@ -207,7 +207,7 @@ export default function ReportesPage() {
       return;
     }
     
-    setLoading(true);
+    setLoadingCSV(true);
     setError(null);
     setSuccess(null);
 
@@ -217,7 +217,7 @@ export default function ReportesPage() {
       
       if (data.length === 0) {
         setError('No hay datos disponibles para generar el reporte con los filtros seleccionados');
-        setLoading(false);
+        setLoadingCSV(false);
         return;
       }
 
@@ -280,16 +280,23 @@ export default function ReportesPage() {
       setSuccess('Reporte generado y descargado exitosamente');
       
       // Verificar si la Web Share API está disponible y ofrecer compartir el archivo
-      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
         try {
           const file = new File([blob], fileName, { type: 'text/csv' });
-          if (navigator.canShare({ files: [file] })) {
+          if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
             await navigator.share({
               title: 'Reporte de Revisiones de Casitas',
               text: 'Reporte generado desde el sistema de revisiones de casitas',
               files: [file]
             });
             setSuccess('Reporte generado y compartido exitosamente');
+          } else {
+            // Fallback para navegadores que no soportan compartir archivos
+            await navigator.share({
+              title: 'Reporte de Revisiones de Casitas',
+              text: `Reporte generado. El archivo fue descargado como ${fileName}.`
+            });
+            // El archivo ya fue descargado localmente; mantenemos el estado de éxito existente
           }
         } catch (shareErr) {
           // El usuario canceló el compartir o hubo un error, pero el archivo ya se descargó
@@ -299,7 +306,7 @@ export default function ReportesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido al generar el reporte');
     } finally {
-      setLoading(false);
+      setLoadingCSV(false);
     }
   };
 
@@ -310,7 +317,7 @@ export default function ReportesPage() {
       return;
     }
     
-    setLoading(true);
+    setLoadingUltimo(true);
     setError(null);
     setSuccess(null);
 
@@ -320,7 +327,7 @@ export default function ReportesPage() {
       
       if (data.length === 0) {
         setError('No hay datos disponibles para generar el reporte');
-        setLoading(false);
+        setLoadingUltimo(false);
         return;
       }
 
@@ -372,16 +379,22 @@ export default function ReportesPage() {
       setSuccess('Reporte de último registro por casita generado y descargado exitosamente');
       
       // Verificar si la Web Share API está disponible y ofrecer compartir el archivo
-      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
         try {
           const file = new File([blob], fileName, { type: 'text/csv' });
-          if (navigator.canShare({ files: [file] })) {
+          if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
             await navigator.share({
               title: 'Último Registro por Casita',
               text: 'Reporte generado desde el sistema de revisiones de casitas',
               files: [file]
             });
             setSuccess('Reporte de último registro por casita generado y compartido exitosamente');
+          } else {
+            // Fallback: compartir solo texto cuando no se soporta compartir archivos
+            await navigator.share({
+              title: 'Último Registro por Casita',
+              text: `Reporte generado. El archivo fue descargado como ${fileName}.`
+            });
           }
         } catch (shareErr) {
           // El usuario canceló el compartir o hubo un error, pero el archivo ya se descargó
@@ -391,7 +404,7 @@ export default function ReportesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido al generar el reporte');
     } finally {
-      setLoading(false);
+      setLoadingUltimo(false);
     }
   };
 
@@ -480,12 +493,12 @@ export default function ReportesPage() {
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             <LoadingButton
               onClick={generateCSV}
-              disabled={loading || selectedFields.length === 0}
-              loading={loading}
+              disabled={loadingCSV || loadingUltimo || selectedFields.length === 0}
+              loading={loadingCSV}
               variant="primary"
               className="flex-1 bg-green-700 hover:bg-green-600 text-white"
             >
-              {loading ? 'Generando...' : 'Generar Reporte CSV'}
+              {loadingCSV ? 'Generando...' : 'Generar Reporte CSV'}
             </LoadingButton>
             
           </div>
@@ -493,12 +506,12 @@ export default function ReportesPage() {
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             <LoadingButton
               onClick={generateUltimoRegistroPorCasitaCSV}
-              disabled={loading || selectedFields.length === 0}
-              loading={loading}
+              disabled={loadingCSV || loadingUltimo || selectedFields.length === 0}
+              loading={loadingUltimo}
               variant="secondary"
               className="flex-1 bg-blue-700 hover:bg-blue-600 text-white"
             >
-              {loading ? 'Generando...' : 'Último Registro por Casita'}
+              {loadingUltimo ? 'Generando...' : 'Último Registro por Casita'}
             </LoadingButton>
             
           </div>

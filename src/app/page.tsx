@@ -874,12 +874,14 @@ export default function Home() {
     e.preventDefault();
     setLoginError(null);
 
+    // Normalizar usuario: sin espacios al final
+    const usuarioTrimmed = loginData.usuario.trimEnd();
+
     try {
-      await login(loginData.usuario, loginData.password);
+      await login(usuarioTrimmed, loginData.password);
       setShowLoginModal(false);
       setLoginData({ usuario: '', password: '' });
     } catch (error: unknown) {
-      
       setLoginError('Error al iniciar sesión');
     }
   };
@@ -1211,8 +1213,8 @@ export default function Home() {
         </div>
 
         {/* Información del Usuario */}
-        <div className="neumorphic-user-container mb-6 max-w-3xl mx-auto">
-          {user && (
+        {isLoggedIn && user && (
+          <div className="neumorphic-user-container mb-6 max-w-3xl mx-auto">
             <div className="neumorphic-user-card">
               <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
@@ -1232,8 +1234,23 @@ export default function Home() {
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Botón de inicio de sesión encima del menú */}
+        {!isLoggedIn && (
+          <div className="mb-6 flex justify-center">
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="neumorphic-login-button"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              Iniciar Sesión
+            </button>
+          </div>
+        )}
 
         {/* 🍽️ Menú del Día */}
         {!loadingMenu && menuDelDia && (
@@ -1320,18 +1337,6 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex justify-center">
             <div className="flex flex-wrap gap-3">
-              {/* Solo mostrar botón de login si no está logueado */}
-              {!isLoggedIn && (
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="neumorphic-login-button"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                  Iniciar Sesión
-                </button>
-              )}
 
               {/* Botón Nueva Revisión - Oculto en móvil */}
               <button
@@ -2013,21 +2018,15 @@ export default function Home() {
 
         {/* Modal de Login Modernizado */}
         {showLoginModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-gradient-to-br from-[#1e2538] to-[#2a3347] p-8 rounded-2xl shadow-2xl w-full max-w-md border border-[#3d4659]/50 backdrop-blur-md">
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-[#1a1f35]">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-[#c9a45c] bg-clip-text text-transparent">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center md:items-center md:justify-center z-50 p-4 pt-4 overflow-y-auto">
+            <div className="bg-gradient-to-br from-[#1e2538] to-[#2a3347] p-4 md:p-8 rounded-2xl shadow-2xl w-full max-w-md border border-[#3d4659]/50 backdrop-blur-md">
+              <div className="text-center mb-2">
+                <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-[#c9a45c] bg-clip-text text-transparent">
                   Iniciar Sesión
                 </h2>
-                <p className="text-gray-400 mt-2">Accede a tu cuenta para continuar</p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-[#c9a45c]">
@@ -2039,10 +2038,16 @@ export default function Home() {
                     type="text"
                     value={loginData.usuario}
                     onChange={(e) => setLoginData({ ...loginData, usuario: e.target.value })}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30"
+                    onBlur={(e) => setLoginData({ ...loginData, usuario: e.target.value.trimEnd() })}
+                    autoComplete="username"
+                    inputMode="text"
+                    className="w-full px-3 py-2 text-sm bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30"
                     placeholder="Ingresa tu usuario"
                     required
                   />
+                  {loginData.usuario.endsWith(' ') && (
+                    <p className="text-xs text-yellow-400 mt-1">No debe haber espacios al final del usuario</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -2057,7 +2062,7 @@ export default function Home() {
                       type={showPassword ? "text" : "password"}
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      className="w-full px-4 py-3 pr-12 bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30"
+                      className="w-full px-3 py-2 pr-10 text-sm bg-gradient-to-r from-[#1a1f35] to-[#1e2538] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30"
                       placeholder="Ingresa tu contraseña"
                       required
                     />
@@ -2092,17 +2097,17 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-2 pt-2 md:pt-4">
                   <button
                     type="button"
                     onClick={() => setShowLoginModal(false)}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-gray-600/25 font-medium"
+                    className="flex-1 px-3 py-2 text-sm md:text-base bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-gray-600/25 font-medium"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1a1f35] rounded-xl hover:from-[#d4b06c] hover:to-[#f5d49a] transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-[#c9a45c]/25 font-medium"
+                    className="flex-1 px-3 py-2 text-sm md:text-base bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1a1f35] rounded-xl hover:from-[#d4b06c] hover:to-[#f5d49a] transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-[#c9a45c]/25 font-medium"
                   >
                     Iniciar Sesión
                   </button>

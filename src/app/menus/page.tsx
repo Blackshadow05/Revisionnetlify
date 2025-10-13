@@ -49,17 +49,36 @@ function parseMenuContent(contenidoMenu: string): MenuDiario | null {
   }
 }
 
+function parseIngredientes(texto: string): string[] {
+  // Dividir el texto cuando encuentra una mayúscula que no esté al inicio
+  const ingredientes = texto.split(/(?=[A-Z])/).filter(item => item.trim() !== '');
+  return ingredientes.map(ingrediente => ingrediente.trim());
+}
+
 function renderComidas(comidas: string[]) {
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-green-400 mb-2">🍽️ Comidas del día</h4>
       <ul className="text-sm text-gray-300 space-y-1">
-        {comidas.map((item, idx) => (
-          <li key={idx} className="flex items-start">
-            <span className="text-green-500 mr-2">•</span>
-            {item}
-          </li>
-        ))}
+        {comidas.map((item, idx) => {
+          // Si el item contiene texto sin espacios claros, intentar dividirlo
+          const ingredientes = item.includes(' ') && !item.includes(', ') ?
+            parseIngredientes(item) : [item];
+          
+          return (
+            <li key={idx} className="flex items-start">
+              <span className="text-green-500 mr-2">•</span>
+              <div className="flex-1">
+                {ingredientes.map((ingrediente, ingIdx) => (
+                  <div key={ingIdx} className="mb-1">
+                    <span className="text-gray-500 mr-1">→</span>
+                    {ingrediente}
+                  </div>
+                ))}
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -136,11 +155,6 @@ export default async function MenusPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-700">
-                    <span className="text-xs text-gray-500">
-                      Fecha: {formatearFecha(menu.fecha_menu)}
-                    </span>
-                  </div>
                 </div>
               );
             })}

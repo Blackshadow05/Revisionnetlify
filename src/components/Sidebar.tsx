@@ -115,7 +115,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
             </svg>
           ),
           color: 'text-orange-400',
-          show: isLoggedIn
+          show: false // Oculto para todos los usuarios
         },
         {
           name: 'Menús',
@@ -137,7 +137,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
             </svg>
           ),
           color: 'text-emerald-400',
-          show: isLoggedIn
+          show: false // Oculto para todos los usuarios
         },
         {
           name: 'Estadísticas',
@@ -159,7 +159,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
             </svg>
           ),
           color: 'text-cyan-400',
-          show: isLoggedIn
+          show: false // Oculto para todos los usuarios
         },
       ]
     },
@@ -175,7 +175,7 @@ export default function Sidebar({ isOpen, onClose, onShowReportModal }: SidebarP
             </svg>
           ),
           color: 'text-green-400',
-          show: userRole === 'SuperAdmin'
+          show: false // Oculto para todos los usuarios
         },
         {
           name: 'Reportes',

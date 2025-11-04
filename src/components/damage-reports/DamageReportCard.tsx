@@ -91,19 +91,19 @@ export default function DamageReportCard({ report }: DamageReportCardProps) {
             {report.title}
           </h3>
           <p className="text-xs sm:text-sm text-gray-400 truncate mt-1">
-            {report.category} • {report.location}
+            {report.reporter} • {getStatusText(report.status)}
           </p>
         </div>
       </div>
 
-      {/* Description - Only on desktop, save space on mobile */}
-      <div className="hidden sm:block mb-4">
-        <p className="text-gray-300 text-sm line-clamp-2">
+      {/* Description */}
+      <div className="mb-4">
+        <p className="text-gray-300 text-sm line-clamp-3">
           {report.description}
         </p>
       </div>
 
-      {/* Status and Priority - Stack on mobile */}
+      {/* Status and Priority */}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between mb-3">
         <span className={`px-3 py-2 rounded-lg text-xs font-medium border ${getStatusColor(report.status)} w-fit sm:w-auto`}>
           {getStatusText(report.status)}
@@ -113,21 +113,7 @@ export default function DamageReportCard({ report }: DamageReportCardProps) {
         </span>
       </div>
 
-      {/* Tags - Horizontal scroll on mobile */}
-      {report.tags && report.tags.length > 0 && (
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-          {report.tags.map((tag: string, index: number) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-[#c9a45c]/20 text-[#c9a45c] text-xs rounded-lg border border-[#c9a45c]/30 whitespace-nowrap flex-shrink-0"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Footer - Stack on mobile */}
+      {/* Footer */}
       <div className="pt-3 border-t border-[#c9a45c]/10">
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -143,16 +129,6 @@ export default function DamageReportCard({ report }: DamageReportCardProps) {
             <span className="whitespace-nowrap">{formatDate(report.createdAt)}</span>
           </div>
         </div>
-
-        {/* Assigned To - Show on mobile when available */}
-        {report.assignedTo && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-gray-400 sm:hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V17.25m-4.5-6.75v3.375m0 0v3.375c0 .621.504 1.125 1.125 1.125h9.75a1.125 1.125 0 001.125-1.125V7.875m-13.5 4.125h16.5M16.5 13.5h16.5m-16.5 3h16.5m0 0v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V16.5" />
-            </svg>
-            <span>Asignado: {report.assignedTo}</span>
-          </div>
-        )}
       </div>
     </div>
   );

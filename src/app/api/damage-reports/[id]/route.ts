@@ -33,7 +33,7 @@ export async function GET(
     // Convert to DamageReport instance
     const report: DamageReport = {
       id: data.id,
-      created_at: data.created_at,
+      createdAt: data.created_at,
       detalle: data.detalle,
       Quien_reporta: data.Quien_reporta,
       Estado: data.Estado,
@@ -62,14 +62,11 @@ export async function GET(
         };
         return statusMap[this.Estado] || 'Open';
       },
-      get createdAt() {
-        return this.created_at;
-      },
       get reporter() {
         return this.Quien_reporta;
       },
       get updatedAt() {
-        return this.created_at;
+        return this.createdAt;
       }
     };
 
@@ -125,7 +122,7 @@ export async function PUT(
     // Convert to DamageReport instance
     const report: DamageReport = {
       id: data.id,
-      created_at: data.created_at,
+      createdAt: data.created_at,
       detalle: data.detalle,
       Quien_reporta: data.Quien_reporta,
       Estado: data.Estado,
@@ -154,14 +151,11 @@ export async function PUT(
         };
         return statusMap[this.Estado] || 'Open';
       },
-      get createdAt() {
-        return this.created_at;
-      },
       get reporter() {
         return this.Quien_reporta;
       },
       get updatedAt() {
-        return this.created_at;
+        return this.createdAt;
       }
     };
 

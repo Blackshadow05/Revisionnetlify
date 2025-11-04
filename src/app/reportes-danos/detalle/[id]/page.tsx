@@ -3,43 +3,57 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { DamageReport, DamageReportTracking } from '@/types/damage-report';
+import { DamageReport, DamageReportData, DamageReportTracking } from '@/types/damage-report';
 import AddTrackingModal from '@/components/damage-reports/AddTrackingModal';
 
 export default function DamageReportDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isLoggedIn, user } = useAuth();
-  const [report, setReport] = useState<DamageReport | null>(null);
+  const [report, setReport] = useState<DamageReportData | null>(null);
   const [tracking, setTracking] = useState<DamageReportTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddTrackingModalOpen, setIsAddTrackingModalOpen] = useState(false);
 
-  // Mock data for demonstration
+  // Fetch data from API
   useEffect(() => {
     const reportId = params.id as string;
     
-    // Mock report data
-    const mockReport: DamageReport = {
-      id: reportId,
-      title: 'Daño en línea de producción',
-      description: 'Se detectó un daño en la cinta transportadora de la línea 2 durante la inspección matutina. La cinta presenta desgaste irregular y hace ruido excesivo.',
-      category: 'Equipamiento',
-      location: 'Línea de Producción 2',
-      priority: 'High',
-      status: 'In Progress',
-      createdAt: '2025-10-27T10:00:00Z',
-      updatedAt: '2025-10-28T08:30:00Z',
-      reporter: 'Juan Pérez',
-      assignedTo: 'María González',
-      tags: ['urgente', 'producción', 'línea2']
+    const fetchReport = async () => {
+      try {
+        const [reportResponse, trackingResponse] = await Promise.all([
+          fetch(`/api/damage-reports/${reportId}`),
+          fetch(`/api/damage-reports-tracking?reportId=${reportId}`)
+        ]);
+
+        const reportResult = await reportResponse.json();
+        const trackingResult = await trackingResponse.json();
+
+        if (reportResult.success) {
+          setReport(reportResult.data);
+        }
+
+        if (trackingResult.success) {
+          setTracking(trackingResult.data);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching report:', error);
+        setLoading(false);
+      }
     };
 
-    // Mock tracking data
+    fetchReport();
+  }, [params.id]);
+
+  // Mock tracking data for demonstration
+  useEffect(() => {
+    // Mock tracking data (keeping the existing structure for now)
     const mockTracking: DamageReportTracking[] = [
       {
         id: '1',
-        reportId: reportId,
+        reportId: params.id as string,
         status: 'Open',
         comment: 'Reporte inicial - daño detectado en inspección rutinaria',
         createdBy: 'Juan Pérez',
@@ -47,7 +61,7 @@ export default function DamageReportDetailPage() {
       },
       {
         id: '2',
-        reportId: reportId,
+        reportId: params.id as string,
         status: 'In Progress',
         comment: 'Asignado a técnico especializado. Se programó inspección detallada para hoy.',
         createdBy: 'María González',
@@ -55,16 +69,25 @@ export default function DamageReportDetailPage() {
       },
       {
         id: '3',
-        reportId: reportId,
+        reportId: params.id as string,
         status: 'In Progress',
         comment: 'Inspección completada. Se requiere reemplazo de la cinta transportadora. Repuestos en pedido.',
         createdBy: 'María González',
         createdAt: '2025-10-28T08:30:00Z'
       }
     ];
+    
+    // For now, set mock data until tracking API is implemented
+    setReport(new DamageReportData({
+      id: params.id as string,
+      createdAt: '2025-10-27T10:00:00Z',
+      detalle: 'Daño en línea de producción - Se detectó un daño en la cinta transportadora de la línea 2 durante la inspección matutina. La cinta presenta desgaste irregular y hace ruido excesivo.',
+      Quien_reporta: 'Juan Pérez',
+      Estado: 'En Progreso',
+      Prioridad: 'Alto'
+    }));
 
     setTimeout(() => {
-      setReport(mockReport);
       setTracking(mockTracking);
       setLoading(false);
     }, 500);
@@ -143,11 +166,19 @@ export default function DamageReportDetailPage() {
   const handleTrackingAdded = (newTracking: DamageReportTracking) => {
     setTracking(prev => [newTracking, ...prev]);
     if (report) {
-      setReport(prev => prev ? {
-        ...prev,
-        status: newTracking.status,
-        updatedAt: newTracking.createdAt
-      } : null);
+      // Map the old status to Spanish Estado
+      const estadoMap: { [key: string]: 'Abierto' | 'En Progreso' | 'Resuelto' | 'Cerrado' } = {
+        'Open': 'Abierto',
+        'In Progress': 'En Progreso',
+        'Resolved': 'Resuelto',
+        'Closed': 'Cerrado'
+      };
+      
+      const newReportData = new DamageReportData({
+        ...report,
+        Estado: estadoMap[newTracking.status] || 'Abierto'
+      });
+      setReport(newReportData);
     }
     setIsAddTrackingModalOpen(false);
   };
@@ -228,7 +259,7 @@ export default function DamageReportDetailPage() {
                     </svg>
                   </div>
                   <div className="min-w-0">
-                    <h1 className="text-lg sm:text-2xl xl:text-3xl font-bold text-white truncate">{report.title}</h1>
+                    <h1 className="text-lg sm:text-2xl xl:text-3xl font-bold text-white truncate">{report.description}</h1>
                     <p className="text-sm sm:text-base text-gray-400">#{report.id}</p>
                   </div>
                 </div>
@@ -259,36 +290,14 @@ export default function DamageReportDetailPage() {
               
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-400 mb-1">Descripción</h3>
-                  <p className="text-white leading-relaxed">{report.description}</p>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Detalle</h3>
+                  <p className="text-white leading-relaxed">{report.detalle}</p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-400 mb-1">Categoría</h3>
-                    <p className="text-white">{report.category}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-400 mb-1">Ubicación</h3>
-                    <p className="text-white">{report.location}</p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Reportado por</h3>
+                  <p className="text-white">{report.Quien_reporta}</p>
                 </div>
-
-                {report.tags && report.tags.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-400 mb-2">Etiquetas</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {report.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-[#c9a45c]/20 text-[#c9a45c] text-xs sm:text-sm rounded-lg border border-[#c9a45c]/30"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -312,19 +321,10 @@ export default function DamageReportDetailPage() {
                 </div>
               </div>
 
-              {/* Mobile people info - stacked */}
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block">Reportado por</label>
-                  <p className="text-white text-sm">{report.reporter}</p>
-                </div>
-                
-                {report.assignedTo && (
-                  <div>
-                    <label className="text-xs text-gray-400 block">Asignado a</label>
-                    <p className="text-white text-sm">{report.assignedTo}</p>
-                  </div>
-                )}
+              {/* Mobile people info */}
+              <div>
+                <label className="text-xs text-gray-400 block">Reportado por</label>
+                <p className="text-white text-sm">{report.reporter}</p>
               </div>
             </div>
 
@@ -403,13 +403,6 @@ export default function DamageReportDetailPage() {
                   <label className="text-sm text-gray-400">Reportado por</label>
                   <p className="text-white mt-1">{report.reporter}</p>
                 </div>
-                
-                {report.assignedTo && (
-                  <div>
-                    <label className="text-sm text-gray-400">Asignado a</label>
-                    <p className="text-white mt-1">{report.assignedTo}</p>
-                  </div>
-                )}
               </div>
             </div>
 

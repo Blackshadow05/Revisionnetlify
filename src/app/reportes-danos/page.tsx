@@ -6,95 +6,81 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import DamageReportModal from '@/components/damage-reports/DamageReportModal';
 import DamageReportCard from '@/components/damage-reports/DamageReportCard';
+import { DamageReportData } from '@/types/damage-report';
 
 interface DamageReport {
   id: string;
-  title: string;
-  description: string;
-  category: string;
-  location: string;
-  priority: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
   createdAt: string;
-  updatedAt: string;
-  reporter: string;
-  assignedTo?: string;
-  tags: string[];
+  detalle: string;
+  Quien_reporta: string;
+  Estado: 'Abierto' | 'En Progreso' | 'Resuelto' | 'Cerrado';
+  Prioridad: 'Bajo' | 'Medio' | 'Alto' | 'Crítico';
 }
 
 export default function DamageReportsPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const [reports, setReports] = useState<DamageReport[]>([]);
+  const [reports, setReports] = useState<DamageReportData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'Open' | 'In Progress' | 'Resolved' | 'Closed'>('all');
+  const [filter, setFilter] = useState<'all' | 'Abierto' | 'En Progreso' | 'Resuelto' | 'Cerrado'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for demonstration
+  // Fetch data from API
   useEffect(() => {
-    const mockReports: DamageReport[] = [
-      {
-        id: '1',
-        title: 'Daño en línea de producción',
-        description: 'Se detectó un daño en la cinta transportadora de la línea 2',
-        category: 'Equipamiento',
-        location: 'Línea de Producción 2',
-        priority: 'High',
-        status: 'Open',
-        createdAt: '2025-10-27T10:00:00Z',
-        updatedAt: '2025-10-27T10:00:00Z',
-        reporter: 'Juan Pérez',
-        assignedTo: 'María González',
-        tags: ['urgente', 'producción']
-      },
-      {
-        id: '2',
-        title: 'Fuga de agua en almacén',
-        description: 'Pequeña fuga detectada en el área de almacenamiento de materias primas',
-        category: 'Infraestructura',
-        location: 'Almacén Principal',
-        priority: 'Medium',
-        status: 'In Progress',
-        createdAt: '2025-10-27T14:30:00Z',
-        updatedAt: '2025-10-27T16:00:00Z',
-        reporter: 'Ana López',
-        assignedTo: 'Carlos Ramírez',
-        tags: ['agua', 'almacén']
-      },
-      {
-        id: '3',
-        title: 'Sistema de ventilación defectuoso',
-        description: 'El sistema de ventilación del área de trabajo presenta ruido inusual',
-        category: 'HVAC',
-        location: 'Área de Trabajo A',
-        priority: 'Low',
-        status: 'Resolved',
-        createdAt: '2025-10-26T09:15:00Z',
-        updatedAt: '2025-10-27T11:45:00Z',
-        reporter: 'Luis Martínez',
-        assignedTo: 'Pedro Sánchez',
-        tags: ['ventilación', 'ruido']
+    const fetchReports = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (filter !== 'all') {
+          params.append('status', filter);
+        }
+        if (searchTerm) {
+          params.append('search', searchTerm);
+        }
+
+        const response = await fetch(`/api/damage-reports?${params}`);
+        const result = await response.json();
+
+        if (result.success) {
+          setReports(result.data);
+        } else {
+          console.error('Error fetching reports:', result.error);
+          setReports([]);
+        }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        setReports([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setTimeout(() => {
-      setReports(mockReports);
-      setLoading(false);
-    }, 500);
-  }, []);
+    };
 
-  const filteredReports = reports.filter(report => {
-    const matchesFilter = filter === 'all' || report.status === filter;
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.location.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+    fetchReports();
+  }, [filter, searchTerm]);
 
-  const handleReportCreated = (newReport: DamageReport) => {
-    setReports(prev => [newReport, ...prev]);
-    setIsModalOpen(false);
+  const filteredReports = reports;
+
+  const handleReportCreated = async (newReport: DamageReport) => {
+    try {
+      const response = await fetch('/api/damage-reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newReport),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setReports(prev => [result.data, ...prev]);
+        setIsModalOpen(false);
+      } else {
+        console.error('Error creating report:', result.error);
+      }
+    } catch (error) {
+      console.error('Error creating report:', error);
+    }
   };
 
   if (!isLoggedIn) {
@@ -174,10 +160,10 @@ export default function DamageReportsPage() {
                 className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
               >
                 <option value="all">Todos los Estados</option>
-                <option value="Open">Abierto</option>
-                <option value="In Progress">En Progreso</option>
-                <option value="Resolved">Resuelto</option>
-                <option value="Closed">Cerrado</option>
+                <option value="Abierto">Abierto</option>
+                <option value="En Progreso">En Progreso</option>
+                <option value="Resuelto">Resuelto</option>
+                <option value="Cerrado">Cerrado</option>
               </select>
             </div>
           </div>

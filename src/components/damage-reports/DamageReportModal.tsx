@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DamageReport } from '@/types/damage-report';
+import { DamageReport, DamageReportData } from '@/types/damage-report';
 import { useAuth } from '@/context/AuthContext';
 
 interface DamageReportModalProps {
@@ -14,35 +14,29 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    location: '',
-    priority: 'Medium' as 'Low' | 'Medium' | 'High' | 'Critical',
-    assignedTo: '',
-    tags: ''
+    detalle: '',
+    Quien_reporta: '',
+    Estado: 'Abierto' as 'Abierto' | 'En Progreso' | 'Resuelto' | 'Cerrado',
+    Prioridad: 'Medio' as 'Bajo' | 'Medio' | 'Alto' | 'Crítico'
   });
 
-  const categories = [
-    'Equipamiento',
-    'Infraestructura',
-    'HVAC',
-    'Eléctrico',
-    'Plomería',
-    'Seguridad',
-    'Otros'
+  const priorities = [
+    { value: 'Bajo', label: 'Baja', color: 'text-green-400' },
+    { value: 'Medio', label: 'Media', color: 'text-yellow-400' },
+    { value: 'Alto', label: 'Alta', color: 'text-orange-400' },
+    { value: 'Crítico', label: 'Crítica', color: 'text-red-400' }
   ];
 
-  const priorities = [
-    { value: 'Low', label: 'Baja', color: 'text-green-400' },
-    { value: 'Medium', label: 'Media', color: 'text-yellow-400' },
-    { value: 'High', label: 'Alta', color: 'text-orange-400' },
-    { value: 'Critical', label: 'Crítica', color: 'text-red-400' }
+  const states = [
+    { value: 'Abierto', label: 'Abierto' },
+    { value: 'En Progreso', label: 'En Progreso' },
+    { value: 'Resuelto', label: 'Resuelto' },
+    { value: 'Cerrado', label: 'Cerrado' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.description.trim() || !formData.category || !formData.location) {
+    if (!formData.detalle.trim() || !formData.Quien_reporta.trim()) {
       return;
     }
 
@@ -50,30 +44,21 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
 
     // Simulate API call
     setTimeout(() => {
-      const newReport: DamageReport = {
+      const newReportData = new DamageReportData({
         id: Date.now().toString(),
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        location: formData.location.trim(),
-        priority: formData.priority,
-        status: 'Open',
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        reporter: user || 'Usuario Anónimo',
-        assignedTo: formData.assignedTo.trim() || undefined,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-      };
+        detalle: formData.detalle.trim(),
+        Quien_reporta: formData.Quien_reporta.trim() || user || 'Usuario Anónimo',
+        Estado: formData.Estado,
+        Prioridad: formData.Prioridad
+      });
 
-      onReportCreated(newReport);
+      onReportCreated(newReportData);
       setFormData({
-        title: '',
-        description: '',
-        category: '',
-        location: '',
-        priority: 'Medium',
-        assignedTo: '',
-        tags: ''
+        detalle: '',
+        Quien_reporta: user || '',
+        Estado: 'Abierto',
+        Prioridad: 'Medio'
       });
       setIsSubmitting(false);
     }, 1000);
@@ -124,29 +109,14 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
         {/* Content */}
         <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Title */}
+            {/* Detalle */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Título del Reporte *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="Describe brevemente el daño..."
-                className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Descripción Detallada *
+                Detalle del Daño *
               </label>
               <textarea
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
+                value={formData.detalle}
+                onChange={(e) => handleChange('detalle', e.target.value)}
                 placeholder="Describe en detalle el daño, cuándo ocurrió, qué lo causó..."
                 rows={4}
                 className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 resize-none text-base min-h-[120px]"
@@ -154,42 +124,38 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
               />
             </div>
 
-            {/* Category and Location - Stack on mobile */}
+            {/* Quien Reporta */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                ¿Quién Reporta? *
+              </label>
+              <input
+                type="text"
+                value={formData.Quien_reporta}
+                onChange={(e) => handleChange('Quien_reporta', e.target.value)}
+                placeholder="Nombre de quien reporta el daño"
+                className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
+                required
+              />
+            </div>
+
+            {/* Estado y Prioridad */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Categoría *
+                  Estado
                 </label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => handleChange('category', e.target.value)}
+                  value={formData.Estado}
+                  onChange={(e) => handleChange('Estado', e.target.value)}
                   className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
-                  required
                 >
-                  <option value="">Seleccionar categoría</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {states.map(state => (
+                    <option key={state.value} value={state.value}>{state.label}</option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Ubicación *
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => handleChange('location', e.target.value)}
-                  placeholder="Ej: Línea de Producción 2"
-                  className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Priority and Assigned To - Stack on mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Prioridad
@@ -199,9 +165,9 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
                     <button
                       key={priority.value}
                       type="button"
-                      onClick={() => handleChange('priority', priority.value)}
+                      onClick={() => handleChange('Prioridad', priority.value)}
                       className={`px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 min-h-[48px] ${
-                        formData.priority === priority.value
+                        formData.Prioridad === priority.value
                           ? 'bg-[#c9a45c] text-white'
                           : 'bg-[#4a5367]/50 text-gray-300 hover:bg-[#4a5367]'
                       }`}
@@ -211,39 +177,9 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
                   ))}
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Asignar a (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={formData.assignedTo}
-                  onChange={(e) => handleChange('assignedTo', e.target.value)}
-                  placeholder="Nombre del responsable"
-                  className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
-                />
-              </div>
             </div>
 
-            {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Etiquetas (opcional)
-              </label>
-              <input
-                type="text"
-                value={formData.tags}
-                onChange={(e) => handleChange('tags', e.target.value)}
-                placeholder="ej: urgente, producción, línea2 (separadas por comas)"
-                className="w-full px-4 py-3 bg-[#4a5367]/50 border border-[#c9a45c]/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-transparent transition-all duration-200 text-base min-h-[48px]"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Separa las etiquetas con comas para facilitar la búsqueda
-              </p>
-            </div>
-
-            {/* Form Actions - Mobile optimized */}
+            {/* Form Actions */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end pt-6 border-t border-[#c9a45c]/20">
               <button
                 type="button"
@@ -256,7 +192,7 @@ export default function DamageReportModal({ isOpen, onClose, onReportCreated }: 
               
               <button
                 type="submit"
-                disabled={isSubmitting || !formData.title.trim() || !formData.description.trim() || !formData.category || !formData.location}
+                disabled={isSubmitting || !formData.detalle.trim() || !formData.Quien_reporta.trim()}
                 className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-[#c9a45c] text-white font-semibold rounded-xl shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
               >
                 {isSubmitting ? (

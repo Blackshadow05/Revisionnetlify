@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Convert Supabase data to DamageReport instances
     const reports = data?.map(item => ({
       id: item.id,
-      created_at: item.created_at,
+      createdAt: item.created_at,
       detalle: item.detalle,
       Quien_reporta: item.Quien_reporta,
       Estado: item.Estado,
@@ -66,14 +66,11 @@ export async function GET(request: NextRequest) {
         };
         return statusMap[this.Estado] || 'Open';
       },
-      get createdAt() {
-        return this.created_at;
-      },
       get reporter() {
         return this.Quien_reporta;
       },
       get updatedAt() {
-        return this.created_at;
+        return this.createdAt;
       }
     } as DamageReport)) || [];
 
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Convert to DamageReport instance
     const damageReportData: DamageReport = {
       id: data.id,
-      created_at: data.created_at,
+      createdAt: data.created_at,
       detalle: data.detalle,
       Quien_reporta: data.Quien_reporta,
       Estado: data.Estado,
@@ -159,14 +156,11 @@ export async function POST(request: NextRequest) {
         };
         return statusMap[this.Estado] || 'Open';
       },
-      get createdAt() {
-        return this.created_at;
-      },
       get reporter() {
         return this.Quien_reporta;
       },
       get updatedAt() {
-        return this.created_at;
+        return this.createdAt;
       }
     };
 

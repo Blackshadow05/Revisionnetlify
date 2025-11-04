@@ -1,95 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DamageReport, CreateDamageReportRequest } from '@/types/damage-report';
-
-// Mock data storage - in a real app, this would be a database
-let damageReports: DamageReport[] = [
-  {
-    id: '1',
-    title: 'Daño en línea de producción',
-    description: 'Se detectó un daño en la cinta transportadora de la línea 2 durante la inspección matutina. La cinta presenta desgaste irregular y hace ruido excesivo.',
-    category: 'Equipamiento',
-    location: 'Línea de Producción 2',
-    priority: 'High',
-    status: 'Open',
-    createdAt: '2025-10-27T10:00:00Z',
-    updatedAt: '2025-10-27T10:00:00Z',
-    reporter: 'Juan Pérez',
-    assignedTo: 'María González',
-    tags: ['urgente', 'producción', 'línea2']
-  },
-  {
-    id: '2',
-    title: 'Fuga de agua en almacén',
-    description: 'Pequeña fuga detectada en el área de almacenamiento de materias primas durante la revisión nocturna.',
-    category: 'Infraestructura',
-    location: 'Almacén Principal',
-    priority: 'Medium',
-    status: 'In Progress',
-    createdAt: '2025-10-27T14:30:00Z',
-    updatedAt: '2025-10-27T16:00:00Z',
-    reporter: 'Ana López',
-    assignedTo: 'Carlos Ramírez',
-    tags: ['agua', 'almacén']
-  },
-  {
-    id: '3',
-    title: 'Sistema de ventilación defectuoso',
-    description: 'El sistema de ventilación del área de trabajo presenta ruido inusual durante el funcionamiento.',
-    category: 'HVAC',
-    location: 'Área de Trabajo A',
-    priority: 'Low',
-    status: 'Resolved',
-    createdAt: '2025-10-26T09:15:00Z',
-    updatedAt: '2025-10-27T11:45:00Z',
-    reporter: 'Luis Martínez',
-    assignedTo: 'Pedro Sánchez',
-    tags: ['ventilación', 'ruido']
-  }
-];
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const category = searchParams.get('category');
     const search = searchParams.get('search');
 
-    let filteredReports = [...damageReports];
+    // Build query
+    let query = supabase
+      .from('Reporte_danos')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    // Filter by status
+    // Filter by status (Estado in Spanish)
     if (status && status !== 'all') {
-      filteredReports = filteredReports.filter(report => report.status === status);
-    }
-
-    // Filter by category
-    if (category && category !== 'all') {
-      filteredReports = filteredReports.filter(report => report.category === category);
+      query = query.eq('Estado', status);
     }
 
     // Search filter
     if (search) {
-      const searchLower = search.toLowerCase();
-      filteredReports = filteredReports.filter(report =>
-        report.title.toLowerCase().includes(searchLower) ||
-        report.description.toLowerCase().includes(searchLower) ||
-        report.location.toLowerCase().includes(searchLower) ||
-        report.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      query = query.or(`detalle.ilike.%${search}%,Quien_reporta.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching damage reports:', error);
+      return NextResponse.json(
+        { success: false, error: 'Error al obtener reportes de daños' },
+        { status: 500 }
       );
     }
 
-    // Sort by created date (newest first)
-    filteredReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Convert Supabase data to DamageReport instances
+    const reports = data?.map(item => ({
+      id: item.id,
+      created_at: item.created_at,
+      detalle: item.detalle,
+      Quien_reporta: item.Quien_reporta,
+      Estado: item.Estado,
+      Prioridad: item.Prioridad,
+      get title() {
+        return this.detalle.length > 50 ? this.detalle.substring(0, 50) + '...' : this.detalle;
+      },
+      get description() {
+        return this.detalle;
+      },
+      get priority() {
+        const priorityMap: { [key: string]: 'Low' | 'Medium' | 'High' | 'Critical' } = {
+          'Bajo': 'Low',
+          'Medio': 'Medium',
+          'Alto': 'High',
+          'Crítico': 'Critical'
+        };
+        return priorityMap[this.Prioridad] || 'Low';
+      },
+      get status() {
+        const statusMap: { [key: string]: 'Open' | 'In Progress' | 'Resolved' | 'Closed' } = {
+          'Abierto': 'Open',
+          'En Progreso': 'In Progress',
+          'Resuelto': 'Resolved',
+          'Cerrado': 'Closed'
+        };
+        return statusMap[this.Estado] || 'Open';
+      },
+      get createdAt() {
+        return this.created_at;
+      },
+      get reporter() {
+        return this.Quien_reporta;
+      },
+      get updatedAt() {
+        return this.created_at;
+      }
+    } as DamageReport)) || [];
 
     return NextResponse.json({
       success: true,
-      data: filteredReports,
-      total: filteredReports.length
+      data: reports,
+      total: reports.length
     });
 
   } catch (error) {
     console.error('Error fetching damage reports:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     );
   }
@@ -97,45 +94,92 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateDamageReportRequest = await request.json();
+    const body = await request.json();
 
-    // Validate required fields
-    if (!body.title || !body.description || !body.category || !body.location) {
+    // Validate required fields for Supabase
+    if (!body.detalle || !body.Quien_reporta) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Los campos detalle y Quien_reporta son requeridos' },
         { status: 400 }
       );
     }
 
-    // Create new report
-    const newReport: DamageReport = {
-      id: Date.now().toString(),
-      title: body.title,
-      description: body.description,
-      category: body.category,
-      location: body.location,
-      priority: body.priority || 'Medium',
-      status: 'Open',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      reporter: 'Usuario Actual', // In a real app, get from auth context
-      assignedTo: body.assignedTo,
-      tags: body.tags || []
+    // Prepare data for Supabase
+    const newReport = {
+      detalle: body.detalle,
+      Quien_reporta: body.Quien_reporta,
+      Estado: body.Estado || 'Abierto',
+      Prioridad: body.Prioridad || 'Medio'
     };
 
-    // Add to storage
-    damageReports.unshift(newReport);
+    // Insert into Supabase
+    const { data, error } = await supabase
+      .from('Reporte_danos')
+      .insert([newReport])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating damage report:', error);
+      return NextResponse.json(
+        { success: false, error: 'Error al crear el reporte de daño' },
+        { status: 500 }
+      );
+    }
+
+    // Convert to DamageReport instance
+    const damageReportData: DamageReport = {
+      id: data.id,
+      created_at: data.created_at,
+      detalle: data.detalle,
+      Quien_reporta: data.Quien_reporta,
+      Estado: data.Estado,
+      Prioridad: data.Prioridad,
+      get title() {
+        return this.detalle.length > 50 ? this.detalle.substring(0, 50) + '...' : this.detalle;
+      },
+      get description() {
+        return this.detalle;
+      },
+      get priority() {
+        const priorityMap: { [key: string]: 'Low' | 'Medium' | 'High' | 'Critical' } = {
+          'Bajo': 'Low',
+          'Medio': 'Medium',
+          'Alto': 'High',
+          'Crítico': 'Critical'
+        };
+        return priorityMap[this.Prioridad] || 'Low';
+      },
+      get status() {
+        const statusMap: { [key: string]: 'Open' | 'In Progress' | 'Resolved' | 'Closed' } = {
+          'Abierto': 'Open',
+          'En Progreso': 'In Progress',
+          'Resuelto': 'Resolved',
+          'Cerrado': 'Closed'
+        };
+        return statusMap[this.Estado] || 'Open';
+      },
+      get createdAt() {
+        return this.created_at;
+      },
+      get reporter() {
+        return this.Quien_reporta;
+      },
+      get updatedAt() {
+        return this.created_at;
+      }
+    };
 
     return NextResponse.json({
       success: true,
-      data: newReport,
-      message: 'Damage report created successfully'
+      data: damageReportData,
+      message: 'Reporte de daño creado exitosamente'
     }, { status: 201 });
 
   } catch (error) {
     console.error('Error creating damage report:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

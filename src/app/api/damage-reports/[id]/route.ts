@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DamageReport, DamageReportData } from '@/types/damage-report';
+import { DamageReport } from '@/types/damage-report';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(
@@ -30,8 +30,48 @@ export async function GET(
       );
     }
 
-    // Convert to DamageReportData instance
-    const report = new DamageReportData(data);
+    // Convert to DamageReport instance
+    const report: DamageReport = {
+      id: data.id,
+      created_at: data.created_at,
+      detalle: data.detalle,
+      Quien_reporta: data.Quien_reporta,
+      Estado: data.Estado,
+      Prioridad: data.Prioridad,
+      get title() {
+        return this.detalle.length > 50 ? this.detalle.substring(0, 50) + '...' : this.detalle;
+      },
+      get description() {
+        return this.detalle;
+      },
+      get priority() {
+        const priorityMap: { [key: string]: 'Low' | 'Medium' | 'High' | 'Critical' } = {
+          'Bajo': 'Low',
+          'Medio': 'Medium',
+          'Alto': 'High',
+          'Crítico': 'Critical'
+        };
+        return priorityMap[this.Prioridad] || 'Low';
+      },
+      get status() {
+        const statusMap: { [key: string]: 'Open' | 'In Progress' | 'Resolved' | 'Closed' } = {
+          'Abierto': 'Open',
+          'En Progreso': 'In Progress',
+          'Resuelto': 'Resolved',
+          'Cerrado': 'Closed'
+        };
+        return statusMap[this.Estado] || 'Open';
+      },
+      get createdAt() {
+        return this.created_at;
+      },
+      get reporter() {
+        return this.Quien_reporta;
+      },
+      get updatedAt() {
+        return this.created_at;
+      }
+    };
 
     return NextResponse.json({
       success: true,
@@ -82,8 +122,48 @@ export async function PUT(
       );
     }
 
-    // Convert to DamageReportData instance
-    const report = new DamageReportData(data);
+    // Convert to DamageReport instance
+    const report: DamageReport = {
+      id: data.id,
+      created_at: data.created_at,
+      detalle: data.detalle,
+      Quien_reporta: data.Quien_reporta,
+      Estado: data.Estado,
+      Prioridad: data.Prioridad,
+      get title() {
+        return this.detalle.length > 50 ? this.detalle.substring(0, 50) + '...' : this.detalle;
+      },
+      get description() {
+        return this.detalle;
+      },
+      get priority() {
+        const priorityMap: { [key: string]: 'Low' | 'Medium' | 'High' | 'Critical' } = {
+          'Bajo': 'Low',
+          'Medio': 'Medium',
+          'Alto': 'High',
+          'Crítico': 'Critical'
+        };
+        return priorityMap[this.Prioridad] || 'Low';
+      },
+      get status() {
+        const statusMap: { [key: string]: 'Open' | 'In Progress' | 'Resolved' | 'Closed' } = {
+          'Abierto': 'Open',
+          'En Progreso': 'In Progress',
+          'Resuelto': 'Resolved',
+          'Cerrado': 'Closed'
+        };
+        return statusMap[this.Estado] || 'Open';
+      },
+      get createdAt() {
+        return this.created_at;
+      },
+      get reporter() {
+        return this.Quien_reporta;
+      },
+      get updatedAt() {
+        return this.created_at;
+      }
+    };
 
     return NextResponse.json({
       success: true,

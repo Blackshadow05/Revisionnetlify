@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DamageReportData } from '@/types/damage-report';
+import { DamageReport, DamageReportData } from '@/types/damage-report';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(

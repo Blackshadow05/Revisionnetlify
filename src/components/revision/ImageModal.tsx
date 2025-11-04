@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { getConsistentImageUrl } from '@/lib/cloudinary';
 
 // Logger no-op para silenciar toda salida en consola desde este componente
 const ImageModalLogger = {
@@ -685,8 +686,8 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
           onDoubleClick={handleDoubleClick}
         >
           <img
-            key={`${currentImageUrl}-${Date.now()}`} // Key más agresiva para móviles
-            src={currentImageUrl}
+            key={currentImageUrl} // Removido Date.now() para evitar recargas innecesarias
+            src={getConsistentImageUrl(currentImageUrl)}
             alt="Imagen ampliada"
             className={`max-w-full max-h-full object-contain rounded-lg shadow-2xl select-none pointer-events-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             style={{
@@ -710,7 +711,20 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
                 isMobile,
                 timestamp: Date.now()
               });
-              setIsLoading(false);
+              
+              // Si falla la carga con la URL consistente, intentar con la URL normalizada
+              const target = e.target as HTMLImageElement;
+              const consistentUrl = getConsistentImageUrl(currentImageUrl);
+              if (target.src !== consistentUrl) {
+                target.src = consistentUrl;
+              } else {
+                // Como último recurso, intentar con la URL original
+                if (target.src !== currentImageUrl) {
+                  target.src = currentImageUrl;
+                } else {
+                  setIsLoading(false);
+                }
+              }
             }}
           />
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { getConsistentImageUrl } from '@/lib/cloudinary';
 
 interface ClickableImageProps {
   src: string;
@@ -35,7 +36,7 @@ const ClickableImage = memo(({
   return (
     <div className={containerClassName} onClick={onClick}>
       <img
-        src={src}
+        src={getConsistentImageUrl(src)}
         alt={alt}
         loading="lazy"
         decoding="async"
@@ -44,7 +45,19 @@ const ClickableImage = memo(({
         className={`${className} transform transition-transform duration-200 group-hover:scale-[1.02]`}
         onError={(e) => {
           const target = e.target as HTMLImageElement;
-          target.src = '/placeholder-image.png';
+          // Si falla la carga con la URL consistente, intentar con la URL normalizada
+          const consistentUrl = getConsistentImageUrl(src);
+          if (target.src !== consistentUrl) {
+            target.src = consistentUrl;
+          } else {
+            // Como último recurso, intentar con la URL original
+            if (target.src !== src) {
+              target.src = src;
+            } else {
+              // Reemplazar con un SVG placeholder en base64
+              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik04MCA2MEgxMjBWODBIODBWNjBaIiBmaWxsPSIjNEI1NTYzIi8+CjxwYXRoIGQ9Ik04MCA4OEgxMjBWMTA4SDgwVjg4WiIgZmlsbD0iIzRCNTU2MyIvPgo8cGF0aCBkPSJNODAgMTE2SDEyMFYxMzZIODBWMTE2WiIgZmlsbD0iIzRCNTU2MyIvPgo8L3N2Zz4K';
+            }
+          }
         }}
       />
       

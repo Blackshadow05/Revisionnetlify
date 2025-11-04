@@ -120,21 +120,27 @@ export const getOriginalCloudinaryUrl = (url: string): string => {
  * @returns URL optimizada con dimensiones y compresión automática
  */
 export const getCloudinaryThumbnailUrl = (url: string, width: number, height?: number): string => {
-  if (!url || !url.includes('cloudinary.com')) {
-    return url;
+  if (!url) return url;
+  
+  // Primero normalizar la URL si es relativa
+  const normalizedUrl = getFullImageUrl(url);
+  
+  // Si después de normalizar no es una URL de Cloudinary, devolverla tal cual
+  if (!normalizedUrl.includes('cloudinary.com')) {
+    return normalizedUrl;
   }
   
   // Si ya tiene transformaciones, no las duplicamos
-  if (url.includes('/upload/f_auto') || url.includes('/upload/q_auto')) {
+  if (normalizedUrl.includes('/upload/f_auto') || normalizedUrl.includes('/upload/q_auto')) {
     // Extraer la parte base de la URL
-    const baseUrl = url.replace(/\/upload\/[^/]*\//, '/upload/');
+    const baseUrl = normalizedUrl.replace(/\/upload\/[^/]*\//, '/upload/');
     const sizeParam = height ? `w_${width},h_${height},c_fill` : `w_${width}`;
     return baseUrl.replace('/upload/', `/upload/${sizeParam},f_auto,q_auto/`);
   }
   
   // Agregar dimensiones y optimizaciones a la URL original
   const sizeParam = height ? `w_${width},h_${height},c_fill` : `w_${width}`;
-  return url.replace('/upload/', `/upload/${sizeParam},f_auto,q_auto/`);
+  return normalizedUrl.replace('/upload/', `/upload/${sizeParam},f_auto,q_auto/`);
 };
 
 /**
@@ -209,4 +215,85 @@ export const migrateExistingCloudinaryUrls = async (): Promise<number> => {
     console.error('Error in migration:', error);
     return 0;
   }
-}; 
+};
+
+/**
+ * Normaliza URLs de imágenes para manejar tanto URLs relativas como absolutas de Cloudinary
+ * @param imageUrl - URL de la imagen (puede ser relativa o absoluta)
+ * @returns URL completa válida para mostrar la imagen
+ */
+export const normalizeImageUrl = (imageUrl: string): string => {
+  if (!imageUrl) return imageUrl;
+  
+  // Si ya es una URL completa de Cloudinary, devolverla tal cual
+  if (imageUrl.startsWith('https://res.cloudinary.com/')) {
+    return imageUrl;
+  }
+  
+  // Si es una ruta relativa (empieza con el nombre de la carpeta), construir la URL completa
+  if (imageUrl.startsWith('Evidencias/') || imageUrl.startsWith('notas/') || imageUrl.includes('/')) {
+    // Para URLs relativas, necesitamos construir la URL base de Cloudinary
+    const cloudName = 'dhd61lan4';
+    const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto/`;
+    
+    // Extraer timestamp si existe en la ruta relativa
+    const timestampMatch = imageUrl.match(/v(\d+)/);
+    if (timestampMatch) {
+      // Si ya tiene timestamp, usarlo
+      return `${baseUrl}${imageUrl}`;
+    } else {
+      // Si no tiene timestamp, no agregar uno dinámico para evitar parpadeo
+      // En su lugar, usar un timestamp fijo o ninguno
+      return `${baseUrl}${imageUrl}`;
+    }
+  }
+  
+  // Si no coincide con ningún patrón conocido, devolver la URL original
+  return imageUrl;
+};
+
+/**
+ * Obtiene la URL completa para mostrar una imagen, manejando ambos formatos
+ * @param imageUrl - URL de la imagen (relativa o absoluta)
+ * @returns URL completa válida para mostrar
+ */
+export const getFullImageUrl = (imageUrl: string): string => {
+  return normalizeImageUrl(imageUrl);
+};
+
+/**
+ * Genera una URL completa para una imagen relativa con un timestamp consistente
+ * @param imageUrl - URL relativa de la imagen
+ * @param useTimestamp - Si se debe usar timestamp (default: false para evitar parpadeo)
+ * @returns URL completa válida para mostrar
+ */
+export const getConsistentImageUrl = (imageUrl: string, useTimestamp: boolean = false): string => {
+  if (!imageUrl) return imageUrl;
+  
+  // Si ya es una URL completa, devolverla tal cual
+  if (imageUrl.startsWith('https://res.cloudinary.com/')) {
+    return imageUrl;
+  }
+  
+  // Si es una ruta relativa, construir la URL completa
+  if (imageUrl.startsWith('Evidencias/') || imageUrl.startsWith('notas/') || imageUrl.includes('/')) {
+    const cloudName = 'dhd61lan4';
+    const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto/`;
+    
+    // Extraer timestamp si existe
+    const timestampMatch = imageUrl.match(/v(\d+)/);
+    if (timestampMatch) {
+      return `${baseUrl}${imageUrl}`;
+    } else if (useTimestamp) {
+      // Usar un timestamp fijo basado en la fecha actual para consistencia
+      const today = new Date();
+      const fixedTimestamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      return `${baseUrl}v${Math.floor(fixedTimestamp / 1000)}/${imageUrl}`;
+    } else {
+      // No agregar timestamp para máxima consistencia
+      return `${baseUrl}${imageUrl}`;
+    }
+  }
+  
+  return imageUrl;
+};

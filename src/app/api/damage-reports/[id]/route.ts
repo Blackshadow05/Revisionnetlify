@@ -1,66 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Mock data storage - in a real app, this would be a database
-let damageReports = [
-  {
-    id: '1',
-    title: 'Daño en línea de producción',
-    description: 'Se detectó un daño en la cinta transportadora de la línea 2 durante la inspección matutina. La cinta presenta desgaste irregular y hace ruido excesivo.',
-    category: 'Equipamiento',
-    location: 'Línea de Producción 2',
-    priority: 'High',
-    status: 'Open',
-    createdAt: '2025-10-27T10:00:00Z',
-    updatedAt: '2025-10-27T10:00:00Z',
-    reporter: 'Juan Pérez',
-    assignedTo: 'María González',
-    tags: ['urgente', 'producción', 'línea2']
-  },
-  {
-    id: '2',
-    title: 'Fuga de agua en almacén',
-    description: 'Pequeña fuga detectada en el área de almacenamiento de materias primas durante la revisión nocturna.',
-    category: 'Infraestructura',
-    location: 'Almacén Principal',
-    priority: 'Medium',
-    status: 'In Progress',
-    createdAt: '2025-10-27T14:30:00Z',
-    updatedAt: '2025-10-27T16:00:00Z',
-    reporter: 'Ana López',
-    assignedTo: 'Carlos Ramírez',
-    tags: ['agua', 'almacén']
-  },
-  {
-    id: '3',
-    title: 'Sistema de ventilación defectuoso',
-    description: 'El sistema de ventilación del área de trabajo presenta ruido inusual durante el funcionamiento.',
-    category: 'HVAC',
-    location: 'Área de Trabajo A',
-    priority: 'Low',
-    status: 'Resolved',
-    createdAt: '2025-10-26T09:15:00Z',
-    updatedAt: '2025-10-27T11:45:00Z',
-    reporter: 'Luis Martínez',
-    assignedTo: 'Pedro Sánchez',
-    tags: ['ventilación', 'ruido']
-  }
-];
+import { DamageReportData } from '@/types/damage-report';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    const report = damageReports.find(r => r.id === id);
+    const { data, error } = await supabase
+      .from('Reporte_danos')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!report) {
+    if (error) {
+      console.error('Error fetching damage report:', error);
       return NextResponse.json(
-        { success: false, error: 'Damage report not found' },
+        { success: false, error: 'Reporte de daño no encontrado' },
         { status: 404 }
       );
     }
+
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: 'Reporte de daño no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Convert to DamageReportData instance
+    const report = new DamageReportData(data);
 
     return NextResponse.json({
       success: true,
@@ -70,7 +41,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching damage report:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     );
   }
@@ -78,38 +49,52 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
-    const reportIndex = damageReports.findIndex(r => r.id === id);
+    // Only allow updating Estado and Prioridad fields for Supabase
+    const allowedFields: any = {};
+    if (body.Estado) allowedFields.Estado = body.Estado;
+    if (body.Prioridad) allowedFields.Prioridad = body.Prioridad;
 
-    if (reportIndex === -1) {
+    const { data, error } = await supabase
+      .from('Reporte_danos')
+      .update(allowedFields)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating damage report:', error);
       return NextResponse.json(
-        { success: false, error: 'Damage report not found' },
+        { success: false, error: 'Error al actualizar el reporte de daño' },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: 'Reporte de daño no encontrado' },
         { status: 404 }
       );
     }
 
-    // Update the report
-    damageReports[reportIndex] = {
-      ...damageReports[reportIndex],
-      ...body,
-      updatedAt: new Date().toISOString()
-    };
+    // Convert to DamageReportData instance
+    const report = new DamageReportData(data);
 
     return NextResponse.json({
       success: true,
-      data: damageReports[reportIndex],
-      message: 'Damage report updated successfully'
+      data: report,
+      message: 'Reporte de daño actualizado exitosamente'
     });
 
   } catch (error) {
     console.error('Error updating damage report:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     );
   }
@@ -117,32 +102,33 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    const reportIndex = damageReports.findIndex(r => r.id === id);
+    const { error } = await supabase
+      .from('Reporte_danos')
+      .delete()
+      .eq('id', id);
 
-    if (reportIndex === -1) {
+    if (error) {
+      console.error('Error deleting damage report:', error);
       return NextResponse.json(
-        { success: false, error: 'Damage report not found' },
-        { status: 404 }
+        { success: false, error: 'Error al eliminar el reporte de daño' },
+        { status: 500 }
       );
     }
 
-    // Remove the report
-    damageReports.splice(reportIndex, 1);
-
     return NextResponse.json({
       success: true,
-      message: 'Damage report deleted successfully'
+      message: 'Reporte de daño eliminado exitosamente'
     });
 
   } catch (error) {
     console.error('Error deleting damage report:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Error interno del servidor' },
       { status: 500 }
     );
   }

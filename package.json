@@ -7,7 +7,7 @@
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "verify-imagekit": "node scripts/verify-imagekit.js",
     "bundle-analyzer": "npx @next/bundle-analyzer"
   },
@@ -27,7 +27,7 @@
     "autoprefixer": "^10.4.17",
     "date-fns": "^3.3.1",
     "imagekit": "^6.0.0",
-    "next": "^15.4.1",
+    "next": "16.0.7",
     "postcss": "^8.4.35",
     "react": "^19.1.0",
     "react-datepicker": "^8.4.0",
@@ -41,16 +41,16 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.11.6",
-    "@next/bundle-analyzer": "^15.4.4",
+    "@next/bundle-analyzer": "16.0.7",
     "@types/node": "^24.0.14",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "eslint": "^8",
-    "eslint-config-next": "^15.4.1",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.0.0",
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.9.0"
   },
   "resolutions": {
     "tailwindcss": "^3.4.1",

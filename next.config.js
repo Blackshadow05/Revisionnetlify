@@ -78,29 +78,7 @@ const nextConfig = {
     ];
   },
   
-  // 🔄 WEBPACK: Configuración optimizada
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
-    
-    return config;
-  },
-  
-  // ⚡ CONFIGURACIÓN DE RENDIMIENTO
-  poweredByHeader: false,
-  
-  // 🚫 DESHABILITAR CARACTERÍSTICAS PROBLEMÁTICAS EN NETLIFY
-  experimental: {
-    scrollRestoration: true,
-  },
-  
-  // 🚀 CODE SPLITTING: Optimizaciones adicionales de webpack
+  // 🔄 WEBPACK: Configuración optimizada (unificada)
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -144,6 +122,18 @@ const nextConfig = {
     
     return config;
   },
+  
+  // ⚡ CONFIGURACIÓN DE RENDIMIENTO
+  poweredByHeader: false,
+  
+  // 🚫 DESHABILITAR CARACTERÍSTICAS PROBLEMÁTICAS EN NETLIFY
+  experimental: {
+    scrollRestoration: true,
+  },
+  
+  // 🚀 TURBOPACK: Configuración para Next.js 16
+  // Para evitar el error "This build is using Turbopack, with a `webpack` config and no `turbopack` config"
+  turbopack: {},
   
   // Asegurarse de que no haya configuraciones obsoletas
 };

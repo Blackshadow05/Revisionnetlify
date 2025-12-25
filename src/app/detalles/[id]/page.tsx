@@ -1113,8 +1113,8 @@ const DetalleRevision = memo(() => {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 mb-12">
 
-        {/* GALERÍA DE IMÁGENES - Preview de la primera imagen */}
-        {revision?.evidencia_01 && (
+        {/* GALERÍA DE IMÁGENES - Preview de la primera imagen (o segunda si no hay primera) */}
+        {(revision?.evidencia_01 || revision?.evidencia_02) && (
           <FadeIn delay={50}>
             <div className="rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <div
@@ -1124,7 +1124,7 @@ const DetalleRevision = memo(() => {
                   if (revision?.evidencia_01) allImages.push(revision.evidencia_01);
                   if (revision?.evidencia_02) allImages.push(revision.evidencia_02);
                   if (revision?.evidencia_03) allImages.push(revision.evidencia_03);
-                  
+                   
                   setModalImages(allImages);
                   setModalInitialIndex(0);
                   setModalImg(allImages[0]);
@@ -1133,7 +1133,7 @@ const DetalleRevision = memo(() => {
                 }}
               >
                 <ClickableImage
-                  src={getCloudinaryThumbnailUrl(revision.evidencia_01, 800, 450)}
+                  src={getCloudinaryThumbnailUrl(revision?.evidencia_01 || revision?.evidencia_02 || '', 800, 450)}
                   alt="Evidencia"
                   onClick={() => {}}
                   className="w-full"

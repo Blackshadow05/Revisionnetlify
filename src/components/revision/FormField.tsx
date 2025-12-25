@@ -19,7 +19,7 @@ export default function FormField({
 }: Props) {
   return (
     <div className="space-y-3">
-      <label className="form-label bg-black/40 text-white px-3 py-1 rounded-lg shadow-sm inline-flex items-center gap-2">
+      <label className="form-label bg-white md:bg-black/40 text-gray-900 md:text-white px-3 py-1 rounded-lg shadow-sm border border-gray-200 md:border-none inline-flex items-center gap-2">
         {icon}
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -28,4 +28,4 @@ export default function FormField({
       </div>
     </div>
   );
-} 
+}

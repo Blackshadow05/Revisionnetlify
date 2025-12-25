@@ -4,10 +4,12 @@ import { Roboto } from 'next/font/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { UploadProvider } from '@/context/UploadContext'
 import { ToastProvider } from '@/context/ToastContext'
+import { SidebarProvider } from '@/context/SidebarContext'
 import UploadIndicator from '@/components/UploadIndicator'
 import UploadRecovery from '@/components/UploadRecovery'
 import InstallPrompter from '@/components/InstallPrompter'
 import UpdateNotifier from '@/components/UpdateNotifier'
+import BottomNavigation from '@/components/BottomNavigation'
 
 // 🚀 OPTIMIZADO: Solo las variantes esenciales con font-display swap
 const roboto = Roboto({ 
@@ -76,15 +78,18 @@ export default function RootLayout({
       </head>
       <body className={roboto.className}>
         <AuthProvider>
-          <ToastProvider>
-            <UploadProvider>
-              {children}
-              <UploadIndicator />
-              <UploadRecovery />
-              <InstallPrompter />
-              <UpdateNotifier />
-            </UploadProvider>
-          </ToastProvider>
+          <SidebarProvider>
+            <ToastProvider>
+              <UploadProvider>
+                {children}
+                <BottomNavigation />
+                <UploadIndicator />
+                <UploadRecovery />
+                <InstallPrompter />
+                <UpdateNotifier />
+              </UploadProvider>
+            </ToastProvider>
+          </SidebarProvider>
         </AuthProvider>
       </body>
     </html>

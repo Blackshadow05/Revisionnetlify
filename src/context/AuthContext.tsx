@@ -38,10 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { usuario, role, timestamp } = JSON.parse(storedSession);
             
-            // Verificar que la sesión no sea muy antigua (24 horas)
+            // Verificar que la sesión no sea muy antigua (7 días)
             const now = new Date().getTime();
             const sessionAge = now - timestamp;
-            const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 días
             
             if (sessionAge < maxAge) {
               console.log('✅ Sesión válida encontrada:', usuario);

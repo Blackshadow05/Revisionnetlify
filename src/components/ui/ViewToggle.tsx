@@ -9,15 +9,12 @@ interface ViewToggleProps {
 
 export default function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
   return (
-    <div className="neumorphic-toggle-button flex items-center p-1">
+    <div className="neumorphic-toggle-button-white flex items-center p-1 md:hidden">
       <button
         onClick={() => onViewChange('table')}
         className={`
           flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300 font-medium text-sm
-          ${currentView === 'table'
-            ? 'neumorphic-toggle-button active'
-            : 'text-gray-400 hover:text-white'
-          }
+          ${currentView === 'table' ? 'active' : ''}
         `}
       >
         <svg
@@ -36,15 +33,12 @@ export default function ViewToggle({ currentView, onViewChange }: ViewToggleProp
         </svg>
         Tabla
       </button>
-      
+
       <button
         onClick={() => onViewChange('card')}
         className={`
           flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300 font-medium text-sm
-          ${currentView === 'card'
-            ? 'neumorphic-toggle-button active'
-            : 'text-gray-400 hover:text-white'
-          }
+          ${currentView === 'card' ? 'active' : ''}
         `}
       >
         <svg

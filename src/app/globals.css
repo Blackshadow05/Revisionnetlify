@@ -1072,6 +1072,80 @@ button, [role="button"] {
   color: #f0c987;
 }
 
+/* Estilo Neumorfismo BLANCO para botones de toggle (versión móvil) */
+.neumorphic-toggle-button-white {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.1),
+    -6px -6px 12px rgba(255, 255, 255, 0.9),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  transition: all 0.3s ease;
+}
+
+.neumorphic-toggle-button-white button {
+  color: #374151;
+  font-weight: 600;
+}
+
+.neumorphic-toggle-button-white button:hover {
+  color: #111827;
+  background: rgba(243, 244, 246, 0.8);
+}
+
+.neumorphic-toggle-button-white button.active {
+  background: #ffffff;
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.12),
+    -4px -4px 8px rgba(255, 255, 255, 0.9),
+    inset 2px 2px 4px rgba(0, 0, 0, 0.08),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+  color: #000000;
+  font-weight: 700;
+}
+
+/* Botones de filtro AZUL CLARO neumórficos */
+.neu-button-filter-blue {
+  background: #dbeafe;
+  border-radius: 12px;
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.1),
+    -6px -6px 12px rgba(255, 255, 255, 0.9),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(191, 219, 254, 1);
+  transition: all 0.3s ease;
+  color: #1e40af;
+}
+
+.neu-button-filter-blue:hover {
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.08),
+    -4px -4px 8px rgba(255, 255, 255, 0.9),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+}
+
+.neu-button-filter-blue:active {
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.1),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.8);
+  transform: translateY(1px);
+}
+
+/* Estado activo para botones de filtro azul */
+.neu-button-filter-blue.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.2),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.1);
+}
+
 /* Estilo Neumorfismo para el botón de filtro */
 .neumorphic-filter-button {
   background: linear-gradient(145deg, #1a1f35, #2a3347);
@@ -1219,4 +1293,130 @@ button, [role="button"] {
 .recharts-tooltip-wrapper .recharts-tooltip-label {
   color: #c9a45c;
   font-size: 12px;
+}
+
+/* 📱 Estilos para el diseño móvil con fondo blanco */
+@media (max-width: 768px) {
+  main {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+
+  main .text-white,
+  main h1,
+  main h2,
+  main h3,
+  main .bg-gradient-to-r .from-white {
+    color: #1a1f35 !important;
+  }
+
+  main .bg-gradient-to-r {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+  }
+
+  main .bg-clip-text {
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    background-image: none !important;
+    color: #1a1f35 !important;
+  }
+
+  main .text-gray-400 {
+    color: #4a5568 !important;
+  }
+
+  main .text-gray-300 {
+    color: #2d3748 !important;
+  }
+
+  main .text-gray-500 {
+    color: #718096 !important;
+  }
+
+  main .placeholder-gray-400::placeholder {
+    color: #a0aec0 !important;
+  }
+
+  main .neumorphic-search-container,
+  main .neumorphic-input,
+  main .neumorphic-select,
+  main .neumorphic-user-container,
+  main .neumorphic-menu-container {
+    background: #f7fafc !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  main .neumorphic-user-card,
+  main .neumorphic-menu-content {
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  main .neumorphic-input,
+  main .neumorphic-select {
+    color: #1a1f35 !important;
+  }
+
+  main .neumorphic-input::placeholder {
+    color: #a0aec0 !important;
+  }
+
+  main .neu-sidebar-button {
+    background: #e2e8f0 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  main .neu-button {
+    background: #e2e8f0 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #cbd5e0 !important;
+  }
+
+  main .bg-gradient-to-r,
+  main .from-\[\#1e2538\] {
+    background: none !important;
+  }
+
+  main .bg-gradient-to-br,
+  main .from-\[\#1e2538\],
+  main .to-\[\#2a3347\] {
+    background: #f7fafc !important;
+  }
+
+  main .backdrop-blur-md {
+    background: #f7fafc !important;
+    backdrop-filter: none !important;
+  }
+
+  main .border-\[\#\#3d4659\]\/50 {
+    border-color: #e2e8f0 !important;
+  }
+
+  main .table-container {
+    background: #ffffff !important;
+  }
+
+  main table {
+    color: #1a1f35 !important;
+  }
+
+  main thead {
+    background: #f7fafc !important;
+  }
+
+  main thead th {
+    color: #2d3748 !important;
+  }
+
+  main tbody tr {
+    border-color: #e2e8f0 !important;
+  }
+
+  main .text-\[\#\#c9a45c\] {
+    color: #b8860b !important;
+  }
 }

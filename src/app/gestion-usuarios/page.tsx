@@ -325,25 +325,25 @@ export default function GestionUsuarios() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Cargando...</div>;
-  if (error) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-red-500">Error: {error}</div>;
+  if (loading) return <div className="min-h-screen bg-white flex items-center justify-center text-black">Cargando...</div>;
+  if (error) return <div className="min-h-screen bg-white flex items-center justify-center text-red-600">Error: {error}</div>;
 
   return (
-    <main className="min-h-screen bg-slate-900 py-8">
+    <main className="min-h-screen bg-white py-8">
       {/* Modal para mostrar token generado */}
       {showTokenModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1e2538] rounded-lg p-6 max-w-lg w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-[#c9a45c]/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">
+              <h3 className="text-lg font-medium text-black mb-2">
                 Enlace de Reseteo Generado
               </h3>
-              <p className="text-gray-300 mb-4">
+              <p className="text-gray-600 mb-4">
                 Para: <span className="font-semibold text-[#c9a45c]">{selectedUser.Usuario}</span>
               </p>
             </div>
@@ -351,21 +351,21 @@ export default function GestionUsuarios() {
             {tokenLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c9a45c] mx-auto mb-4"></div>
-                <p className="text-gray-300">Generando enlace...</p>
+                <p className="text-gray-600">Generando enlace...</p>
               </div>
             ) : generatedToken ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Enlace Permanente:
                   </label>
-                  <div className="bg-[#2a3347] border border-[#3d4659] rounded-lg p-3">
+                  <div className="bg-gray-100 border border-gray-300 rounded-lg p-3">
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={ResetTokenService.generateResetUrl(generatedToken)}
                         readOnly
-                        className="flex-1 bg-transparent text-gray-300 text-sm focus:outline-none"
+                        className="flex-1 bg-transparent text-black text-sm focus:outline-none"
                       />
                       <button
                         onClick={() => copyToClipboard(ResetTokenService.generateResetUrl(generatedToken))}
@@ -376,13 +376,13 @@ export default function GestionUsuarios() {
                     </div>
                   </div>
                 </div>
-                
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div className="text-sm text-blue-300">
+                    <div className="text-sm text-blue-700">
                       <p className="font-medium mb-1">Información importante:</p>
                       <ul className="space-y-1 text-xs">
                         <li>• Este enlace es permanente hasta que lo revoques</li>
@@ -396,7 +396,7 @@ export default function GestionUsuarios() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-red-400">Error al generar el enlace</p>
+                <p className="text-red-600">Error al generar el enlace</p>
               </div>
             )}
 
@@ -407,7 +407,7 @@ export default function GestionUsuarios() {
                   setSelectedUser(null);
                   setGeneratedToken(null);
                 }}
-                className="px-4 py-2 bg-[#3d4659] text-gray-300 rounded-lg hover:bg-[#4a5568] transition-all"
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
               >
                 Cerrar
               </button>
@@ -419,13 +419,13 @@ export default function GestionUsuarios() {
       {/* Modal de confirmación de eliminación */}
       {showDeleteModal && usuarioToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-          <div className="bg-[#1e2538] rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="text-center mb-6">
               <svg className="mx-auto h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <h3 className="text-lg font-medium text-white mb-2">¿Eliminar Usuario?</h3>
-              <p className="text-gray-300">
+              <h3 className="text-lg font-medium text-black mb-2">¿Eliminar Usuario?</h3>
+              <p className="text-gray-600">
                 ¿Estás seguro de que deseas eliminar el usuario <span className="font-semibold text-[#c9a45c]">{usuarioToDelete.Usuario}</span>?
                 Esta acción no se puede deshacer.
               </p>
@@ -436,7 +436,7 @@ export default function GestionUsuarios() {
                   setShowDeleteModal(false);
                   setUsuarioToDelete(null);
                 }}
-                className="px-4 py-2 bg-[#3d4659] text-gray-300 rounded-lg hover:bg-[#4a5568] transition-all"
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
               >
                 Cancelar
               </button>
@@ -452,35 +452,34 @@ export default function GestionUsuarios() {
       )}
 
       <div className="max-w-4xl mx-auto px-4">
-        <div className={`bg-[#1e2538] rounded-lg shadow-xl p-6 border-2 ${isHighlighting ? 'border-[#c9a45c]' : 'border-transparent'} transition-colors duration-1000`}>
+        <div className={`bg-white rounded-lg shadow-xl p-6 border-2 ${isHighlighting ? 'border-[#c9a45c]' : 'border-gray-200'} transition-colors duration-1000`}>
           <div className="flex items-center mb-4">
             <button
               type="button"
               onClick={() => router.back()}
-              className="text-sm text-white bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-xl hover:from-gray-700 hover:via-gray-800 hover:to-gray-900 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl relative overflow-hidden border border-gray-600/40 hover:border-gray-500/60 font-medium flex items-center justify-center gap-2"
+              className="text-sm text-black bg-gray-200 rounded-xl hover:bg-gray-300 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl relative overflow-hidden border border-gray-300 font-medium flex items-center justify-center gap-2"
               style={{ padding: '10px 18px' }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0cb35]/80 to-transparent animate-[slide_2s_ease-in-out_infinite] z-0"></div>
               <div className="relative z-10 flex items-center gap-2">
                 ← Volver
               </div>
             </button>
-            <h1 className="text-3xl font-bold text-white">Gestión de Usuarios</h1>
+            <h1 className="text-3xl font-bold text-black">Gestión de Usuarios</h1>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 mb-6">
             <div className="col-span-1">
-              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Usuario</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Usuario</label>
               <input
                 type="text"
                 required
                 value={nuevoUsuario.Usuario}
                 onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Usuario: e.target.value })}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
               />
             </div>
             <div className="col-span-1">
               <div className="mb-4">
-                <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Contraseña
                 </label>
                 <div className="relative">
@@ -489,13 +488,13 @@ export default function GestionUsuarios() {
                     id="password"
                     value={nuevoUsuario.password_hash}
                     onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, password_hash: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md bg-[#2a3347] border border-[#3d4659] text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]"
+                    className="w-full px-3 py-2 rounded-md bg-white border border-gray-300 text-black focus:outline-none focus:ring-2 focus:ring-[#c9a45c]"
                     placeholder="Contraseña"
                     required={!isEditing}
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -514,12 +513,12 @@ export default function GestionUsuarios() {
               </div>
             </div>
             <div className="col-span-1">
-              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Rol</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Rol</label>
               <select
                 required
                 value={nuevoUsuario.Rol}
                 onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, Rol: e.target.value })}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-[#2a3347] border border-[#3d4659] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-[#c9a45c] text-sm sm:text-base"
               >
                 <option value="">Seleccionar rol</option>
                 <option value="SuperAdmin">SuperAdmin</option>
@@ -555,19 +554,19 @@ export default function GestionUsuarios() {
           <div className="overflow-x-auto rounded-md mt-4 hidden sm:block">
             <table className="w-full min-w-[500px] text-sm sm:text-base">
               <thead>
-                <tr className="bg-[#2a3347]">
-                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Usuario</th>
-                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Rol</th>
-                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Enlace Reset</th>
-                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Fecha de Creación</th>
-                  <th className="px-2 sm:px-4 py-2 text-left text-gray-300 whitespace-nowrap">Acciones</th>
+                <tr className="bg-gray-100">
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-700 whitespace-nowrap">Usuario</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-700 whitespace-nowrap">Rol</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-700 whitespace-nowrap">Enlace Reset</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-700 whitespace-nowrap">Fecha de Creación</th>
+                  <th className="px-2 sm:px-4 py-2 text-left text-gray-700 whitespace-nowrap">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {usuarios.map((usuario) => (
-                  <tr key={usuario.id} className="border-b border-[#3d4659]">
-                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Usuario}</td>
-                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap">{usuario.Rol}</td>
+                  <tr key={usuario.id} className="border-b border-gray-200">
+                    <td className="px-2 sm:px-4 py-2 text-black whitespace-nowrap">{usuario.Usuario}</td>
+                    <td className="px-2 sm:px-4 py-2 text-black whitespace-nowrap">{usuario.Rol}</td>
                     <td className="px-2 sm:px-4 py-2">
                       <div className="flex flex-col gap-1">
                         {usuario.permanent_reset_token ? (
@@ -609,7 +608,7 @@ export default function GestionUsuarios() {
                         )}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 text-gray-300 whitespace-nowrap text-xs">{new Date(usuario.created_at).toLocaleDateString()}</td>
+                    <td className="px-2 sm:px-4 py-2 text-black whitespace-nowrap text-xs">{new Date(usuario.created_at).toLocaleDateString()}</td>
                     <td className="px-2 sm:px-4 py-2">
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
@@ -635,25 +634,25 @@ export default function GestionUsuarios() {
           {/* Cards solo visibles en móvil */}
           <div className="block sm:hidden mt-4 space-y-4">
             {usuarios.map((usuario) => (
-              <div key={usuario.id} className="bg-[#232c41] rounded-lg shadow p-4 flex flex-col gap-3 border border-[#3d4659]">
+              <div key={usuario.id} className="bg-gray-50 rounded-lg shadow p-4 flex flex-col gap-3 border border-gray-200">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-[#c9a45c]">Usuario:</span>
-                  <span className="text-gray-300">{usuario.Usuario}</span>
+                  <span className="font-semibold text-gray-700">Usuario:</span>
+                  <span className="text-black">{usuario.Usuario}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-[#c9a45c]">Rol:</span>
-                  <span className="text-gray-300">{usuario.Rol}</span>
+                  <span className="font-semibold text-gray-700">Rol:</span>
+                  <span className="text-black">{usuario.Rol}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-[#c9a45c]">Creado:</span>
-                  <span className="text-gray-300 text-xs">{new Date(usuario.created_at).toLocaleDateString()}</span>
+                  <span className="font-semibold text-gray-700">Creado:</span>
+                  <span className="text-black text-xs">{new Date(usuario.created_at).toLocaleDateString()}</span>
                 </div>
-                
+
                 {/* Sección de Enlace Reset */}
-                <div className="border-t border-[#3d4659] pt-3">
+                <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-[#c9a45c]">Enlace Reset:</span>
-                    <span className="text-gray-300 text-xs">
+                    <span className="font-semibold text-gray-700">Enlace Reset:</span>
+                    <span className="text-black text-xs">
                       {usuario.permanent_reset_token ? 'Activo' : 'No generado'}
                     </span>
                   </div>
@@ -695,7 +694,7 @@ export default function GestionUsuarios() {
                 </div>
 
                 {/* Acciones principales */}
-                <div className="flex gap-2 mt-2 border-t border-[#3d4659] pt-3">
+                <div className="flex gap-2 mt-2 border-t border-gray-200 pt-3">
                   <button
                     onClick={() => handleEdit(usuario)}
                     className="w-full px-3 py-1 bg-[#c9a45c] text-white rounded hover:bg-[#d4b06c] transition-all text-xs"

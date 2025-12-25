@@ -11,8 +11,8 @@ interface FechaCardProps {
 const FechaCard = memo(({ value, formatearFechaParaMostrar }: FechaCardProps) => {
   return (
     <FadeIn delay={200}>
-      <div className="bg-[#1e2538]/90 p-6 rounded-xl border border-[#3d4659]/50 shadow-lg hover:shadow-xl transform transition-transform duration-200 hover:scale-[1.01] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -translate-y-6 translate-x-6"></div>
+      <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl shadow-gray-200/60 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-6 translate-x-6"></div>
         <div className="relative">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
@@ -20,10 +20,10 @@ const FechaCard = memo(({ value, formatearFechaParaMostrar }: FechaCardProps) =>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-blue-400">Fecha de Revisión</h3>
+            <h3 className="text-lg font-black text-gray-800">Fecha de Revisión</h3>
           </div>
-          <p className="text-xl font-bold text-white drop-shadow-lg">
-            {value ? formatearFechaParaMostrar(value) : <span className="text-gray-400 italic text-base">Sin información</span>}
+          <p className="text-lg sm:text-xl font-black text-blue-700">
+            {value ? formatearFechaParaMostrar(value) : <span className="text-gray-500 italic text-base">Sin información</span>}
           </p>
         </div>
       </div>

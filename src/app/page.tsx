@@ -9,6 +9,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useSidebar } from '@/context/SidebarContext';
 
 import Sidebar from '@/components/Sidebar';
 import ImageModal from '@/components/revision/ImageModal';
@@ -17,8 +18,8 @@ import ViewToggle from '@/components/ui/ViewToggle';
 import CardView from '@/components/revision/CardView';
 import ShareModal from '@/components/ShareModal';
 import { PuestoService } from '@/lib/puesto-service';
-import { formatearFecha } from '@/lib/dateUtils';
-import { MenuData } from '@/types/revision';
+
+
 
 interface RevisionData {
   id?: string;
@@ -59,6 +60,7 @@ interface RevisionData {
 export default function Home() {
   const router = useRouter();
   const { isLoggedIn, userRole, login, logout, user } = useAuth();
+  const { isOpen: showSidebar, openSidebar, closeSidebar, toggleSidebar } = useSidebar();
   const pathname = usePathname();
   
   useEffect(() => {
@@ -107,13 +109,13 @@ export default function Home() {
   });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportDateFrom, setReportDateFrom] = useState('');
   const [reportDateTo, setReportDateTo] = useState('');
   const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
+  const [showFilterModal, setShowFilterModal] = useState(false);
   // Definir el tipo para el filtro activo
-  type FilterType = 'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'no-sombrero' | 'no-bulto' | 'today' | 'no-cola-caballo';
+  type FilterType = 'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'has-trapo-binocular' | 'no-sombrero' | 'has-sombrero' | 'no-bulto' | 'today' | 'no-cola-caballo';
   
   // Estado para el filtro activo: inicial estable en SSR. Leer localStorage en useEffect para evitar hydration mismatch.
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -130,9 +132,10 @@ export default function Home() {
         localStorage.removeItem('activeRevisionFilter');
       }
     } catch (err) {
-      
+
     }
     setShowFilterDropdown(false);
+    setShowFilterModal(false);
     setCurrentPage(1);
   };
   
@@ -283,7 +286,7 @@ export default function Home() {
       const savedActiveFilter = localStorage.getItem('activeRevisionFilter');
       if (typeof savedActiveFilter === 'string' && savedActiveFilter.length > 0) {
         // Validar que el filtro sea uno de los valores permitidos
-        const validFilters: FilterType[] = ['all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 'no-trapo-binocular', 'no-sombrero', 'no-bulto', 'today', 'no-cola-caballo'];
+        const validFilters: FilterType[] = ['all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 'no-trapo-binocular', 'has-trapo-binocular', 'no-sombrero', 'has-sombrero', 'no-bulto', 'today', 'no-cola-caballo'];
         if (validFilters.includes(savedActiveFilter as FilterType)) {
           setActiveFilter(savedActiveFilter as FilterType);
         }
@@ -308,9 +311,7 @@ export default function Home() {
     }
   }, [activeFilter]);
   
-  // 🍽️ Estados para menú del día
-  const [menuDelDia, setMenuDelDia] = useState<MenuData | null>(null);
-  const [loadingMenu, setLoadingMenu] = useState(true);
+
 
   // 🚀 Estados para paginado
   const [currentPage, setCurrentPage] = useState(1);
@@ -328,7 +329,7 @@ export default function Home() {
 
   // Función para manejar el toggle del menú
   const handleMenuToggle = () => {
-    setShowSidebar(prev => !prev);
+    toggleSidebar();
   };
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -342,53 +343,7 @@ export default function Home() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // 🍽️ Función para cargar el menú del día actual
-  const fetchMenuDelDia = async () => {
-    try {
-      setLoadingMenu(true);
-      // Obtener fecha local sin conversión UTC
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const todayLocal = `${year}-${month}-${day}`; // Formato YYYY-MM-DD
-      
-      
-      
-      const { data, error } = await supabase
-        .from('menus')
-        .select('*')
-        .eq('fecha_menu', todayLocal)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        
-        setMenuDelDia(null);
-      } else {
-        setMenuDelDia(data);
-      }
-    } catch (err) {
-      
-      setMenuDelDia(null);
-    } finally {
-      setLoadingMenu(false);
-    }
-  };
 
-  // 🍽️ Función para parsear el contenido del menú
-  const parseMenuContent = (contenidoMenu: string) => {
-    try {
-      return JSON.parse(contenidoMenu);
-    } catch (err) {
-      
-      return null;
-    }
-  };
-
-  // 🍽️ Efecto para cargar el menú del día
-  useEffect(() => {
-    fetchMenuDelDia();
-  }, []);
 
   // 🔄 Efecto para despertar el servidor de Supabase con un ping silencioso
   useEffect(() => {
@@ -711,9 +666,19 @@ export default function Home() {
         .filter(row => row.trapo_binoculares === 'No');
     }
 
+    if (activeFilter === 'has-trapo-binocular') {
+      return getLatestByCasita()
+        .filter(row => row.trapo_binoculares === 'Si');
+    }
+
     if (activeFilter === 'no-sombrero') {
       return getLatestByCasita()
         .filter(row => row.sombrero === 'No');
+    }
+
+    if (activeFilter === 'has-sombrero') {
+      return getLatestByCasita()
+        .filter(row => row.sombrero === 'Si');
     }
 
     if (activeFilter === 'no-bulto') {
@@ -1119,7 +1084,7 @@ export default function Home() {
  
       // Cerrar modal y limpiar campos
       setShowReportModal(false);
-      setShowSidebar(false);
+      closeSidebar();
       setReportDateFrom('');
       setReportDateTo('');
       alert(`Reporte exportado exitosamente como CSV`);
@@ -1160,14 +1125,16 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen relative overflow-hidden" style={{
-      background: '#334d50',
-      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-    }}>
-
+    <main
+      className="min-h-screen relative overflow-hidden bg-white md:bg-[#334d50]"
+      style={{
+        backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
+      }}
+      data-mobile="true"
+    >
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
-        <div className="relative text-center mb-12 pl-16 sm:pl-0">
+        <div className="relative text-center mb-12">
           {/* Botón de inicio de sesión para móviles */}
           {!isLoggedIn && (
             <button
@@ -1180,11 +1147,11 @@ export default function Home() {
               </svg>
             </button>
           )}
-          
-          {/* Botón del menú lateral dentro del hero (solo visible cuando está logueado) */}
+
+          {/* Botón del menú lateral dentro del hero (solo visible cuando está logueado y en tablet/desktop) */}
           {isLoggedIn && (
             <button
-              className="absolute left-0 z-20 w-11 h-11 neu-sidebar-button flex items-center justify-center group top-4 md:top-2"
+              className="hidden md:flex absolute left-0 z-20 w-11 h-11 neu-sidebar-button items-center justify-center group top-4 md:top-2"
               onClick={handleMenuToggle}
               type="button"
               aria-label="Abrir menú lateral"
@@ -1200,138 +1167,109 @@ export default function Home() {
           {/* Efecto de resplandor de fondo */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-3xl rounded-full transform scale-150"></div>
 
-          {/* Título principal uniforme */}
-          <PageTitle size="md">
-            Revisión de<br />Casitas
-          </PageTitle>
+          {/* Información del Usuario o Título Principal */}
+          {isLoggedIn && user ? (
+            <div className="neumorphic-user-container max-w-3xl mx-auto">
+              <div className="neumorphic-user-card flex-col gap-2">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 text-[#1a1f35]">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                  </div>
+                  <p className="text-white font-bold text-sm sm:text-lg truncate">{user}</p>
+                  <p className="text-[#c9a45c] text-[10px] sm:text-xs font-medium flex-shrink-0">• {userRole}</p>
+                  {supabaseAwake && (
+                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500/20 border border-green-500/30 rounded-full flex-shrink-0">
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                  )}
+                </div>
+                {/* Puntos verdes indicando días restantes de sesión */}
+                <div className="flex items-center gap-1.5 justify-center">
+                  {(() => {
+                    try {
+                      const storedSession = localStorage.getItem('userSession');
+                      if (storedSession) {
+                        const { timestamp } = JSON.parse(storedSession);
+                        const now = new Date().getTime();
+                        const sessionAge = now - timestamp;
+                        const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 días
+                        const remainingMs = maxAge - sessionAge;
+                        const remainingDays = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+                        return Array.from({ length: remainingDays }, (_, i) => (
+                          <div key={i} className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                        ));
+                      }
+                    } catch (error) {
+                      return null;
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Título principal para usuarios no logueados */}
+              <PageTitle size="md">
+                Revisión de<br />Casitas
+              </PageTitle>
 
-          {/* Línea decorativa animada */}
-          <div className="relative mt-6 h-1 w-32 mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
+              {/* Línea decorativa animada */}
+              <div className="relative mt-6 h-1 w-32 mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f0c987] to-transparent rounded-full animate-pulse"></div>
+              </div>
+
+              {/* Botón de inicio de sesión para usuarios no logueados */}
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="neu-button-login px-8 py-3 text-white rounded-xl hover:shadow-lg hover:shadow-[#c9a45c]/40 transition-all duration-300 transform hover:scale-[1.02] items-center gap-3 font-medium text-lg inline-flex"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  Iniciar Sesión
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Barra de Búsqueda */}
+        <div className="mb-8 max-w-2xl mx-auto">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por número de casita..."
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c] transition-all shadow-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Información del Usuario */}
-        {isLoggedIn && user && (
-          <div className="neumorphic-user-container mb-6 max-w-3xl mx-auto">
-            <div className="neumorphic-user-card">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#c9a45c] to-[#f0c987] rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#1a1f35]">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                </svg>
-              </div>
-              <div className="flex items-center gap-2">
-                <div>
-                  <p className="text-white font-medium">{user}</p>
-                  <p className="text-[#c9a45c] text-sm">{userRole}</p>
-                </div>
-                {supabaseAwake && (
-                  <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-green-400 text-xs font-medium">awake</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Botón de inicio de sesión encima del menú */}
-        {!isLoggedIn && (
-          <div className="mb-6 flex justify-center">
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="neumorphic-login-button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
-              Iniciar Sesión
-            </button>
-          </div>
-        )}
-
-        {/* 🍽️ Menú del Día */}
-        {!loadingMenu && menuDelDia && (
-          <div className="neumorphic-menu-container mb-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5-1.5M3 21l1.5-1.5m15-5.25v-2.513C19.5 10.608 18.155 9.51 16.976 9.166 15.697 8.944 14.355 8.25 13 8.25s-2.697.694-3.976.916C7.845 9.51 6.5 10.608 6.5 11.735v2.513m13-2.513v2.513" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">🍽️ Menú del Día</h3>
-                <p className="text-green-400 text-sm">{formatearFecha(menuDelDia.fecha_menu)}</p>
-              </div>
-            </div>
-            
-            {(() => {
-              const menuContent = parseMenuContent(menuDelDia.contenido_menu);
-
-              const splitOnCapitalizedWords = (text: string) => {
-                if (!text) return [];
-                const tokens = text.split(/\s+/);
-                const groups: string[] = [];
-                let current: string[] = [];
-
-                tokens.forEach((token) => {
-                  const firstChar = token.charAt(0) || '';
-                  const isUpper = firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase();
-
-                  if (current.length === 0) {
-                    current.push(token);
-                  } else if (isUpper) {
-                    groups.push(current.join(' '));
-                    current = [token];
-                  } else {
-                    current.push(token);
-                  }
-                });
-
-                if (current.length) groups.push(current.join(' '));
-                return groups;
-              };
-
-              if (menuContent && menuContent.comidas) {
-                const allItems = menuContent.comidas.flatMap((comida: string) =>
-                  splitOnCapitalizedWords(String(comida))
-                );
-
-                return (
-                  <div className="neumorphic-menu-content">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-green-400 font-semibold">{menuContent.dia_semana}</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {allItems.map((item: string, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
-                          <span className="text-green-500">•</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              } else {
-                return (
-                  <div className="neumorphic-menu-content">
-                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{menuDelDia.contenido_menu}</p>
-                  </div>
-                );
-              }
-            })()
-            }
-          </div>
-        )}
-
-        {/* Sidebar */}
-        <Sidebar
-          isOpen={showSidebar}
-          onClose={() => setShowSidebar(false)}
-          onShowReportModal={() => setShowReportModal(true)}
-        />
+        {/* Sidebar - Solo visible en tablet y desktop */}
+        <div className="hidden md:block">
+          <Sidebar
+            isOpen={showSidebar}
+            onClose={closeSidebar}
+            onShowReportModal={() => setShowReportModal(true)}
+          />
+        </div>
 
         {/* Barra de Acciones */}
         <div className="mb-8">
@@ -1352,128 +1290,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Estadísticas Principales */}
-        {!statsLoading && (
-          <div className="bg-gradient-to-r from-[#1e2538]/80 to-[#2a3347]/80 backdrop-blur-md rounded-xl p-3 mb-4 border border-[#3d4659]/50 shadow-md">
-            <h3 className="sr-only">📊 Estadísticas</h3>
-            
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-lg border border-blue-500/30">
-                <div className="w-6 h-6 bg-blue-500/20 rounded-md flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-blue-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                  </svg>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wide">Revisor</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-semibold text-blue-300 truncate max-w-[80px]">{topRevisor?.name || 'N/A'}</span>
-                    <span className="text-[9px] text-gray-400">({topRevisor?.count || 0})</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-br from-green-900/30 to-green-800/20 rounded-lg border border-green-500/30">
-                <div className="w-6 h-6 bg-green-500/20 rounded-md flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-green-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wide">Check-outs</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-semibold text-green-300 truncate max-w-[80px]">{topCheckOut?.name || 'N/A'}</span>
-                    <span className="text-[9px] text-gray-400">({topCheckOut?.count || 0})</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-br from-amber-900/30 to-amber-800/20 rounded-lg border border-amber-500/30">
-                <div className="w-6 h-6 bg-amber-500/20 rounded-md flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-amber-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                  </svg>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wide">Más Check in</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-semibold text-amber-300 truncate max-w-[60px]">{topCheckInCasita?.name || 'N/A'}</span>
-                    <span className="text-[9px] text-gray-400">({topCheckInCasita?.count || 0})</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Botón para ver más estadísticas */}
-            <div className="mt-3 flex justify-center">
-              <button
-                onClick={() => router.push('/estadisticas')}
-                className="flex items-center gap-1 text-[10px] text-[#c9a45c] hover:text-[#f0c987] transition-colors duration-200 group"
-              >
-                <span>Ver más estadísticas</span>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Barra de Búsqueda y Filtros Mejorada */}
-        <div className="neumorphic-search-container mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Búsqueda Principal */}
-            <div className="flex-1 relative order-2 lg:order-1">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Buscar por casita, revisor o estado..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="neumorphic-input w-full pl-4 pr-12 py-3 text-white placeholder-gray-400"
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white transition-colors"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Filtro por Caja Fuerte */}
-            <div className="relative order-1 lg:order-2">
-              <select
-                value={cajaFuerteFilter}
-                onChange={(e) => setCajaFuerteFilter(e.target.value)}
-                className="neumorphic-select w-full lg:w-48 px-4 py-3 text-white appearance-none cursor-pointer"
-              >
-                <option value="">Todas las cajas</option>
-                {cajaFuerteOptions.map(option => (
-                  <option key={option} value={option} className="bg-[#1e2538]">{option}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                <svg className="w-4 h-4 text-[#c9a45c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Resultados de búsqueda y filtros */}
-          {(mounted && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')) && (
-            <div className="mt-4 pt-4 border-t border-[#3d4659]/50">
+        {/* Barra de Búsqueda y Filtros Mejorada - Solo resultados activos */}
+        {(mounted && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')) && (
+          <div className="neumorphic-search-container mb-8">
+            {/* Resultados de búsqueda y filtros */}
+            <div className="py-2">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <p className="text-gray-400 text-sm">
                   Mostrando {finalFilteredData.length} de {data.length} revisiones
                   {searchTerm && <span> para "{searchTerm}"</span>}
-                  {cajaFuerteFilter && <span> con caja fuerte "{cajaFuerteFilter}"</span>}
+                  {cajaFuerteFilter && <span> con estado "{cajaFuerteFilter}"</span>}
                   {dateFilter && (() => {
                     // Formatear la fecha manualmente sin conversión de zona horaria
                     const [year, month, day] = dateFilter.split('-');
@@ -1499,8 +1325,8 @@ export default function Home() {
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Toggle de Vista y Filtros - Visible para todos los usuarios */}
         <div className="flex justify-center items-center gap-4 mb-8 mt-4">
@@ -1508,234 +1334,31 @@ export default function Home() {
             currentView={viewMode}
             onViewChange={handleViewModeChange}
           />
-          <div className="flex items-center gap-2">
-            {/* Date Filter Icon */}
-            <div className="relative">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <button
-                type="button"
-                className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center ${
-                  dateFilter
-                    ? 'border-blue-400/40 bg-blue-500/20'
-                    : ''
-                }`}
-                title={dateFilter ? `Filtrando por: ${dateFilter}` : "Filtrar por fecha"}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.6}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v2M16 3v2M3.5 8.5h17M5 5h14a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-                  <rect x="7" y="11" width="2.5" height="2.5" rx="0.5" />
-                  <rect x="11" y="11" width="2.5" height="2.5" rx="0.5" />
-                  <rect x="15" y="11" width="2.5" height="2.5" rx="0.5" />
-                  <rect x="7" y="15" width="2.5" height="2.5" rx="0.5" />
-                  <rect x="11" y="15" width="2.5" height="2.5" rx="0.5" />
-                  <rect x="15" y="15" width="2.5" height="2.5" rx="0.5" />
-                </svg>
-              </button>
-              {dateFilter && (
-                <span
-                  className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearDateFilter();
-                  }}
-                >
-                  ×
-                </span>
-              )}
-            </div>
-            
-            {/* Existing Filter Button */}
-            <div className="relative filter-dropdown-container">
-            <button
-              type="button"
-              className={`neu-button p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
-                activeFilter !== 'all'
-                  ? 'border-red-400/40 bg-red-500/20'
-                  : ''
-              }`}
-              title="Filtros"
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+
+          {/* Botón único de Filtros */}
+          <button
+            type="button"
+            onClick={() => setShowFilterModal(true)}
+            className="relative p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center bg-[#2a3347] border border-[#3d4659]"
+            title="Filtros"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
             >
-              <style jsx>{`
-                @keyframes pulse {
-                  0% { transform: scale(1); }
-                  50% { transform: scale(1.15); }
-                  100% { transform: scale(1); }
-                }
-                @keyframes glow {
-                  0% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
-                  50% { box-shadow: 0 0 15px rgba(255, 59, 48, 0.8); }
-                  100% { box-shadow: 0 0 5px rgba(255, 59, 48, 0.5); }
-                }
-                .filter-pulse {
-                  animation: pulse 1.5s infinite;
-                  color: #ff3b30;
-                }
-                .filter-active {
-                  border-color: #ff3b30 !important;
-                  animation: glow 2s infinite;
-                }
-                .filter-badge {
-                  position: absolute;
-                  top: -6px;
-                  right: -6px;
-                  background-color: #ff3b30;
-                  color: white;
-                  border-radius: 50%;
-                  width: 16px;
-                  height: 16px;
-                  font-size: 10px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: bold;
-                }
-              `}</style>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className={`w-5 h-5 ${activeFilter !== 'all' ? 'filter-pulse' : ''}`}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-              </svg>
-              {activeFilter !== 'all' && (
-                <span className="filter-badge">!</span>
-              )}
-            </button>
-            
-            {showFilterDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#1e2538] border border-[#3d4659] rounded-xl shadow-xl z-50">
-                <div className="py-1">
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'all'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('all')}
-                  >
-                    Todas las revisiones
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'today'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('today')}
-                  >
-                    Revisiones de Hoy
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'latest'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('latest')}
-                  >
-                    Última Revisión
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'no-yute'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('no-yute')}
-                  >
-                    No hay yute
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'has-yute-1'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('has-yute-1')}
-                  >
-                    Hay un yute
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'has-yute-2'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('has-yute-2')}
-                  >
-                    Hay 2 Yutes
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'no-trapo-binocular'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('no-trapo-binocular')}
-                  >
-                    No hay trapo binocular
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'no-sombrero'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('no-sombrero')}
-                  >
-                    No hay sombrero
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'no-bulto'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('no-bulto')}
-                  >
-                    No hay Bulto
-                  </button>
-                  <button
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                      activeFilter === 'no-cola-caballo'
-                        ? 'text-[#c9a45c] bg-[#2a3347]/50'
-                        : 'text-gray-300 hover:text-white hover:bg-[#2a3347]/30'
-                    }`}
-                    onClick={() => handleFilterChange('no-cola-caballo')}
-                  >
-                    No hay Cola de Caballo
-                  </button>
-                </div>
-              </div>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+            </svg>
+            {/* Indicador de filtros activos */}
+            {(searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
+              <span className="absolute -top-1 -right-1 bg-[#c9a45c] text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px]">
+                !
+              </span>
             )}
-          </div>
-        </div>
+          </button>
         </div>
 
         {/* Vista de datos - Solo visible si el usuario está logueado */}
@@ -2211,10 +1834,8 @@ export default function Home() {
         )}
 
 
-      </div>
-
       {/* Botón flotante para móvil - Nueva Revisión con estilo neumórfico */}
-      <div className="md:hidden fixed bottom-24 right-6 z-50">
+      <div className="md:hidden fixed bottom-24 right-6 z-[60]">
         <button
           onClick={() => router.push('/nueva-revision?new=true')}
           className="w-14 h-14 neu-floating-button flex items-center justify-center"
@@ -2246,6 +1867,91 @@ export default function Home() {
           isLoading={isSharing}
         />
       )}
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowFilterModal(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10 flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-base font-bold text-gray-900">Filtros</h2>
+              <button onClick={() => setShowFilterModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-3">
+              {/* Dropdown de Casita */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Seleccionar casita</label>
+                <select value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]">
+                  <option value="">Todas las casitas</option>
+                  {Array.from({ length: 50 }, (_, i) => (
+                    <option key={i + 1} value={String(i + 1)}>Casita {i + 1}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filtro de Fecha */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Filtrar por fecha</label>
+                <div className="relative">
+                  <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]" />
+                  {dateFilter && (
+                    <button onClick={() => clearDateFilter()} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Estado */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Estado</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Check in', 'Check out', 'Si', 'No'].map((status) => (
+                    <button key={status} onClick={() => setCajaFuerteFilter(cajaFuerteFilter === status ? '' : status)} className={'px-3 py-2 rounded-lg text-xs font-medium transition-all ' + (cajaFuerteFilter === status ? (status === 'Check in' ? 'bg-green-500 text-white shadow-lg' : status === 'Check out' ? 'bg-red-500 text-white shadow-lg' : status === 'Si' ? 'bg-[#c9a45c] text-white shadow-lg' : 'bg-gray-500 text-white shadow-lg') : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200')}>
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtros Avanzados - Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-700">Filtros avanzados</label>
+                <select value={activeFilter} onChange={(e) => handleFilterChange(e.target.value as FilterType)} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]">
+                  <option value="all">Todas las revisiones</option>
+                  <option value="today">Revisiones de hoy</option>
+                  <option value="latest">Última revisión por casita</option>
+                  <option value="no-yute">Sin bolso yute</option>
+                  <option value="has-yute-1">Con 1 yute</option>
+                  <option value="has-yute-2">Con 2 yutes</option>
+                  <option value="no-trapo-binocular">Sin trapo binocular</option>
+                  <option value="has-trapo-binocular">Hay trapo binocular</option>
+                  <option value="no-sombrero">Sin sombrero</option>
+                  <option value="has-sombrero">Hay sombrero</option>
+                  <option value="no-bulto">Sin bulto</option>
+                  <option value="no-cola-caballo">Sin cola de caballo</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 flex gap-2 rounded-b-2xl">
+              <button onClick={() => {clearAllFilters(); setShowFilterModal(false);}} className="flex-1 px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all text-xs font-medium">Limpiar todo</button>
+              <button onClick={() => setShowFilterModal(false)} className="flex-1 px-3 py-2 bg-[#c9a45c] text-gray-900 rounded-lg hover:bg-[#d4b06c] transition-all text-xs font-medium shadow-lg">Aplicar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </main>
   );
 }

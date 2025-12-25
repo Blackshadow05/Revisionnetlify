@@ -50,7 +50,7 @@ export default function InfoCard({
             </svg>
           )}
         </div>
-        <h3 className="text-lg font-bold bg-gradient-to-r from-[#c9a45c] to-[#f0c987] bg-clip-text text-transparent">
+        <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-[#c9a45c] to-[#f0c987] bg-clip-text text-transparent">
           {label}
         </h3>
       </div>
@@ -59,11 +59,11 @@ export default function InfoCard({
           type="text"
           value={localValue}
           onChange={(e) => handleChange(e.target.value)}
-          className="w-full px-3 py-2 bg-[#1e2538]/80 border border-[#3d4659]/60 rounded-lg text-gray-100 font-medium focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/40 focus:border-[#c9a45c]/40 transition-all"
+          className="w-full px-3 py-2 bg-[#1e2538]/80 border border-[#3d4659]/60 rounded-lg text-gray-100 font-medium focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/40 focus:border-[#c9a45c]/40 transition-all text-sm sm:text-base"
           placeholder={placeholder}
         />
       ) : (
-        <p className={`font-medium break-words ${accentText[accent]}`}>
+        <p className={`text-sm sm:text-base font-medium break-words ${accentText[accent]}`}>
           {value ? value : <span className="text-gray-500 italic">{placeholder}</span>}
         </p>
       )}

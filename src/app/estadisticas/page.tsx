@@ -9,14 +9,14 @@ import LazyInView from '@/components/ui/LazyInView';
 import { useRevisionStatistics, clearRevisionStatisticsCache } from '@/hooks/useStatisticsCache';
 
 
-// 🚀 Importación dinámica optimizada con mejor loading glassmorphism
+// 🚀 Importación dinámica optimizada con mejor loading
 const BarChartComponent = dynamic(() => import('@/components/BarChartComponent'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#2a3347] rounded-xl border border-[#c9a45c]/20 p-6 shadow-2xl h-96 flex items-center justify-center">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-lg h-96 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#c9a45c] border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-[#c9a45c] font-medium">Cargando gráfico...</span>
+        <span className="text-gray-600 font-medium">Cargando gráfico...</span>
       </div>
     </div>
   )
@@ -25,10 +25,10 @@ const BarChartComponent = dynamic(() => import('@/components/BarChartComponent')
 const AreaCheckInChart = dynamic(() => import('@/components/AreaCheckInChart'), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#2a3347] rounded-xl border border-[#c9a45c]/20 p-6 shadow-2xl h-96 flex items-center justify-center">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-lg h-96 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#c9a45c] border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-[#c9a45c] font-medium">Cargando gráfico...</span>
+        <span className="text-gray-600 font-medium">Cargando gráfico...</span>
       </div>
     </div>
   )
@@ -245,8 +245,8 @@ export default function EstadisticasPage() {
   // Mostrar loading mientras se verifica la autenticación
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-8 shadow-2xl">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-lg">
           <LoadingSpinner />
           <p className="text-[#c9a45c] text-center mt-4 font-medium">Verificando autenticación...</p>
         </div>
@@ -260,14 +260,14 @@ export default function EstadisticasPage() {
 
   if (cacheLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-8 shadow-2xl">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-lg">
           <LoadingSpinner />
           <p className="text-[#c9a45c] text-center mt-4 font-medium">
             {isFromCache ? 'Cargando datos frescos...' : 'Cargando estadísticas...'}
           </p>
           {isFromCache && (
-            <p className="text-gray-400 text-center mt-2 text-sm">
+            <p className="text-gray-500 text-center mt-2 text-sm">
               Mostrando datos en cache mientras se actualizan
             </p>
           )}
@@ -278,15 +278,15 @@ export default function EstadisticasPage() {
 
   if (cacheError) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="bg-[#2a3347] rounded-2xl border border-red-500/30 p-8 shadow-2xl text-center max-w-md">
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-red-300 p-8 shadow-lg text-center max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Error al cargar datos</h2>
-          <p className="text-gray-300 mb-4">{cacheError}</p>
+          <h2 className="text-xl font-bold text-black mb-2">Error al cargar datos</h2>
+          <p className="text-gray-600 mb-4">{cacheError}</p>
           <button
             onClick={handleRefresh}
             className="px-4 py-2 bg-[#c9a45c] text-white rounded-lg hover:bg-[#f0c987] transition-colors duration-200 font-medium"
@@ -300,19 +300,18 @@ export default function EstadisticasPage() {
 
   return (
     <main
-      className="min-h-screen relative overflow-hidden bg-estadisticas-gradient"
+      className="min-h-screen bg-gray-100"
     >
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con glassmorphism */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <header className="mb-8">
-          <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-6 md:p-8 shadow-2xl">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#c9a45c] via-[#f0c987] to-[#ff8c42] bg-clip-text text-transparent">
+                <h1 className="text-3xl md:text-4xl font-bold text-black">
                   Estadísticas de Revisiones
                 </h1>
-                <p className="text-gray-300 mt-2">Panel de control y análisis de datos</p>
-
+                <p className="text-gray-600 mt-2">Panel de control y análisis de datos</p>
               </div>
               
               <div className="flex items-center gap-3">
@@ -322,7 +321,7 @@ export default function EstadisticasPage() {
                     clearRevisionStatisticsCache();
                     window.location.reload();
                   }}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 rounded-xl transition-all duration-200 flex items-center gap-2"
+                  className="px-4 py-2 bg-red-100 hover:bg-red-200 border border-red-300 text-red-600 rounded-xl transition-all duration-200 flex items-center gap-2"
                   title="Limpiar cache y recargar datos"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,22 +330,10 @@ export default function EstadisticasPage() {
                   Limpiar Cache
                 </button>
 
-                {/* Botón de refresh */}
-                <button
-                  onClick={debouncedRefresh}
-                  disabled={refreshing}
-                  className="px-4 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-xl transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {refreshing ? 'Actualizando...' : 'Actualizar'}
-                </button>
-
                 {/* Botón volver */}
                 <button
                   onClick={() => router.push('/')}
-                  className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 border border-gray-500/40 text-gray-300 rounded-xl transition-all duration-200 flex items-center gap-2"
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 border border-gray-300 text-gray-700 rounded-xl transition-all duration-200 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -358,18 +345,18 @@ export default function EstadisticasPage() {
           </div>
         </header>
 
-        {/* Tarjetas de estadísticas glassmorphism */}
+        {/* Tarjetas de estadísticas */}
         <section className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stats-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {statCards.map((card, index) => (
               <div
                 key={card.title}
-                className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-6 shadow-2xl group hover:border-[#c9a45c]/40 transition-all duration-300 stat-card"
+                className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg group hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-300 mb-1">{card.title}</h3>
-                    <p className="text-sm text-gray-400">{card.description}</p>
+                    <h3 className="text-lg font-semibold text-black mb-1">{card.title}</h3>
+                    <p className="text-sm text-gray-500">{card.description}</p>
                   </div>
                   <div className={`${card.color} group-hover:scale-110 transition-transform duration-300`}>
                     {card.icon}
@@ -433,8 +420,8 @@ export default function EstadisticasPage() {
         
         {/* Footer */}
         <footer className="mt-12 text-center">
-          <div className="bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-4 shadow-2xl">
-            <p className="text-sm text-gray-400">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-lg">
+            <p className="text-sm text-gray-500">
               © {currentYear} Revision Casitas AG. Todos los derechos reservados.
             </p>
           </div>

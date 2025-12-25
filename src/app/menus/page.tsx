@@ -1,11 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatearFecha } from '@/lib/dateUtils';
 import BackButton from '@/components/ui/BackButton';
 import { MenuSkeleton } from '@/components/ui/MenuSkeleton';
+
+function getTodayLocal(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 interface Menu {
   id: string;
@@ -152,8 +160,75 @@ export default function MenusPage() {
   }, [lastUpdated]);
 
   // Función para recarga manual
+  // Función para recarga manual
   const handleRecargar = () => {
     cargarMenus();
+  };
+
+  // Clasificar menús para la vista móvil
+  const { menuHoy, otrosMenusMobile } = useMemo(() => {
+    const today = getTodayLocal();
+    const hoy = menus.find(m => m.fecha_menu === today);
+    
+    // Menús de días siguientes (ascendente)
+    const futuros = menus
+      .filter(m => m.fecha_menu > today)
+      .sort((a, b) => a.fecha_menu.localeCompare(b.fecha_menu));
+      
+    // Menús pasados (descendente)
+    const pasados = menus
+      .filter(m => m.fecha_menu < today)
+      .sort((a, b) => b.fecha_menu.localeCompare(a.fecha_menu));
+
+    return { 
+      menuHoy: hoy, 
+      otrosMenusMobile: [...futuros, ...pasados] 
+    };
+  }, [menus]);
+
+  // Componente interno para la tarjeta de menú
+  const MenuCard = ({ menu, esHoy = false }: { menu: Menu, esHoy?: boolean }) => {
+    const menuContent = parseMenuContent(menu.contenido_menu);
+    return (
+      <div 
+        key={menu.id} 
+        className={`relative bg-gray-800/50 backdrop-blur-lg rounded-2xl border transition-all ${
+          esHoy 
+            ? 'border-green-500/50 shadow-lg shadow-green-500/10' 
+            : 'border-gray-700 hover:border-purple-500/50'
+        } p-6`}
+      >
+        {esHoy && (
+          <div className="absolute -top-3 left-6">
+            <span className="bg-green-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+              Hoy
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className={`text-lg font-semibold mb-1 ${esHoy ? 'text-green-400' : 'text-white'}`}>
+              {menuContent?.dia_semana || 'Menú'}
+            </h3>
+            <p className="text-sm text-purple-400">
+              {formatearFecha(menu.fecha_menu)}
+            </p>
+          </div>
+        </div>
+
+        {menuContent ? (
+          <div className="mb-4">
+            {renderComidas(menuContent.comidas)}
+          </div>
+        ) : (
+          <div className="mb-4">
+            <div className="text-sm text-gray-400 bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+              <p className="whitespace-pre-wrap">{menu.contenido_menu}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -174,7 +249,9 @@ export default function MenusPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Escanear Menú
+            <span className="hidden sm:inline">Escanear Menú</span>
+            <span className="sm:hidden">Escanear</span>
+
           </Link>
         </div>
 
@@ -227,7 +304,9 @@ export default function MenusPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Escanear Menú
+            <span className="hidden sm:inline">Escanear Menú</span>
+            <span className="sm:hidden">Escanear</span>
+
           </Link>
         </div>
 
@@ -272,37 +351,22 @@ export default function MenusPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {menus.map((menu) => {
-              const menuContent = parseMenuContent(menu.contenido_menu);
-              return (
-                <div key={menu.id} className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 hover:border-purple-500/50 transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        {menuContent?.dia_semana || 'Menú'}
-                      </h3>
-                      <p className="text-sm text-purple-400">
-                        {formatearFecha(menu.fecha_menu)}
-                      </p>
-                    </div>
-                  </div>
+          <>
+            {/* Vista Móvil: Hoy primero, luego siguientes, luego pasados */}
+            <div className="flex flex-col gap-6 md:hidden">
+              {menuHoy && <MenuCard menu={menuHoy} esHoy={true} />}
+              {otrosMenusMobile.map((menu) => (
+                <MenuCard key={menu.id} menu={menu} />
+              ))}
+            </div>
 
-                  {menuContent ? (
-                    <div className="mb-4">
-                      {renderComidas(menuContent.comidas)}
-                    </div>
-                  ) : (
-                    <div className="mb-4">
-                      <div className="text-sm text-gray-400 bg-gray-900/50 rounded-lg p-3 border border-gray-700">
-                        <p className="whitespace-pre-wrap">{menu.contenido_menu}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            {/* Vista Desktop: Grid original (descendente) */}
+            <div className="hidden md:grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {menus.map((menu) => (
+                <MenuCard key={menu.id} menu={menu} esHoy={menu.fecha_menu === getTodayLocal()} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

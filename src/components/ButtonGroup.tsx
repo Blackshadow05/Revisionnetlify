@@ -118,11 +118,7 @@ export default function ButtonGroup({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <div className="flex flex-wrap gap-3 p-4 rounded-xl" style={{
-        background: 'linear-gradient(to left, #334d50, #2a3347)',
-        border: '1px solid rgba(201, 164, 92, 0.2)',
-        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}>
+      <div className="flex flex-wrap gap-3 p-4 rounded-xl">
         {options.map(option => {
           const isSelected = selectedValue === option;
           return (
@@ -131,12 +127,12 @@ export default function ButtonGroup({
               type="button"
               onClick={() => onSelect(option)}
               className={`
-                px-4 py-3 text-sm font-semibold rounded-lg transition-all duration-300
+                px-5 py-3 text-sm font-bold rounded-lg transition-all duration-300
                 transform hover:scale-105 active:scale-95
                 ${
                   isSelected 
-                    ? 'bg-gradient-to-r from-[#c9a45c] to-[#f0c987] text-[#1e2538] shadow-lg' 
-                    : 'bg-[#2a3347]/50 text-white/90 hover:bg-[#334d50]/70 border border-[#c9a45c]/20'
+                    ? 'bg-[#c9a45c] text-[#1e2538] shadow-xl border-2 border-[#c9a45c] hover:bg-[#d4b06c]' 
+                    : 'bg-gray-100 md:bg-[#2a3347]/50 text-gray-800 md:text-white hover:bg-gray-200 md:hover:bg-[#334d50]/70 border-2 border-gray-300 md:border-[#c9a45c]/30'
                 }
                 min-w-[60px] focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50
               `}

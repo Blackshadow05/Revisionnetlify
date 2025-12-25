@@ -13,6 +13,24 @@
   transition: all 0.3s ease;
 }
 
+/* Variante blanca que resalta para móvil */
+.neu-card-white {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 
+    0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(229, 231, 235, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-card-white-hover:hover {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.15), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px);
+}
+
 .neu-card-hover {
   transition: all 0.3s ease;
 }
@@ -132,6 +150,37 @@
     inset 3px 3px 6px rgba(255, 255, 255, 0.4),
     inset -3px -3px 6px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px) scale(1.1);
+}
+
+/* Botón de inicio de sesión neumórfico */
+.neu-button-login {
+  background: linear-gradient(145deg, #c9a45c, #f0c987);
+  border-radius: 12px;
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.2),
+    -4px -4px 8px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(201, 164, 92, 0.4);
+  transition: all 0.3s ease;
+}
+
+.neu-button-login:hover {
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.25),
+    -6px -6px 12px rgba(255, 255, 255, 0.15),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.25),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.neu-button-login:active {
+  box-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.15),
+    -2px -2px 4px rgba(255, 255, 255, 0.05),
+    inset 4px 4px 8px rgba(0, 0, 0, 0.2),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
 }
 
 /* Container de búsqueda neumórfico */
@@ -328,34 +377,89 @@
   color: #f8f8f8;
 }
 
-/* Neumorphic buttons inside evidence section while maintaining their colors */
-[data-section="evidencia-fotografica"] button {
-  border-radius: 12px !important;
-  box-shadow:
-    4px 4px 8px rgba(0,0,0,0.3),
-    -4px -4px 8px rgba(255,255,255,0.05),
-    inset 1px 1px 2px rgba(255,255,255,0.1),
-    inset -1px -1px 2px rgba(0,0,0,0.2) !important;
-  border: 1px solid rgba(61,70,89,0.3) !important;
-  transition: all 0.2s ease !important;
+/* Mobile: white background for evidence section */
+@media (max-width: 767px) {
+  /* Contenedor principal de evidencias con fondo blanco */
+  [data-section="evidencia-fotografica"] {
+    background: #ffffff !important;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,0.08),
+      0 2px 4px rgba(0,0,0,0.04),
+      inset 1px 1px 2px rgba(255,255,255,0.8) !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+  }
+
+  [data-section="evidencia-fotografica"] .neu-button-group-button,
+  [data-section="evidencia-fotografica"] .evidence-uploader-card {
+    background: #ffffff;
+    box-shadow:
+      6px 6px 14px rgba(0,0,0,0.1),
+      -6px -6px 12px rgba(255,255,255,0.8);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #1a1f35;
+  }
+
+  /* Neumorphic buttons inside evidence section - mobile version */
+  [data-section="evidencia-fotografica"] button {
+    border-radius: 12px !important;
+    box-shadow:
+      4px 4px 8px rgba(0,0,0,0.1),
+      -4px -4px 8px rgba(255,255,255,0.8),
+      inset 1px 1px 2px rgba(255,255,255,0.8),
+      inset -1px -1px 2px rgba(0,0,0,0.1) !important;
+    border: 2px solid rgba(0,0,0,0.15) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  [data-section="evidencia-fotografica"] button:hover {
+    box-shadow:
+      6px 6px 12px rgba(0,0,0,0.15),
+      -6px -6px 12px rgba(255,255,255,0.9),
+      inset 2px 2px 4px rgba(255,255,255,0.9),
+      inset -2px -2px 4px rgba(0,0,0,0.15) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  [data-section="evidencia-fotografica"] button:active {
+    box-shadow:
+      2px 2px 4px rgba(0,0,0,0.1),
+      -2px -2px 4px rgba(255,255,255,0.7),
+      inset 3px 3px 6px rgba(0,0,0,0.1),
+      inset -3px -3px 6px rgba(255,255,255,0.7) !important;
+    transform: translateY(1px) !important;
+  }
 }
 
-[data-section="evidencia-fotografica"] button:hover {
-  box-shadow:
-    6px 6px 12px rgba(0,0,0,0.35),
-    -6px -6px 12px rgba(255,255,255,0.08),
-    inset 2px 2px 4px rgba(255,255,255,0.15),
-    inset -2px -2px 4px rgba(0,0,0,0.25) !important;
-  transform: translateY(-2px) !important;
-}
+/* Neumorphic buttons inside evidence section while maintaining their colors - desktop version */
+@media (min-width: 768px) {
+  [data-section="evidencia-fotografica"] button {
+    border-radius: 12px !important;
+    box-shadow:
+      4px 4px 8px rgba(0,0,0,0.3),
+      -4px -4px 8px rgba(255,255,255,0.05),
+      inset 1px 1px 2px rgba(255,255,255,0.1),
+      inset -1px -1px 2px rgba(0,0,0,0.2) !important;
+    border: 1px solid rgba(61,70,89,0.3) !important;
+    transition: all 0.2s ease !important;
+  }
 
-[data-section="evidencia-fotografica"] button:active {
-  box-shadow:
-    2px 2px 4px rgba(0,0,0,0.25),
-    -2px -2px 4px rgba(255,255,255,0.03),
-    inset 3px 3px 6px rgba(0,0,0,0.3),
-    inset -3px -3px 6px rgba(255,255,255,0.1) !important;
-  transform: translateY(1px) !important;
+  [data-section="evidencia-fotografica"] button:hover {
+    box-shadow:
+      6px 6px 12px rgba(0,0,0,0.35),
+      -6px -6px 12px rgba(255,255,255,0.08),
+      inset 2px 2px 4px rgba(255,255,255,0.15),
+      inset -2px -2px 4px rgba(0,0,0,0.25) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  [data-section="evidencia-fotografica"] button:active {
+    box-shadow:
+      2px 2px 4px rgba(0,0,0,0.25),
+      -2px -2px 4px rgba(255,255,255,0.03),
+      inset 3px 3px 6px rgba(0,0,0,0.3),
+      inset -3px -3px 6px rgba(255,255,255,0.1) !important;
+    transform: translateY(1px) !important;
+  }
 }
 
 /* Focus state improvements to keep neumorphic look */
@@ -365,4 +469,28 @@
     0 6px 18px rgba(0,0,0,0.55),
     0 0 0 3px rgba(201,164,92,0.08) !important;
   transform: translateY(-1px);
+}
+
+/* Botón guardar verde en móviles */
+@media (max-width: 767px) {
+  .guardar-btn-mobile.btn-primary {
+    background: linear-gradient(145deg, #22c55e, #16a34a) !important;
+    border-color: #15803d !important;
+    color: #ffffff !important;
+  }
+
+  .guardar-btn-mobile.btn-primary:hover {
+    background: linear-gradient(145deg, #4ade80, #22c55e) !important;
+    box-shadow:
+      0 8px 16px rgba(34, 197, 94, 0.4),
+      0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .guardar-btn-mobile.btn-primary:active {
+    background: linear-gradient(145deg, #16a34a, #15803d) !important;
+    box-shadow:
+      0 4px 8px rgba(34, 197, 94, 0.3),
+      inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(1px) !important;
+  }
 }

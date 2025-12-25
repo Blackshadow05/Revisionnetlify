@@ -1023,14 +1023,18 @@ export default function NuevaRevision() {
   // Evitar problemas de hidratación - no renderizar hasta que esté hidratado
   if (!isHydrated) {
     return (
-      <main className="min-h-screen relative overflow-hidden" style={{
-        background: '#334d50',
-        backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-      }}>
+      <main className="min-h-screen relative overflow-hidden bg-white md:bg-[#334d50] gradient-container">
+        <style jsx global>{`
+          @media (min-width: 768px) {
+            .gradient-container {
+              background-image: linear-gradient(to left, #cbcaa5, #334d50);
+            }
+          }
+        `}</style>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]">
+          <div className="bg-white md:bg-[#2a3347] rounded-xl shadow-xl p-4 md:p-8 border border-gray-300 md:border-[#3d4659]">
             <div className="flex justify-center items-center h-64">
-              <div className="animate-pulse text-[#c9a45c] text-lg">Cargando...</div>
+              <div className="animate-pulse text-gray-900 md:text-[#c9a45c] text-lg">Cargando...</div>
             </div>
           </div>
         </div>
@@ -1039,21 +1043,23 @@ export default function NuevaRevision() {
   }
 
   return (
-    <main className="min-h-screen relative overflow-hidden" style={{
-      background: '#334d50',
-      backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-    }}>
+    <main className="min-h-screen relative overflow-hidden bg-white md:bg-[#334d50] gradient-container">
+      <style jsx global>{`
+        @media (min-width: 768px) {
+          .gradient-container {
+            background-image: linear-gradient(to left, #cbcaa5, #334d50);
+          }
+          .gradient-form {
+            background-image: linear-gradient(to left, #cbcaa5, #334d50);
+          }
+        }
+      `}</style>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <form onSubmit={handleSubmit} className="rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659]" style={{
-          background: '#334d50',
-          backgroundImage: 'linear-gradient(to left, #cbcaa5, #334d50)'
-        }}>
+        <form onSubmit={handleSubmit} className="rounded-xl shadow-xl p-4 md:p-8 border border-[#3d4659] bg-white md:bg-[#334d50] gradient-form">
           {/* Header */}
           <header className="flex justify-between items-center mb-6 md:mb-8">
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 blur-lg rounded-xl"></div>
-              
-              <PageTitle size="md">Nueva Revisión</PageTitle>
               
               <div className="relative mt-2 h-0.5 w-20">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#c9a45c] to-transparent rounded-full"></div>
@@ -1061,7 +1067,7 @@ export default function NuevaRevision() {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3">
               {/* Botón Volver */}
               <button
                 type="button"
@@ -1342,9 +1348,9 @@ export default function NuevaRevision() {
               <fieldset data-section="evidencia-fotografica" className="neu-evidence-section">
                 <legend className="sr-only">Evidencia fotográfica</legend>
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-[#ff8c42] flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-gray-900 md:text-[#ff8c42] flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Evidencia Fotográfica
@@ -1410,9 +1416,9 @@ export default function NuevaRevision() {
             <div className="space-y-3">
               {/* 🔍 Indicador de campos pendientes (café claro/naranja) */}
               {nextEmptyField && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-xl p-3 text-orange-200">
+                <div className="bg-orange-100 md:bg-orange-500/20 border border-orange-300 md:border-orange-500/50 rounded-xl p-3 text-orange-900 md:text-orange-200">
                   <div className="flex items-center justify-center gap-2 text-sm">
-                    <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-orange-600 md:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <span>
@@ -1425,7 +1431,7 @@ export default function NuevaRevision() {
               <button
                 type="submit"
                 disabled={isFormLoading}
-                className={isFormLoading ? "btn-primary btn-loading" : "btn-primary"}
+                className={`btn-primary ${isFormLoading ? 'btn-loading' : ''} guardar-btn-mobile`}
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isFormLoading ? (

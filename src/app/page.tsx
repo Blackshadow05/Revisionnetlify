@@ -18,6 +18,7 @@ import ViewToggle from '@/components/ui/ViewToggle';
 import CardView from '@/components/revision/CardView';
 import ShareModal from '@/components/ShareModal';
 import { PuestoService } from '@/lib/puesto-service';
+import { useRevisiones } from '@/hooks/useRevisionesCache';
 
 
 
@@ -83,9 +84,28 @@ export default function Home() {
     anchor?.focus();
   }, [pathname]);
   
+  // 🚀 Hook para cargar revisiones con caché en localStorage
+  const {
+    data: revisionesData,
+    loading: revisionesLoading,
+    error: revisionesError,
+    isFromCache,
+    lastUpdated,
+    refresh: refreshRevisiones
+  } = useRevisiones();
+  
   const [data, setData] = useState<RevisionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Sincronizar datos del hook con el estado local
+  useEffect(() => {
+    if (revisionesData) {
+      setData(revisionesData);
+    }
+    setLoading(revisionesLoading);
+    setError(revisionesError);
+  }, [revisionesData, revisionesLoading, revisionesError]);
   
   // Estados para estadísticas principales
   const [statsLoading, setStatsLoading] = useState(true);
@@ -411,10 +431,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    fetchRevisiones();
-  }, []);
-
   // 🚀 Efecto para detectar dispositivo y ajustar elementos por página
   // Paginación fija de 40 registros por página para todos los dispositivos
   useEffect(() => {
@@ -461,58 +477,6 @@ export default function Home() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showFilterDropdown]);
-
-  const fetchRevisiones = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Verificar la conexión con Supabase
-      const isConnected = await checkSupabaseConnection();
-      if (!isConnected) {
-        throw new Error('No se pudo conectar con la base de datos. Por favor, verifica tu conexión.');
-      }
-
-      // Cargar todos los registros en lotes para evitar límites
-      let allData: RevisionData[] = [];
-      let start = 0;
-      const batchSize = 1000;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('revisiones_casitas')
-          .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(start, start + batchSize - 1);
-        
-        if (error) {
-          
-          throw new Error('Error al cargar los datos: ' + error.message);
-        }
-        
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          start += batchSize;
-          // Si el lote tiene menos registros que el tamaño del lote, ya no hay más datos
-          hasMore = data.length === batchSize;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      if (!allData) {
-        throw new Error('No se encontraron datos');
-      }
-
-      setData(allData);
-    } catch (error: unknown) {
-      
-      setError(error instanceof Error ? error.message : 'Error al cargar los datos');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Función para calcular estadísticas principales
   const calcularEstadisticas = useCallback(() => {
@@ -866,7 +830,7 @@ export default function Home() {
         .eq('id', id);
 
       if (error) throw error;
-      fetchRevisiones();
+      refreshRevisiones();
     } catch (error: unknown) {
       
       setError(error instanceof Error ? error.message : 'Error desconocido');

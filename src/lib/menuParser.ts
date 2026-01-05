@@ -30,8 +30,8 @@ export function procesarMenuDiario(textoMenu: string): MenuDiario[] {
     'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
   };
   
-  // Año actual (2025)
-  const año = 2025;
+  // Año actual (2026)
+  const año = 2026;
   
   // Encontrar todas las posiciones de los encabezados de días
   const matches = Array.from(textoMenu.matchAll(regexDia));
@@ -97,8 +97,8 @@ export function procesarMenuAlternativo(textoMenu: string): MenuDiario[] {
     'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
   };
   
-  // Año actual (2025)
-  const año = 2025;
+  // Año actual (2026)
+  const año = 2026;
   
   // Procesar cada línea
   for (const linea of lineas) {

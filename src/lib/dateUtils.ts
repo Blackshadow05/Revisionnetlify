@@ -5,7 +5,7 @@
 /**
  * Extrae y formatea fechas del texto del menú
  * @param textoMenu Texto del menú escaneado
- * @returns Fecha en formato YYYY-MM-DD (asumiendo año 2025)
+ * @returns Fecha en formato YYYY-MM-DD (asumiendo año 2026)
  */
 export function extraerFechaMenu(textoMenu: string): string {
   // Patrones comunes de fechas en menús (sin año)
@@ -23,8 +23,8 @@ export function extraerFechaMenu(textoMenu: string): string {
     'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
   };
   
-  // Año actual (2025)
-  const año = 2025;
+  // Año actual (2026)
+  const año = 2026;
   
   // Buscar fechas en el texto
   for (const patron of patronesFecha) {
@@ -53,7 +53,7 @@ export function extraerFechaMenu(textoMenu: string): string {
 /**
  * Formatea una fecha para mostrar en la interfaz
  * @param fecha Fecha en formato YYYY-MM-DD
- * @returns Fecha formateada en español (ej: "15 de julio de 2025")
+ * @returns Fecha formateada en español (ej: "15 de julio de 2026")
  */
 export function formatearFecha(fecha: string): string {
   const meses = [

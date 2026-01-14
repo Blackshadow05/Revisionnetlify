@@ -926,7 +926,7 @@ export default function NuevaRevision() {
         const compressedFile = compressedFiles[field];
         if (compressedFile) {
           try {
-            const uploadedUrl = await uploadEvidenciaToCloudinary(compressedFile);
+            const uploadedUrl = await uploadEvidenciaToCloudinary(compressedFile, field);
             submitData[field] = uploadedUrl;
             console.log(`✅ ${field} subida exitosamente a Cloudinary/Evidencias:`, uploadedUrl);
           } catch (uploadError) {

@@ -33,11 +33,22 @@ export const uploadToCloudinary = async (file: File, customFolder?: string): Pro
 
     const data = await response.json();
     
-    // Agregar optimizaciones automáticas f_auto,q_auto a la URL
+    // Extraer solo la ruta relativa (carpeta + nombre de archivo)
+    // La URL tiene formato: https://res.cloudinary.com/cloud_name/image/upload/vTIMESTAMP/folder/file.ext
+    // Queremos devolver: folder/file.ext
     const originalUrl = data.secure_url;
-    const optimizedUrl = originalUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+    const urlParts = originalUrl.split('/image/upload/');
     
-    return optimizedUrl;
+    if (urlParts.length >= 2) {
+      // Extraer la parte después de /image/upload/
+      const pathWithTimestamp = urlParts[1];
+      // Remover el timestamp (vXXXXXXXXXX/) para obtener la ruta relativa limpia
+      const relativePath = pathWithTimestamp.replace(/^v\d+\//, '');
+      return relativePath;
+    }
+    
+    // Fallback: devolver la URL completa si no se puede procesar
+    return originalUrl;
   } catch (error) {
     console.error('Error en uploadToCloudinary:', error);
     throw error;
@@ -61,9 +72,10 @@ export const uploadNotaToCloudinary = async (file: File): Promise<string> => {
 /**
  * Función específica para subir evidencias a la carpeta "Evidencias"
  * @param file - Archivo a subir
- * @returns URL optimizada de Cloudinary
+ * @param fieldName - Nombre del campo (evidencia_01, evidencia_02, evidencia_03)
+ * @returns Ruta relativa en formato: Evidencias/Mes Año/evidencia_N_timestamp
  */
-export const uploadEvidenciaToCloudinary = async (file: File): Promise<string> => {
+export const uploadEvidenciaToCloudinary = async (file: File, fieldName?: string): Promise<string> => {
   const now = new Date();
   const year = now.getFullYear();
   
@@ -75,8 +87,39 @@ export const uploadEvidenciaToCloudinary = async (file: File): Promise<string> =
   
   const mesNombre = meses[now.getMonth()];
   const folder = `Evidencias/${mesNombre} ${year}`;
+  
+  // Generar nombre personalizado usando el nombre del campo
+  const timestamp = Date.now();
+  const customFileName = `evidencia_${fieldName ? fieldName.replace('evidencia_', '') : '1'}_${timestamp}`;
 
-  return uploadToCloudinary(file, folder);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'ml_default');
+  formData.append('cloud_name', 'dhd61lan4');
+  formData.append('folder', folder);
+  formData.append('public_id', customFileName);
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/dhd61lan4/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen a Cloudinary');
+    }
+
+    const data = await response.json();
+    
+    // Devolver ruta relativa en el formato deseado
+    return `${folder}/${customFileName}`;
+  } catch (error) {
+    console.error('Error en uploadEvidenciaToCloudinary:', error);
+    throw error;
+  }
 };
 
 /**

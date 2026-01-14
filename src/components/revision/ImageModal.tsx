@@ -481,7 +481,8 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
     if (!currentImageUrl) return;
 
     try {
-      const response = await fetch(currentImageUrl);
+      const fullImageUrl = getConsistentImageUrl(currentImageUrl);
+      const response = await fetch(fullImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -501,7 +502,8 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
     if (!currentImageUrl || !navigator.share) return;
 
     try {
-      const response = await fetch(currentImageUrl);
+      const fullImageUrl = getConsistentImageUrl(currentImageUrl);
+      const response = await fetch(fullImageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'evidencia.jpg', { type: 'image/jpeg' });
 

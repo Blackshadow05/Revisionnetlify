@@ -144,6 +144,7 @@ export default function NuevaRevision() {
 
   const [highlightedField, setHighlightedField] = useState<string | null>('casita');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [skippedFieldWarning, setSkippedFieldWarning] = useState<{show: boolean, fieldName: string}>({show: false, fieldName: ''});
   
   // Estados para modal de compartir
   const [showShareModal, setShowShareModal] = useState(false);
@@ -442,6 +443,23 @@ export default function NuevaRevision() {
     setFormData(newFormData);
     
     debouncedSave(newFormData);
+    
+    const fieldIndex = requiredFields.indexOf(field);
+    if (fieldIndex > 0) {
+      for (let i = 0; i < fieldIndex; i++) {
+        const previousField = requiredFields[i];
+        if (!formData[previousField]) {
+          setSkippedFieldWarning({
+            show: true,
+            fieldName: fieldLabels[previousField] || previousField
+          });
+          setTimeout(() => {
+            setSkippedFieldWarning({show: false, fieldName: ''});
+          }, 4000);
+          break;
+        }
+      }
+    }
   }, [formData, debouncedSave]);
 
   // 🚀 NUEVA: Función auxiliar para compresión con reintento
@@ -1109,9 +1127,9 @@ export default function NuevaRevision() {
                       value={formData.casita}
                       onChange={(e) => handleInputChange('casita', e.target.value)}
                     >
-                      <option value="" className="bg-[#1e2538] text-gray-400">Seleccionar casita</option>
+                      <option value="" className="bg-white text-gray-400 md:bg-[#1e2538]">Seleccionar casita</option>
                       {Array.from({ length: 50 }, (_, i) => i + 1).map(num => (
-                        <option key={num} value={num} className="bg-[#1e2538] text-white">{num}</option>
+                        <option key={num} value={num} className="bg-white text-gray-900 md:bg-[#1e2538] md:text-white">{num}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -1155,9 +1173,9 @@ export default function NuevaRevision() {
                         value={formData.quien_revisa}
                         onChange={(e) => handleInputChange('quien_revisa', e.target.value)}
                       >
-                        <option value="" className="bg-[#1e2538] text-gray-400">Seleccionar persona</option>
+                        <option value="" className="bg-white text-gray-400 md:bg-[#1e2538]">Seleccionar persona</option>
                         {usuarios.map((nombre: string) => (
-                          <option key={nombre} value={nombre} className="bg-[#1e2538] text-white">{nombre}</option>
+                          <option key={nombre} value={nombre} className="bg-white text-gray-900 md:bg-[#1e2538] md:text-white">{nombre}</option>
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -1414,6 +1432,20 @@ export default function NuevaRevision() {
 
             {/* Submit button */}
             <div className="space-y-3">
+              {/* ⚠️ Advertencia de campo saltado */}
+              {skippedFieldWarning.show && (
+                <div className="bg-red-100 md:bg-red-500/20 border border-red-300 md:border-red-500/50 rounded-xl p-3 text-red-900 md:text-red-200">
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4 text-red-600 md:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>
+                      Saltaste el campo "{skippedFieldWarning.fieldName}". Por favor complétalo primero.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* 🔍 Indicador de campos pendientes (café claro/naranja) */}
               {nextEmptyField && (
                 <div className="bg-orange-100 md:bg-orange-500/20 border border-orange-300 md:border-orange-500/50 rounded-xl p-3 text-orange-900 md:text-orange-200">

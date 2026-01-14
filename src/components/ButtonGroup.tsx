@@ -118,7 +118,7 @@ export default function ButtonGroup({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <div className="flex flex-wrap gap-3 p-4 rounded-xl">
+      <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${highlight ? 'form-field-highlight' : ''}`}>
         {options.map(option => {
           const isSelected = selectedValue === option;
           return (

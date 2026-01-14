@@ -229,11 +229,11 @@ body {
 @layer components {
   /* Formularios */
   .form-input {
-    @apply w-full px-4 py-3 md:py-4 bg-gradient-to-br from-[#1e2538] to-[#2a3347] border border-[#3d4659] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30 hover:shadow-lg hover:shadow-[#c9a45c]/10 backdrop-blur-sm;
+    @apply w-full px-4 py-3 md:py-4 bg-white md:bg-gradient-to-br md:from-[#1e2538] md:to-[#2a3347] border border-gray-300 md:border-[#3d4659] rounded-xl text-gray-900 md:text-white placeholder-gray-400 md:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30 hover:shadow-lg hover:shadow-[#c9a45c]/10 md:backdrop-blur-sm;
   }
   
   .form-select {
-    @apply form-input appearance-none cursor-pointer;
+    @apply w-full px-4 py-3 md:py-4 bg-white md:bg-gradient-to-br md:from-[#1e2538] md:to-[#2a3347] border border-gray-300 md:border-[#3d4659] rounded-xl text-gray-900 md:text-white placeholder-gray-400 md:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50 focus:border-[#c9a45c]/50 transition-all duration-300 hover:border-[#c9a45c]/30 hover:shadow-lg hover:shadow-[#c9a45c]/10 md:backdrop-blur-sm appearance-none cursor-pointer;
   }
   
   .form-label {

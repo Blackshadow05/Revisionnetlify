@@ -515,26 +515,6 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
     }
   };
 
-  // Pantalla completa
-  const toggleFullscreen = async () => {
-    if (!modalRef.current) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        // Entrar en pantalla completa
-        await modalRef.current.requestFullscreen().catch(() => {});
-      } else {
-        // Salir de pantalla completa
-        await document.exitFullscreen();
-      }
-    } catch (error) {
-      // silenciado
-    }
-  };
-
-  // Verificar si estamos en pantalla completa
-  const isFullscreen = typeof document !== 'undefined' && !!document.fullscreenElement;
-
   if (!isOpen || !currentImageUrl) return null;
 
   return (
@@ -563,12 +543,12 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
 
       {/* Controles superiores - Auto-ocultables en móvil */}
       {showControls && (
-        <div className={`fixed top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${isMobile ? 'pt-12' : ''}`}>
+        <div className={`fixed top-0 left-0 right-0 z-[60] p-4 bg-gradient-to-b from-black/95 to-transparent transition-opacity duration-300 ${isMobile ? 'pt-12' : ''}`}>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+                className="w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30"
                 title="Cerrar (Escape)"
                 aria-label="Cerrar modal"
               >
@@ -579,7 +559,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
               
               {/* Información de casita y evidencia */}
               {casita && (
-                <div className="bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1">
+                <div className="bg-black/80 backdrop-blur-md border border-white/30 rounded-lg px-3 py-1 shadow-xl">
                   <span className="text-white text-sm font-medium">
                     C.# {casita} - Evidencia {currentIndex + 1}
                     {images && images.length > 1 && ` (${currentIndex + 1}/${images.length})`}
@@ -589,27 +569,10 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
             </div>
 
             <div className="flex gap-2">
-              {/* Botón de pantalla completa */}
-              <button
-                onClick={toggleFullscreen}
-                className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
-                title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-              >
-                {isFullscreen ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-5.25l5.25 5.25" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5M3.75 3.75l5.25 5.25m0 0l-5.25 5.25m5.25-5.25l5.25 5.25m-5.25-5.25h4.5m-4.5 0V3.75" />
-                  </svg>
-                )}
-              </button>
-
               {/* Botón de descarga */}
               <button
                 onClick={handleDownload}
-                className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+                className="w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30"
                 title="Descargar imagen"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -621,7 +584,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
               {typeof navigator !== 'undefined' && 'share' in navigator && (
                 <button
                   onClick={handleShare}
-                  className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+                  className="w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30"
                   title="Compartir imagen"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -640,7 +603,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
           {/* Botón anterior */}
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20 z-50"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30 z-[60]"
             title="Imagen anterior"
             aria-label="Imagen anterior"
           >
@@ -652,7 +615,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
           {/* Botón siguiente */}
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20 z-50"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30 z-[60]"
             title="Imagen siguiente"
             aria-label="Imagen siguiente"
           >
@@ -664,7 +627,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
       )}
 
       {/* Contenedor de imagen con soporte para zoom y pan */}
-      <div className="relative" ref={containerRef} onWheel={handleWheel}>
+      <div className="relative z-10" ref={containerRef} onWheel={handleWheel}>
         <div
           ref={imgWrapperRef}
           className={`inline-block select-none ${imageScale > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
@@ -732,7 +695,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
 
       {/* Controles inferiores - Auto-ocultables en móvil */}
       {showControls && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 bg-gradient-to-t from-black/95 to-transparent transition-opacity duration-300">
           <div className="flex justify-center items-center gap-4">
             {/* Botón de zoom OUT */}
             <button
@@ -742,10 +705,10 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
                 preserveFocalWhileZoom(next, { x: window.innerWidth / 2, y: window.innerHeight / 2 });
               }}
               disabled={imageScale <= 1}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border ${
                 imageScale <= 1
                   ? 'bg-gray-600/40 text-gray-400 border-gray-500/30 cursor-not-allowed'
-                  : 'bg-black/60 hover:bg-black/80 text-white border-white/20'
+                  : 'bg-black/80 hover:bg-black/95 text-white border-white/30'
               }`}
               title="Reducir zoom"
             >
@@ -755,7 +718,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
             </button>
 
             {/* Indicador de zoom */}
-            <div className="bg-black/60 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1">
+            <div className="bg-black/80 backdrop-blur-md border border-white/30 rounded-lg px-3 py-1">
               <span className="text-white text-sm font-medium">
                 {Math.round(imageScale * 100)}%
               </span>
@@ -768,10 +731,10 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
                 preserveFocalWhileZoom(next, { x: window.innerWidth / 2, y: window.innerHeight / 2 });
               }}
               disabled={imageScale >= 4}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border ${
                 imageScale >= 4
                   ? 'bg-gray-600/40 text-gray-400 border-gray-500/30 cursor-not-allowed'
-                  : 'bg-black/60 hover:bg-black/80 text-white border-white/20'
+                  : 'bg-black/80 hover:bg-black/95 text-white border-white/30'
               }`}
               title="Aumentar zoom"
             >
@@ -786,7 +749,7 @@ export default function ImageModal({ isOpen, images, initialIndex = 0, casita, e
                 setImageScale(1);
                 setImagePosition({ x: 0, y: 0 });
               }}
-              className="w-10 h-10 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+              className="w-10 h-10 bg-black/80 hover:bg-black/95 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-xl backdrop-blur-md border border-white/30"
               title="Restablecer zoom"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

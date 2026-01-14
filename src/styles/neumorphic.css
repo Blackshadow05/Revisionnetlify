@@ -325,32 +325,69 @@
    - Readonly user input (.form-input[readonly])
    - Sección de evidencias [data-section="evidencia-fotografica"]
    These rules enhance depth and maintain contrast with existing theme.
-*/
-.form-select {
-  background: linear-gradient(145deg, #232a3a, #1d2433) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    6px 6px 16px rgba(0,0,0,0.45),
-    -6px -6px 16px rgba(255,255,255,0.03),
-    inset 1px 1px 2px rgba(255,255,255,0.02),
-    inset -1px -1px 2px rgba(0,0,0,0.35);
-  border: 1px solid rgba(61,70,89,0.5) !important;
-  color: #f3f4f6 !important;
-  padding: 12px 14px !important;
-  min-height: 44px;
-  transition: box-shadow 0.25s ease, transform 0.08s ease;
+ */
+@media (min-width: 768px) {
+  .form-select {
+    background: linear-gradient(145deg, #232a3a, #1d2433) !important;
+    border-radius: 12px !important;
+    box-shadow:
+      6px 6px 16px rgba(0,0,0,0.45),
+      -6px -6px 16px rgba(255,255,255,0.03),
+      inset 1px 1px 2px rgba(255,255,255,0.02),
+      inset -1px -1px 2px rgba(0,0,0,0.35);
+    border: 1px solid rgba(61,70,89,0.5) !important;
+    color: #f3f4f6 !important;
+    padding: 12px 14px !important;
+    min-height: 44px;
+    transition: box-shadow 0.25s ease, transform 0.08s ease;
+  }
+  
+  .form-select option {
+    background: #1e2538 !important;
+    color: #ffffff !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .form-select {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    color: #1a1f35 !important;
+    padding: 12px 14px !important;
+    min-height: 44px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .form-select option {
+    background: #ffffff !important;
+    color: #1a1f35 !important;
+  }
 }
 
 /* Give readOnly inputs (user display) a subtle neumorphic look */
-.form-input[readonly], input[readonly].form-input {
-  background: linear-gradient(145deg, #1f2633, #232b3a) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    inset 3px 3px 8px rgba(0,0,0,0.6),
-    inset -3px -3px 8px rgba(255,255,255,0.02);
-  border: 1px solid rgba(61,70,89,0.45) !important;
-  color: #e6e7e8 !important;
-  padding-right: 40px; /* keep icon space */
+@media (min-width: 768px) {
+  .form-input[readonly], input[readonly].form-input {
+    background: linear-gradient(145deg, #1f2633, #232b3a) !important;
+    border-radius: 12px !important;
+    box-shadow:
+      inset 3px 3px 8px rgba(0,0,0,0.6),
+      inset -3px -3px 8px rgba(255,255,255,0.02);
+    border: 1px solid rgba(61,70,89,0.45) !important;
+    color: #e6e7e8 !important;
+    padding-right: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .form-input[readonly], input[readonly].form-input {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    color: #1a1f35 !important;
+    padding-right: 40px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
 }
 
 /* Evidences section container */

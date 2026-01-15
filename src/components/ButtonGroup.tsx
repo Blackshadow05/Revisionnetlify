@@ -13,6 +13,7 @@ interface ButtonGroupProps {
   highlight?: boolean;
   iconType?: 'emoji' | 'custom'; // Opcional - si no se especifica, usa la configuración global
   persistSelection?: boolean; // Mantiene el estado seleccionado hasta reset
+  columns?: number; // Opcional - si se especifica, usa un grid con este número de columnas
 }
 
 // Función para obtener el emoji apropiado según el label
@@ -97,7 +98,8 @@ export default function ButtonGroup({
   required = false,
   highlight = false,
   iconType, // Ya no tiene valor por defecto
-  persistSelection = false // Mantiene el estado seleccionado
+  persistSelection = false, // Mantiene el estado seleccionado
+  columns // Grid de columnas
 }: ButtonGroupProps) {
   
   // Función para obtener el icono según el tipo seleccionado
@@ -118,7 +120,17 @@ export default function ButtonGroup({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <div className={`flex flex-wrap gap-3 p-4 rounded-xl ${highlight ? 'form-field-highlight' : ''}`}>
+      <div 
+        className={`p-4 rounded-xl ${highlight ? 'form-field-highlight' : ''} ${
+          columns 
+            ? `grid grid-cols-${columns} gap-3` 
+            : 'flex flex-wrap gap-3'
+        }`}
+        style={columns ? {
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
+        } : undefined}
+      >
         {options.map(option => {
           const isSelected = selectedValue === option;
           return (
@@ -134,7 +146,7 @@ export default function ButtonGroup({
                     ? 'bg-[#c9a45c] text-[#1e2538] shadow-xl border-2 border-[#c9a45c] hover:bg-[#d4b06c]' 
                     : 'bg-gray-100 md:bg-[#2a3347]/50 text-gray-800 md:text-white hover:bg-gray-200 md:hover:bg-[#334d50]/70 border-2 border-gray-300 md:border-[#c9a45c]/30'
                 }
-                min-w-[60px] focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50
+                min-w-[60px] ${columns ? 'w-full' : ''} focus:outline-none focus:ring-2 focus:ring-[#c9a45c]/50
               `}
               aria-pressed={isSelected}
             >

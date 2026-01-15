@@ -123,6 +123,7 @@ const DetalleRevision = memo(() => {
       evidencia_01: "Evidencia 1",
       evidencia_02: "Evidencia 2",
       evidencia_03: "Evidencia 3",
+      room_move: "Movimiento de casita",
       notas: "Notas",
       created_at: "Fecha de Creación",
     }),
@@ -143,6 +144,95 @@ const DetalleRevision = memo(() => {
       return fechaISO;
     }
   }, []);
+
+  // 🎨 TEMA DINÁMICO: Colores basados en el estado de caja_fuerte
+  const getThemeColors = useCallback((status: string) => {
+    switch (status) {
+      case 'Check out':
+        return {
+          primary: 'rgb(239, 68, 68)',
+          primaryLight: 'rgb(254, 226, 226)',
+          primaryDark: 'rgb(220, 38, 38)',
+          accent: 'bg-red-500',
+          accentLight: 'bg-red-50',
+          accentBorder: 'border-red-200',
+          text: 'text-red-700',
+          textLight: 'text-red-500',
+          shadow: 'shadow-red-200',
+          glow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
+        };
+      case 'Check in':
+        return {
+          primary: 'rgb(16, 185, 129)',
+          primaryLight: 'rgb(209, 250, 229)',
+          primaryDark: 'rgb(5, 150, 105)',
+          accent: 'bg-emerald-500',
+          accentLight: 'bg-emerald-50',
+          accentBorder: 'border-emerald-200',
+          text: 'text-emerald-700',
+          textLight: 'text-emerald-500',
+          shadow: 'shadow-emerald-200',
+          glow: 'shadow-[0_0_30px_rgba(16,185,129,0.15)]',
+        };
+      case 'Upsell':
+        return {
+          primary: 'rgb(59, 130, 246)',
+          primaryLight: 'rgb(219, 234, 254)',
+          primaryDark: 'rgb(37, 99, 235)',
+          accent: 'bg-blue-500',
+          accentLight: 'bg-blue-50',
+          accentBorder: 'border-blue-200',
+          text: 'text-blue-700',
+          textLight: 'text-blue-500',
+          shadow: 'shadow-blue-200',
+          glow: 'shadow-[0_0_30px_rgba(59,130,246,0.15)]',
+        };
+      case 'Guardar Upsell':
+        return {
+          primary: 'rgb(168, 85, 247)',
+          primaryLight: 'rgb(243, 232, 255)',
+          primaryDark: 'rgb(147, 51, 234)',
+          accent: 'bg-purple-500',
+          accentLight: 'bg-purple-50',
+          accentBorder: 'border-purple-200',
+          text: 'text-purple-700',
+          textLight: 'text-purple-500',
+          shadow: 'shadow-purple-200',
+          glow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
+        };
+      case 'Room Move':
+        return {
+          primary: '#F5EB27',
+          primaryLight: '#FFFBEA',
+          primaryDark: '#d1c71f',
+          accent: 'bg-[#F5EB27]',
+          accentLight: 'bg-[#FFFBEA]',
+          accentBorder: 'border-[#F5EB27]',
+          text: 'text-[#d1c71f]',
+          textLight: 'text-[#F5EB27]',
+          shadow: 'shadow-[#F5EB27]/20',
+          glow: 'shadow-[0_0_30px_rgba(245,235,39,0.25)]',
+        };
+      default:
+        return {
+          primary: 'rgb(245, 158, 11)',
+          primaryLight: 'rgb(254, 243, 199)',
+          primaryDark: 'rgb(217, 119, 6)',
+          accent: 'bg-amber-500',
+          accentLight: 'bg-amber-50',
+          accentBorder: 'border-amber-200',
+          text: 'text-amber-700',
+          textLight: 'text-amber-500',
+          shadow: 'shadow-amber-200',
+          glow: 'shadow-[0_0_30px_rgba(245,158,11,0.15)]',
+        };
+    }
+  }, []);
+
+  // Obtener tema actual basado en la revisión
+  const theme = useMemo(() => {
+    return revision ? getThemeColors(revision.caja_fuerte) : getThemeColors('');
+  }, [revision, getThemeColors]);
 
   // 🚀 OPTIMIZACIÓN: Memoizar handlers de modal
   const openModal = useCallback(
@@ -286,6 +376,7 @@ const DetalleRevision = memo(() => {
             "evidencia_01",
             "evidencia_02",
             "evidencia_03",
+            "room_move",
             "notas",
           ];
 
@@ -1146,10 +1237,10 @@ const DetalleRevision = memo(() => {
 
         {/* GRUPO PRINCIPAL: Información Base */}
         <FadeIn delay={100}>
-          <div className="bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+          <div className={`bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border-2 ${theme.accentBorder} ${theme.glow}`}>
             <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="w-11 h-11 sm:w-14 sm:h-14 bg-amber-50 rounded-[22px] flex items-center justify-center shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-7 sm:w-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className={`w-11 h-11 sm:w-14 sm:h-14 ${theme.accentLight} rounded-[22px] flex items-center justify-center shadow-sm`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 sm:h-7 sm:w-7 ${theme.textLight}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
@@ -1162,7 +1253,7 @@ const DetalleRevision = memo(() => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Casita */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm flex-shrink-0">
+                    <div className={`w-10 h-10 ${theme.accentLight} rounded-xl flex items-center justify-center ${theme.textLight} shadow-sm flex-shrink-0`}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
@@ -1184,7 +1275,7 @@ const DetalleRevision = memo(() => {
 
                   {/* Fecha de Revisión */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 shadow-sm flex-shrink-0">
+                    <div className={`w-10 h-10 ${theme.accentLight} rounded-xl flex items-center justify-center ${theme.textLight} shadow-sm flex-shrink-0`}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -1197,7 +1288,7 @@ const DetalleRevision = memo(() => {
 
                   {/* Revisado por */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-500 shadow-sm flex-shrink-0">
+                    <div className={`w-10 h-10 ${theme.accentLight} rounded-xl flex items-center justify-center ${theme.textLight} shadow-sm flex-shrink-0`}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
@@ -1259,6 +1350,32 @@ const DetalleRevision = memo(() => {
                           }`}>
                             {String(revision.caja_fuerte)}
                           </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Movimiento de casita (Conditional) */}
+                  {shouldShowField('room_move', revision.room_move) && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 shadow-sm flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Movimiento</p>
+                        {isEditing && editedData ? (
+                          <input
+                            type="text"
+                            value={editedData.room_move as string || ''}
+                            onChange={(e) => handleInputChange('room_move', e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                          />
+                        ) : (
+                          <p className="text-sm font-bold text-gray-800 truncate">
+                            {String(revision.room_move)}
+                          </p>
                         )}
                       </div>
                     </div>

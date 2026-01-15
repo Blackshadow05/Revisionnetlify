@@ -20,6 +20,7 @@ export interface Revision {
   bolso_yute: string;
   camas_ordenadas: string;
   cola_caballo: string;
+  room_move?: string;
   evidencia_01: string;
   evidencia_02: string;
   evidencia_03: string;
@@ -52,6 +53,7 @@ export interface RevisionData {
   sombrero: string;
   bolso_yute: string;
   camas_ordenadas: string;
+  room_move?: string;
   evidencia_01: string;
   evidencia_02: string;
   evidencia_03: string;

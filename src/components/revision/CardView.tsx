@@ -50,6 +50,7 @@ const getEvidenceStyles = (status: string) => {
     case 'Check in': return 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-200';
     case 'Upsell': return 'bg-blue-500 text-white border-blue-600 shadow-blue-200';
     case 'Guardar Upsell': return 'bg-purple-500 text-white border-purple-600 shadow-purple-200';
+    case 'Room Move': return 'bg-[#F5EB27] text-black border-[#d1c71f] shadow-[#F5EB27]/20';
     default: return 'bg-amber-500 text-white border-amber-600 shadow-amber-200';
   }
 };
@@ -60,6 +61,7 @@ const getCardGlowStyles = (status: string) => {
     case 'Check in': return 'shadow-[0_0_15px_rgba(16,185,129,0.15)] border-2 border-emerald-500/30';
     case 'Upsell': return 'shadow-[0_0_15px_rgba(59,130,246,0.15)] border-2 border-blue-500/30';
     case 'Guardar Upsell': return 'shadow-[0_0_15px_rgba(168,85,247,0.15)] border-2 border-purple-500/30';
+    case 'Room Move': return 'shadow-[0_0_20px_rgba(245,235,39,0.25)] border-2 border-[#F5EB27]/50';
     default: return 'shadow-[0_0_15px_rgba(245,158,11,0.1)] border-2 border-amber-500/20';
   }
 };
@@ -127,6 +129,8 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
               <h3 className={`text-sm sm:text-base font-black truncate ${
                 revision.notas_count && revision.notas_count > 0
                   ? 'text-orange-700'
+                  : revision.caja_fuerte === 'Room Move'
+                  ? 'text-[#F5EB27]'
                   : 'text-sky-800'
               }`}>
                 {revision.casita}
@@ -144,6 +148,8 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                 ? 'bg-blue-50 text-blue-700 border-blue-200'
                 : revision.caja_fuerte === 'Guardar Upsell'
                 ? 'bg-purple-50 text-purple-700 border-purple-200'
+                : revision.caja_fuerte === 'Room Move'
+                ? 'bg-[#F5EB27] text-black border-[#F5EB27]'
                 : 'bg-amber-100 text-amber-800 border-amber-200'
             }`}>
               {revision.caja_fuerte === 'Guardar Upsell' ? (
@@ -157,25 +163,25 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
           {/* Información Principal - Mejorada */}
           <div className="space-y-1 sm:space-y-2 mb-2 sm:mb-3">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${revision.caja_fuerte === 'Room Move' ? 'text-[#F5EB27]' : 'text-amber-600'} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
-              <span className="text-[10px] sm:text-xs text-gray-900 font-bold truncate">{revision.quien_revisa}</span>
+              <span className={`text-[10px] sm:text-xs ${revision.caja_fuerte === 'Room Move' ? 'text-black' : 'text-gray-900'} font-bold truncate`}>{revision.quien_revisa}</span>
             </div>
             
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${revision.caja_fuerte === 'Room Move' ? 'text-[#F5EB27]' : 'text-amber-600'} flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
               </svg>
               <div className="flex items-center gap-1 font-bold">
-                <span className="text-[10px] sm:text-xs text-gray-800">
+                <span className={`text-[10px] sm:text-xs ${revision.caja_fuerte === 'Room Move' ? 'text-black' : 'text-gray-800'}`}>
                   {revision.created_at ? (() => {
                     const datePart = revision.created_at.split('+')[0].split('T')[0];
                     const [year, month, day] = datePart.split('-');
                     return `${day}/${month}/${year}`;
                   })() : 'N/A'}
                 </span>
-                <span className="text-[10px] sm:text-xs text-gray-800">
+                <span className={`text-[10px] sm:text-xs ${revision.caja_fuerte === 'Room Move' ? 'text-black' : 'text-gray-800'}`}>
                   {revision.created_at ? revision.created_at.split('+')[0].split('T')[1].split(':').slice(0,2).join(':') : '--:--'}
                 </span>
               </div>
@@ -224,6 +230,8 @@ export default function CardView({ data, onCardClick, onImageClick, onShareClick
                             ? 'bg-blue-500 shadow-blue-200'
                             : revision.caja_fuerte === 'Guardar Upsell'
                             ? 'bg-purple-500 shadow-purple-200'
+                            : revision.caja_fuerte === 'Room Move'
+                            ? 'bg-[#F5EB27] text-black shadow-[#F5EB27]/40'
                             : 'bg-amber-500 shadow-amber-200'
                         }`}
                         title="Compartir en WhatsApp"

@@ -18,7 +18,7 @@ import ViewToggle from '@/components/ui/ViewToggle';
 import CardView from '@/components/revision/CardView';
 import ShareModal from '@/components/ShareModal';
 import { PuestoService } from '@/lib/puesto-service';
-import { useRevisiones } from '@/hooks/useRevisionesCache';
+import { useRevisionesPaginated, useRevisionesStats, type AdvancedFilterType } from '@/hooks/useRevisionesCache';
 
 
 
@@ -84,40 +84,64 @@ export default function Home() {
     anchor?.focus();
   }, [pathname]);
   
-  // 🚀 Hook para cargar revisiones con caché en localStorage
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [cajaFuerteFilter, setCajaFuerteFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [activeFilter, setActiveFilter] = useState<AdvancedFilterType>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(40);
+
+  // 🚀 Hooks para datos y estadísticas optimizados
   const {
     data: revisionesData,
+    count: totalItems,
     loading: revisionesLoading,
     error: revisionesError,
-    isFromCache,
-    lastUpdated,
     refresh: refreshRevisiones
-  } = useRevisiones();
-  
+  } = useRevisionesPaginated({
+    page: currentPage,
+    pageSize: itemsPerPage,
+    filters: {
+      searchTerm,
+      cajaFuerte: cajaFuerteFilter,
+      date: dateFilter,
+      advancedFilter: activeFilter as AdvancedFilterType
+    }
+  });
+
+  const { stats, loading: statsLoading } = useRevisionesStats();
+
   const [data, setData] = useState<RevisionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Sincronizar datos del hook con el estado local
+  // Sincronizar datos del hook con el estado local para compatibilidad con el resto del código
   useEffect(() => {
     if (revisionesData) {
-      setData(revisionesData);
+      setData(revisionesData as RevisionData[]);
     }
     setLoading(revisionesLoading);
     setError(revisionesError);
   }, [revisionesData, revisionesLoading, revisionesError]);
-  
-  // Estados para estadísticas principales
-  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Estados para estadísticas principales vinculados al nuevo hook
   const [topRevisor, setTopRevisor] = useState<{name: string, count: number} | null>(null);
   const [topCheckOut, setTopCheckOut] = useState<{name: string, count: number} | null>(null);
   const [topCasita, setTopCasita] = useState<{name: string, count: number} | null>(null);
   const [checkInCount, setCheckInCount] = useState(0);
   const [topCheckInCasita, setTopCheckInCasita] = useState<{name: string, count: number} | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [cajaFuerteFilter, setCajaFuerteFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState<string>('');
+
+  useEffect(() => {
+    if (stats) {
+      setTopRevisor(stats.topRevisor);
+      setTopCheckOut(stats.topCheckOut);
+      setTopCasita(stats.topCasita);
+      setCheckInCount(stats.checkInCount);
+      setTopCheckInCasita(stats.topCheckInCasita);
+    }
+  }, [stats]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState<string | null>(null);
   const [modalImages, setModalImages] = useState<string[]>([]);
@@ -134,11 +158,9 @@ export default function Home() {
   const [reportDateTo, setReportDateTo] = useState('');
   const [reportType, setReportType] = useState<'Revisión Casitas' | 'Puesto 01'>('Revisión Casitas');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  // Definir el tipo para el filtro activo
-  type FilterType = 'all' | 'latest' | 'no-yute' | 'has-yute-1' | 'has-yute-2' | 'no-trapo-binocular' | 'has-trapo-binocular' | 'no-sombrero' | 'has-sombrero' | 'no-bulto' | 'today' | 'no-cola-caballo';
   
-  // Estado para el filtro activo: inicial estable en SSR. Leer localStorage en useEffect para evitar hydration mismatch.
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  type FilterType = AdvancedFilterType;
+
   
   // Función auxiliar para cambiar el filtro y guardarlo en localStorage
   const handleFilterChange = (filter: FilterType) => {
@@ -146,14 +168,11 @@ export default function Home() {
     try {
       if (filter !== 'all') {
         localStorage.setItem('activeRevisionFilter', filter);
-        // Actualizar timestamp cuando se aplica un filtro
         localStorage.setItem('revisionFiltersTimestamp', Date.now().toString());
       } else {
         localStorage.removeItem('activeRevisionFilter');
       }
-    } catch (err) {
-
-    }
+    } catch (err) {}
     setShowFilterDropdown(false);
     setShowFilterModal(false);
     setCurrentPage(1);
@@ -300,20 +319,13 @@ export default function Home() {
     }
   }, [cajaFuerteFilter]);
   
-  // Persistir el filtro activo en localStorage
   useEffect(() => {
     try {
       const savedActiveFilter = localStorage.getItem('activeRevisionFilter');
       if (typeof savedActiveFilter === 'string' && savedActiveFilter.length > 0) {
-        // Validar que el filtro sea uno de los valores permitidos
-        const validFilters: FilterType[] = ['all', 'latest', 'no-yute', 'has-yute-1', 'has-yute-2', 'no-trapo-binocular', 'has-trapo-binocular', 'no-sombrero', 'has-sombrero', 'no-bulto', 'today', 'no-cola-caballo'];
-        if (validFilters.includes(savedActiveFilter as FilterType)) {
-          setActiveFilter(savedActiveFilter as FilterType);
-        }
+        setActiveFilter(savedActiveFilter as FilterType);
       }
-    } catch (err) {
-      
-    }
+    } catch (err) {}
   }, []);
   
   // Guardar el filtro activo cada vez que cambie. Si se limpia, se elimina de localStorage.
@@ -334,8 +346,6 @@ export default function Home() {
 
 
   // 🚀 Estados para paginado
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(40);
   const [supabaseAwake, setSupabaseAwake] = useState(false);
 
   // 🎯 Estado para modo de vista (tabla/tarjeta) - inicial estable en SSR; se ajustará en cliente en useEffect
@@ -478,240 +488,11 @@ export default function Home() {
     };
   }, [showFilterDropdown]);
 
-  // Función para calcular estadísticas principales
-  const calcularEstadisticas = useCallback(() => {
-    if (!data || data.length === 0) return;
-
-    // Calcular quién ha revisado más
-    const revisorCounts = data.reduce((acc, item) => {
-      const name = item.quien_revisa || 'Desconocido';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const topRevisorEntry = Object.entries(revisorCounts)
-      .sort((a, b) => b[1] - a[1])[0];
-
-    setTopRevisor({
-      name: topRevisorEntry[0],
-      count: topRevisorEntry[1]
-    });
-
-    // Calcular quién ha realizado más check-out
-    const checkOutCounts = data
-      .filter(item => item.caja_fuerte === 'Check out')
-      .reduce((acc, item) => {
-        const name = item.quien_revisa || 'Desconocido';
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-    const topCheckOutEntry = Object.entries(checkOutCounts)
-      .sort((a, b) => b[1] - a[1])[0];
-
-    setTopCheckOut(topCheckOutEntry ? {
-      name: topCheckOutEntry[0],
-      count: topCheckOutEntry[1]
-    } : null);
-
-    // Calcular qué casita tiene más registros
-    const casitaCounts = data.reduce((acc, item) => {
-      const name = item.casita || 'Desconocida';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const topCasitaEntry = Object.entries(casitaCounts)
-      .sort((a, b) => b[1] - a[1])[0];
-
-    setTopCasita({
-      name: topCasitaEntry[0],
-      count: topCasitaEntry[1]
-    });
-    setCheckInCount(data.filter(item => item.caja_fuerte === 'Check in').length);
-
-    // Calcular qué casita tiene más "Check in"
-    const checkInCasitaCounts = data
-      .filter(item => item.caja_fuerte === 'Check in')
-      .reduce((acc, item) => {
-        const name = item.casita || 'Desconocida';
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-    const topCheckInCasitaEntry = Object.entries(checkInCasitaCounts).sort((a, b) => b[1] - a[1])[0];
-
-    setTopCheckInCasita(topCheckInCasitaEntry ? {
-      name: topCheckInCasitaEntry[0],
-      count: topCheckInCasitaEntry[1]
-    } : null);
-  }, [data]);
-
-  // Calcular estadísticas cuando los datos cambian
-  useEffect(() => {
-    if (data.length > 0) {
-      setStatsLoading(false);
-      calcularEstadisticas();
-    }
-  }, [data, calcularEstadisticas]);
-
-  const filteredData = data.filter(row => {
-    const searchLower = searchTerm.toLowerCase();
-
-    const cajaFuerteMatch = !cajaFuerteFilter || row.caja_fuerte === cajaFuerteFilter;
-    
-    // Date filter logic - Use local date comparison without timezone conversion
-    const dateMatch = !dateFilter || (row.created_at && (() => {
-      if (dateFilter) {
-        // Extract date portion from created_at (YYYY-MM-DD) for comparison
-        const createdAtDate = row.created_at.split('T')[0];
-        return createdAtDate === dateFilter;
-      }
-      return true;
-    })());
-
-    if (!searchTerm && !dateFilter) {
-      return cajaFuerteMatch;
-    }
-
-    const searchMatch = searchTerm ? (
-      row.casita.toLowerCase() === searchLower ||
-      row.quien_revisa.toLowerCase().includes(searchLower) ||
-      row.caja_fuerte.toLowerCase().includes(searchLower)
-    ) : true;
-
-    return cajaFuerteMatch && searchMatch && dateMatch;
-  });
-
-  const applyAdvancedFilters = (data: RevisionData[]) => {
-    if (activeFilter === 'all') {
-      return data;
-    }
-
-    // Helper function to get latest revision per casita
-    const getLatestByCasita = () => {
-      const latestByCasita = new Map<string, RevisionData>();
-      
-      data.forEach(row => {
-        const existing = latestByCasita.get(row.casita);
-        if (!existing || new Date(row.created_at) > new Date(existing.created_at)) {
-          latestByCasita.set(row.casita, row);
-        }
-      });
-      
-      return Array.from(latestByCasita.values()).sort((a, b) => {
-        const numA = parseInt(a.casita, 10);
-        const numB = parseInt(b.casita, 10);
-        return numA - numB;
-      });
-    };
-
-    if (activeFilter === 'latest') {
-      return getLatestByCasita();
-    }
-
-    if (activeFilter === 'no-yute') {
-      return getLatestByCasita()
-        .filter(row => row.bolso_yute === '0');
-    }
-
-    if (activeFilter === 'has-yute-1') {
-      return getLatestByCasita()
-        .filter(row => row.bolso_yute === '01');
-    }
-
-    if (activeFilter === 'has-yute-2') {
-      return getLatestByCasita()
-        .filter(row => row.bolso_yute === '02');
-    }
-
-    if (activeFilter === 'no-trapo-binocular') {
-      return getLatestByCasita()
-        .filter(row => row.trapo_binoculares === 'No');
-    }
-
-    if (activeFilter === 'has-trapo-binocular') {
-      return getLatestByCasita()
-        .filter(row => row.trapo_binoculares === 'Si');
-    }
-
-    if (activeFilter === 'no-sombrero') {
-      return getLatestByCasita()
-        .filter(row => row.sombrero === 'No');
-    }
-
-    if (activeFilter === 'has-sombrero') {
-      return getLatestByCasita()
-        .filter(row => row.sombrero === 'Si');
-    }
-
-    if (activeFilter === 'no-bulto') {
-      return getLatestByCasita()
-        .filter(row => row.bulto === 'No');
-    }
-
-    if (activeFilter === 'no-cola-caballo') {
-      return getLatestByCasita()
-        .filter(row => row.cola_caballo === 'No');
-    }
-
-    if (activeFilter === 'today') {
-      // Ejecutar este filtro solo en cliente para evitar hydration mismatch.
-      // Si todavía no estamos montados en el cliente, devolvemos los datos sin filtrar.
-      if (!mounted) {
-        return data;
-      }
-
-      // Obtener la fecha de hoy en formato YYYY-MM-DD usando la fecha local del dispositivo
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0'); // Los meses son 0-indexados
-      const day = String(today.getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${day}`;
-      
-      
-      
-      // Filtrar revisiones de hoy y ordenar por casita ascendente
-      const todayRevisions = data.filter(row => {
-        if (!row.created_at) return false;
-        
-        // Convertir la fecha UTC de la base de datos a fecha local
-        const rowDate = new Date(row.created_at);
-        const rowYear = rowDate.getFullYear();
-        const rowMonth = String(rowDate.getMonth() + 1).padStart(2, '0');
-        const rowDay = String(rowDate.getDate()).padStart(2, '0');
-        const rowDateStr = `${rowYear}-${rowMonth}-${rowDay}`;
-        
-        const isToday = rowDateStr === todayStr;
-        
-        if (isToday) {
-          
-        }
-        
-        return isToday;
-      });
-      
-      
-      
-      // Ordenar por casita ascendente
-      return todayRevisions.sort((a, b) => {
-        const numA = parseInt(a.casita, 10) || 0;
-        const numB = parseInt(b.casita, 10) || 0;
-        return numA - numB;
-      });
-    }
-
-    return data;
-  };
-
-  const finalFilteredData = applyAdvancedFilters(filteredData);
-
-  // 🚀 Cálculos de paginado
-  const totalItems = finalFilteredData.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = finalFilteredData.slice(startIndex, endIndex);
+  const endIndex = startIndex + data.length;
+  const paginatedData = data; // Los datos ya vienen paginados del hook
+
 
 
 
@@ -1261,32 +1042,26 @@ export default function Home() {
             <div className="py-2">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <p className="text-gray-400 text-sm">
-                  Mostrando {finalFilteredData.length} de {data.length} revisiones
+                  Mostrando {data.length} de {totalItems} resultados
                   {searchTerm && <span> para "{searchTerm}"</span>}
                   {cajaFuerteFilter && <span> con estado "{cajaFuerteFilter}"</span>}
                   {dateFilter && (() => {
-                    // Formatear la fecha manualmente sin conversión de zona horaria
                     const [year, month, day] = dateFilter.split('-');
                     return <span> del {day}/{month}/{year}</span>;
                   })()}
-                  {activeFilter === 'latest' && <span> (última revisión por casita)</span>}
-                  {activeFilter === 'no-yute' && <span> (sin bolso yute)</span>}
-                  {activeFilter === 'today' && <span> (revisiones de hoy)</span>}
-                  {activeFilter === 'no-cola-caballo' && <span> (sin cola de caballo)</span>}
+                  {activeFilter !== 'all' && <span> (filtro avanzado activo)</span>}
                 </p>
-                {(searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setCajaFuerteFilter('');
-                      clearDateFilter();
-                      setActiveFilter('all');
-                    }}
-                    className="px-3 py-1 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-lg transition-all duration-200 text-sm whitespace-nowrap"
-                  >
-                    Limpiar filtros
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCajaFuerteFilter('');
+                    clearDateFilter();
+                    setActiveFilter('all');
+                  }}
+                  className="px-3 py-1 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 border border-[#c9a45c]/40 text-[#c9a45c] rounded-lg transition-all duration-200 text-sm whitespace-nowrap"
+                >
+                  Limpiar filtros
+                </button>
               </div>
             </div>
           </div>
@@ -1393,17 +1168,17 @@ export default function Home() {
                                 </div>
                                 <div className="text-center">
                                   <h3 className="text-lg font-semibold text-gray-400 mb-2">
-                                    {finalFilteredData.length === 0 ? 'No se encontraron revisiones' : 'No hay datos en esta página'}
+                                    {totalItems === 0 ? 'No se encontraron revisiones' : 'No hay datos en esta página'}
                                   </h3>
                                   <p className="text-gray-500 text-sm max-w-md mx-auto">
-                                    {finalFilteredData.length === 0
+                                    {totalItems === 0
                                       ? (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all')
                                         ? 'Intenta ajustar los filtros de búsqueda para encontrar revisiones.'
                                         : 'Aún no se han registrado revisiones en el sistema.'
                                       : `Página ${currentPage} está vacía. Navega a una página anterior.`
                                     }
                                   </p>
-                                  {finalFilteredData.length === 0 && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
+                                  {totalItems === 0 && (searchTerm || cajaFuerteFilter || dateFilter || activeFilter !== 'all') && (
                                     <button
                                       onClick={() => {
                                         setSearchTerm('');
@@ -1516,7 +1291,7 @@ export default function Home() {
             )}
 
             {/* 🚀 Componente de Paginado Compartido - Visible para ambas vistas */}
-            {!loading && filteredData.length > 0 && (
+            {!loading && totalItems > 0 && (
               <div className="mt-8 flex items-center justify-between bg-[#2a3347]/95 backdrop-blur-xl rounded-2xl border border-[#c9a45c]/20 p-4 shadow-2xl">
                 {/* Información de registros */}
                 <div className="flex items-center gap-2">
@@ -1527,7 +1302,7 @@ export default function Home() {
                   </div>
                   <div className="hidden sm:block">
                     <p className="text-sm text-gray-400">
-                      Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} registros
+                      Mostrando {startIndex + 1} a {endIndex} de {totalItems} registros
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {itemsPerPage} por página • Página {currentPage} de {totalPages}
@@ -1535,7 +1310,7 @@ export default function Home() {
                   </div>
                   <div className="sm:hidden">
                     <p className="text-sm text-gray-400">
-                      {startIndex + 1}-{Math.min(endIndex, totalItems)} de {totalItems}
+                      {startIndex + 1}-{endIndex} de {totalItems}
                     </p>
                     <p className="text-xs text-gray-500">
                       Pág. {currentPage}/{totalPages}
@@ -1545,10 +1320,9 @@ export default function Home() {
 
                 {/* Controles de navegación */}
                 <div className="flex items-center gap-2">
-                  {/* Botón Anterior */}
                   <button
                     onClick={goToPrevious}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || loading}
                     className="flex items-center gap-2 px-3 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 disabled:bg-gray-600/20 border border-[#c9a45c]/40 disabled:border-gray-500/40 text-[#c9a45c] disabled:text-gray-500 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                     title="Página anterior"
                   >
@@ -1558,18 +1332,15 @@ export default function Home() {
                     <span className="hidden sm:inline">Anterior</span>
                   </button>
 
-                  {/* Indicador de página actual */}
                   <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#c9a45c]/20 via-[#f0c987]/20 to-[#c9a45c]/20 border border-[#c9a45c]/40 rounded-xl">
-                    <div className="w-2 h-2 bg-[#c9a45c] rounded-full animate-pulse"></div>
                     <span className="text-[#c9a45c] font-semibold text-sm">
                       {currentPage}
                     </span>
                   </div>
 
-                  {/* Botón Siguiente */}
                   <button
                     onClick={goToNext}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || loading}
                     className="flex items-center gap-2 px-3 py-2 bg-[#c9a45c]/20 hover:bg-[#c9a45c]/30 disabled:bg-gray-600/20 border border-[#c9a45c]/40 disabled:border-gray-500/40 text-[#c9a45c] disabled:text-gray-500 rounded-xl transition-all duration-200 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                     title="Página siguiente"
                   >

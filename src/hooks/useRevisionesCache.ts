@@ -41,10 +41,18 @@ export function useRevisionesPaginated({ page, pageSize, filters }: UsePaginated
   const buildQuery = (query: any) => {
     // 1. Filtro de búsqueda (Buscador general)
     if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      // Supabase no tiene un "OR" simple entre columnas con ilike en una sola cadena sin sintaxis especial
-      // Usamos sintaxis de filtro 'or'
-      query = query.or(`casita.ilike.%${term}%,quien_revisa.ilike.%${term}%,caja_fuerte.ilike.%${term}%`);
+      const term = filters.searchTerm.toLowerCase().trim();
+      const isNumeric = /^\d+$/.test(term);
+
+      if (isNumeric) {
+        // Si el término es puramente numérico, buscamos coincidencia exacta en 'casita'
+        // para evitar que al buscar "1" aparezcan "11", "12", etc.
+        // Pero mantenemos ilike para otros campos por flexibilidad.
+        query = query.or(`casita.eq.${term},quien_revisa.ilike.%${term}%,caja_fuerte.ilike.%${term}%`);
+      } else {
+        // Búsqueda parcial normal para términos no numéricos
+        query = query.or(`casita.ilike.%${term}%,quien_revisa.ilike.%${term}%,caja_fuerte.ilike.%${term}%`);
+      }
     }
 
     // 2. Filtro de Caja Fuerte
@@ -146,6 +154,40 @@ export function useRevisionesPaginated({ page, pageSize, filters }: UsePaginated
              const numB = parseInt(b.casita, 10) || 0;
              return numA - numB;
            });
+
+           // Aplicar filtros en cliente (el hook recibe filtros que de otro modo se ignoran en 'latest')
+           if (filters.searchTerm) {
+             const term = filters.searchTerm.toLowerCase().trim();
+             const isNumeric = /^\d+$/.test(term);
+             
+             finalData = finalData.filter((row: any) => {
+               if (isNumeric) {
+                 // Coincidencia exacta para número en casita
+                 return row.casita === term || 
+                        (row.quien_revisa && row.quien_revisa.toLowerCase().includes(term)) ||
+                        (row.caja_fuerte && row.caja_fuerte.toLowerCase().includes(term));
+               } else {
+                 return (row.casita && row.casita.toLowerCase().includes(term)) ||
+                        (row.quien_revisa && row.quien_revisa.toLowerCase().includes(term)) ||
+                        (row.caja_fuerte && row.caja_fuerte.toLowerCase().includes(term));
+               }
+             });
+           }
+           
+           if (filters.cajaFuerte) {
+             finalData = finalData.filter((row: any) => row.caja_fuerte === filters.cajaFuerte);
+           }
+           
+           if (filters.date) {
+             finalData = finalData.filter((row: any) => {
+               try {
+                 const rowDate = new Date(row.created_at).toISOString().split('T')[0];
+                 return rowDate === filters.date;
+               } catch (e) {
+                 return false;
+               }
+             });
+           }
 
            // Aplicar paginación en cliente a este set reducido
            const start = (page - 1) * pageSize;

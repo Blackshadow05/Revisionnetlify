@@ -115,11 +115,13 @@ export default function ButtonGroup({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-bold text-[#ff8c42]">
-        {getIcon()}
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
+      {label && (
+        <label className="block text-sm font-bold text-[#ff8c42]">
+          {getIcon()}
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
       <div 
         className={`p-4 rounded-xl ${highlight ? 'form-field-highlight' : ''} ${
           columns 
@@ -132,7 +134,9 @@ export default function ButtonGroup({
         } : undefined}
       >
         {options.map(option => {
-          const isSelected = selectedValue === option;
+          const isSelected = selectedValue !== undefined && 
+                           selectedValue !== null && 
+                           String(selectedValue).trim().toLowerCase() === String(option).trim().toLowerCase();
           return (
             <button
               key={option}

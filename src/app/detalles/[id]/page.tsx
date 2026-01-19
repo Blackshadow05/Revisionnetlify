@@ -26,6 +26,7 @@ import DetallesSkeleton from "@/components/ui/DetallesSkeleton";
 import LoadingButton from "@/components/ui/LoadingButton";
 import FadeIn from "@/components/ui/FadeIn";
 import ClickableImage from "@/components/ui/ClickableImage";
+import ButtonGroup from "@/components/ButtonGroup";
 
 // 🚀 CODE SPLITTING: Lazy load de componentes no críticos
 const ImageModal = lazy(() => import("@/components/revision/ImageModal"));
@@ -126,6 +127,30 @@ const DetalleRevision = memo(() => {
       room_move: "Movimiento de casita",
       notas: "Notas",
       created_at: "Fecha de Creación",
+    }),
+    []
+  );
+
+  // 🚀 OPTIMIZACIÓN: Opciones para campos con botones
+  const fieldOptions: Record<string, string[]> = useMemo(
+    () => ({
+      chromecast: ["0", "01", "02", "03"],
+      speaker: ["0", "01", "02"],
+      usb_speaker: ["0", "01", "02"],
+      controles_tv: ["0", "01", "02", "03"],
+      binoculares: ["0", "01", "02"],
+      trapo_binoculares: ["Si", "No"],
+      secadora: ["0", "01", "02", "03"],
+      accesorios_secadora: ["0", "01", "02", "03", "04", "05", "06", "07", "08"],
+      steamer: ["0", "01", "02"],
+      bolsa_vapor: ["Si", "No"],
+      plancha_cabello: ["0", "01", "02"],
+      cola_caballo: ["Si", "No"],
+      bulto: ["Si", "No"],
+      sombrero: ["Si", "No"],
+      caja_fuerte: ["Si", "No", "Check in", "Check out", "Upsell", "Guardar Upsell"],
+      bolso_yute: ["0", "01", "02", "03"],
+      camas_ordenadas: ["Si", "No"],
     }),
     []
   );
@@ -1338,12 +1363,14 @@ const DetalleRevision = memo(() => {
                       <div className="min-w-0 flex-1">
                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Caja Fuerte</p>
                         {isEditing && editedData ? (
-                          <input
-                            type="text"
-                            value={editedData.caja_fuerte as string || ''}
-                            onChange={(e) => handleInputChange('caja_fuerte', e.target.value)}
-                            className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-800"
-                          />
+                          <div className="mt-2">
+                            <ButtonGroup
+                              label=""
+                              options={fieldOptions.caja_fuerte}
+                              selectedValue={String(editedData.caja_fuerte || '')}
+                              onSelect={(val) => handleInputChange('caja_fuerte', val)}
+                            />
+                          </div>
                         ) : (
                           <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                             revision.caja_fuerte === 'Ok' || revision.caja_fuerte === 'Limpia' || revision.caja_fuerte === 'Si' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
@@ -1435,8 +1462,10 @@ const DetalleRevision = memo(() => {
                       const isZeroOrNo = value === 0 || value === '0' || value === 'No';
                       const isSiOrGood = value === 'Si' || value === 'Limpia' || value === 'Ok' || (typeof value === 'number' && value > 0) || (typeof value === 'string' && parseInt(value) > 0);
 
+                      const options = fieldOptions[key];
+
                       return (
-                        <div key={key} className="flex items-center justify-between p-2 sm:p-3 rounded-2xl transition-all hover:bg-gray-50/50 group">
+                        <div key={key} className={`flex ${isEditing && options ? 'flex-col items-start gap-4' : 'items-center justify-between'} p-2 sm:p-3 rounded-2xl transition-all hover:bg-gray-50/50 group`}>
                           <div className="flex items-center gap-3 sm:gap-4">
                             <div className={`w-9 h-9 sm:w-11 sm:h-11 ${itemUI.bg} rounded-xl flex items-center justify-center ${itemUI.text} shadow-sm group-hover:scale-110 transition-transform`}>
                               {itemUI.icon}
@@ -1445,12 +1474,23 @@ const DetalleRevision = memo(() => {
                           </div>
 
                           {isEditing && editedData ? (
-                            <input
-                              type="text"
-                              value={editedData[key as keyof Revision] as string || ''}
-                              onChange={(e) => handleInputChange(key as keyof Revision, e.target.value)}
-                              className="w-14 sm:w-16 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-center text-gray-950 text-xs sm:text-sm focus:ring-2 focus:ring-blue-100"
-                            />
+                            options ? (
+                              <div className="w-full">
+                                <ButtonGroup
+                                  label=""
+                                  options={options}
+                                  selectedValue={String(editedData[key as keyof Revision] || '')}
+                                  onSelect={(val) => handleInputChange(key as keyof Revision, val)}
+                                />
+                              </div>
+                            ) : (
+                              <input
+                                type="text"
+                                value={editedData[key as keyof Revision] as string || ''}
+                                onChange={(e) => handleInputChange(key as keyof Revision, e.target.value)}
+                                className="w-14 sm:w-16 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-center text-gray-950 text-xs sm:text-sm focus:ring-2 focus:ring-blue-100"
+                              />
+                            )
                           ) : (
                             <div className={`min-w-[36px] sm:min-w-[42px] h-[28px] sm:h-[34px] rounded-full flex items-center justify-center px-2 sm:px-3 text-[12px] sm:text-[15px] font-black shadow-sm ${
                               isSiOrGood ? 'bg-emerald-100 text-emerald-800' :
